@@ -31,7 +31,7 @@ Basic configuration:
 ![wireless_conf1](wireless_conf1.png)  
 
 Wireless password:  
-![wireless_conf1](wireless_conf1.png)  
+![wireless_conf1](wireless_conf2.png)  
 
 ### 3.3 Firewall
 Path: `Network-Firewall`  
