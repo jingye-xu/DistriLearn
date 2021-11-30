@@ -11,10 +11,32 @@ Use a network cable connect your pc to the Pi's Etherent port to get an ip addre
 
 ## 3 Change Pi into wireless AP mode
 ### 3.1 Interfaces Configuration  
-`Network-Interfaces`
-overview:  
+Path: `Network-Interfaces`  
+
+Overview:  
 ![interface overview](interface_overview.png)
 
-click on edit:  
+click on edit:
 ![interface_conf1](interface_conf1.png)
 ![interface_conf2](interface_conf2.png)
+
+### 3.2 Wireless Configuration
+Path: `Network-Wireless`  
+
+Overview:  
+![wireless_overview](wireless_overview.png)
+Please note that you may need to enable the wireless network first.  
+
+Basic configuration:  
+![wireless_conf1](wireless_conf1.png)
+
+Wireless password:  
+![wireless_conf1](wireless_conf1.png)
+
+### 3.3 Firewall
+Path: `Network-Firewall`
+
+change all the `reject` to `accept`, we will configure our firewall rules later, here we allow all the traffices:  
+![firewall_over](firewall_over.png)
+
+### 3.4 Once all the configuration is done, click on the `Save & Apply`
