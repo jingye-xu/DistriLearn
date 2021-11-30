@@ -16,7 +16,7 @@ Path: `Network-Interfaces`
 Overview:  
 ![interface overview](interface_overview.png)  
 
-click on edit:  
+Click on edit:  
 ![interface_conf1](interface_conf1.png)  
 ![interface_conf2](interface_conf2.png)  
 
@@ -36,7 +36,7 @@ Wireless password:
 ### 3.3 Firewall
 Path: `Network-Firewall`  
 
-change all the `reject` to `accept`, we will configure our firewall rules later, here we allow all the traffices:  
+Change all the `reject` to `accept`, we will configure our firewall rules later, here we allow all the traffices:  
 ![firewall_overview](firewall_overview.png)  
 
 ### 3.4 Once all the configuration is done, click on the `Save & Apply`  
