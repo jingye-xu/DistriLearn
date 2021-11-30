@@ -7,7 +7,7 @@
 2.1 If it is your first time to connect the Pi, the Ethernet port is running as the LAN port and providing DHCP service by default. 
 Use a network cable connect your pc to the Pi's Etherent port to get an ip address (the ip address shoule be in 192.168.1.0/24).  
 2.2 Once get a valid ip address, open a broswer and type Pi's ip address (192.168.1.1 by default).  
-2.3 input any password to login, and then navigate 'System-Administration-Router Password' to set the login password.  
+2.3 input any password to login, and then navigate `System-Administration-Router Password` to set the login password.  
 
 ## 3 Change Pi into wireless AP mode
 ![interface overview](interface_overview.png)
