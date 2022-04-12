@@ -5,22 +5,30 @@ import os
 import sys
 import socket
 import threading
+import pickle
 
-SERVER_IP = "0.0.0.0"
+from scapy.all import *
+
+SERVER_IP = "127.0.0.1"
 SERVER_PORT = 3254
-MAX_LISTEN_BYTES = 4096
+MAX_LISTEN_BYTES = 65536
 
 if __name__ == "__main__":
 	
 
 	with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client:
 		
-		print('[*] Connecting to %s%d' % (SERVER_IP, SERVER_PORT))
+		print('[*] Connecting to %s:%d' % (SERVER_IP, SERVER_PORT))
 
 		client.connect((SERVER_IP, SERVER_PORT))
+
 		# TODO: Load model and begin running inferences. Send to server. 
+		
 		while True:
-			msg = input('Enter your message: ')
-			client.send(bytes(msg, encoding='UTF-8'))
+
+			# Block receive!
 			response = client.recv(MAX_LISTEN_BYTES)
-			print(response)
+			deserialized_packet = pickle.loads(response) 
+			print(deserialized_packet)
+
+
