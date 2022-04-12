@@ -4,13 +4,20 @@ import os
 import sys
 import threading
 import socket
+import pickle
+import queue
+
+from scapy.all import *
 
 
-BIND_IP = "0.0.0.0"
+BIND_IP = "127.0.0.1"
 BIND_PORT = 3254
 BACKLOG_LIMIT = 20
-MAX_LISTEN_BYTES = 4096
+MAX_LISTEN_BYTES = 65536
 
+LISTEN_INTERFACE = 'en0'
+
+QUEUE = queue.Queue()
 
 def setup_server(server):
 
@@ -25,11 +32,18 @@ def setup_server(server):
 
 def service_client(client_socket, client_ip):
 	
+
 	while True:
-		# Listen for inferences, and aggregate
-		msg = client_socket.recv(MAX_LISTEN_BYTES)
-		print(msg)
-		client_socket.send(b'Got your message!')
+		
+		# Dequeue data and send to client
+		packed_packet = QUEUE.get()
+		client_socket.send(packed_packet)
+		QUEUE.task_done()
+
+		# Block receive! Listen for inferences, and aggregate
+		# msg = client_socket.recv(MAX_LISTEN_BYTES)
+		
+		
 
 
 def accept_clients(server):
@@ -39,13 +53,31 @@ def accept_clients(server):
 		client_socket, client_ip = server.accept()
 		print('[*] Accepting connection from %s:%d' % (client_ip[0], client_ip[1]))
 		client_thread = threading.Thread(target=service_client, args=(client_socket, client_ip))
-		client_thread.run()
+		client_thread.start()
+
+
+
+def capture_populate_queue():
+
+	MAX_PACKET_SNIFF = 25
+
+	while True:
+		# capture packets
+		capture = sniff(count=MAX_PACKET_SNIFF, iface=LISTEN_INTERFACE)
+
+		# serialize with pickle (turn to bytes)
+		serialized_cap = pickle.dumps(capture)
+		QUEUE.put_nowait(serialized_cap)
 
 
 if __name__ == "__main__":
-	
+
+
+	print("[*] Opening socket for connections...")
 	with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server:
 		try:
+			producer_thread = threading.Thread(target=capture_populate_queue)
+			producer_thread.start()
 			setup_server(server)
 			accept_clients(server)
 		except:
