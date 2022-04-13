@@ -18,6 +18,8 @@ if __name__ == "__main__":
 
 	with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client:
 		
+		pickle_first_bytes = b'\x80\x04\x95'
+		
 		print('[*] Connecting to %s:%d' % (SERVER_IP, SERVER_PORT))
 
 		client.connect((SERVER_IP, SERVER_PORT))
@@ -28,6 +30,12 @@ if __name__ == "__main__":
 
 			# Block receive!
 			response = client.recv(MAX_LISTEN_BYTES)
+
+			first_three_bytes = response[:3]
+
+			if pickle_first_bytes != first_three_bytes:
+				continue
+
 			deserialized_packet = pickle.loads(response) 
 			print(deserialized_packet)
 
