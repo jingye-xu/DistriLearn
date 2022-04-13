@@ -15,9 +15,11 @@ BIND_PORT = 3254
 BACKLOG_LIMIT = 20
 MAX_LISTEN_BYTES = 65536
 
+Q_MAX_SIZE = 100
+
 LISTEN_INTERFACE = 'en0'
 
-QUEUE = queue.Queue()
+QUEUE = queue.Queue(maxsize=Q_MAX_SIZE)
 
 def setup_server(server):
 
@@ -32,17 +34,28 @@ def setup_server(server):
 
 def service_client(client_socket, client_ip):
 	
+	pickle_first_bytes = b'\x80\x04\x95'
 
 	while True:
 		
-		# Dequeue data and send to client
-		packed_packet = QUEUE.get()
-		client_socket.send(packed_packet)
-		QUEUE.task_done()
+		try:
+			# Dequeue data and send to client
+			packed_packet = QUEUE.get(block=True)
 
-		# Block receive! Listen for inferences, and aggregate
-		# msg = client_socket.recv(MAX_LISTEN_BYTES)
-		
+			first_three_bytes = packed_packet[:3]
+
+			if pickle_first_bytes != first_three_bytes:
+				continue
+
+			client_socket.send(packed_packet)
+			QUEUE.task_done()
+
+			# Block receive! Listen for inferences, and aggregate
+			# msg = client_socket.recv(MAX_LISTEN_BYTES)
+		except:
+			client_socket.close()
+			print(f'[!] Disconnected client {client_ip[0]}:{client_ip[1]}')
+			break
 		
 
 
@@ -59,15 +72,22 @@ def accept_clients(server):
 
 def capture_populate_queue():
 
-	MAX_PACKET_SNIFF = 25
+	MAX_PACKET_SNIFF = 20
+
+	pickle_first_bytes = b'\x80\x04\x95'
 
 	while True:
 		# capture packets
 		capture = sniff(count=MAX_PACKET_SNIFF, iface=LISTEN_INTERFACE)
-
 		# serialize with pickle (turn to bytes)
 		serialized_cap = pickle.dumps(capture)
-		QUEUE.put_nowait(serialized_cap)
+
+		first_three_bytes = serialized_cap[:3]
+
+		if pickle_first_bytes != first_three_bytes:
+			continue
+
+		QUEUE.put(serialized_cap, block=True)
 
 
 if __name__ == "__main__":
