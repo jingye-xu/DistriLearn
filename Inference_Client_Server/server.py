@@ -16,27 +16,6 @@ import pandas as pd
 
 # Inference vectors for the vectors on our packets -- how can we use this info post-learning process?
 
-FIN = 0x01
-SYN = 0x02
-RST = 0x04
-PSH = 0x08
-ACK = 0x10
-URG = 0x20
-ECE = 0x40
-CWR = 0x80
-
-flags = {
-    'F': 'FIN',
-    'S': 'SYN',
-    'R': 'RST',
-    'P': 'PSH',
-    'A': 'ACK',
-    'U': 'URG',
-    'E': 'ECE',
-    'C': 'CWR',
-}
-
-
 
 BIND_IP = "127.0.0.1"
 BIND_PORT = 3254
