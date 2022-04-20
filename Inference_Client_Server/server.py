@@ -28,6 +28,8 @@ LISTEN_INTERFACE = 'en0'
 
 QUEUE = queue.Queue(maxsize=Q_MAX_SIZE)
 
+mac_key = dict()
+
 def setup_server(server):
 
 	# Bind to address and port first 
@@ -44,13 +46,12 @@ def handle_interrupt(sig, frame):
     stop_event.set()
 
 
-
 def service_client(client_socket, client_ip):
 	
 	pickle_first_bytes = b'\x80\x04\x95'
 
 	while True:
-		
+
 		try:
 			# Dequeue data and send to client
 			packed_packet = QUEUE.get(block=True)
@@ -64,11 +65,17 @@ def service_client(client_socket, client_ip):
 			QUEUE.task_done()
 
 			# Block receive! Listen for inferences, and aggregate
-			# msg = client_socket.recv(MAX_LISTEN_BYTES)
+			received_data_frame_pickled = client_socket.recv(MAX_LISTEN_BYTES)
+			
+			df = pickle.loads(received_data_frame_pickled)
+			df['source_mac'] = df.apply(obtain_mac, axis=1)
+			df['prediction'] = df.apply(obtain_label, axis=1)
+			
+			print(f'{df}\n')
 
-		except:
+		except Exception as e:
 			client_socket.close()
-			print(f'[!] Disconnected client {client_ip[0]}:{client_ip[1]}')
+			print(f'[!] Disconnected client {client_ip[0]}:{client_ip[1]} - {e}')
 			break
 		
 
@@ -83,6 +90,70 @@ def accept_clients(server):
 		client_thread.start()
 
 
+def obtain_label(x):
+	return 'benign' if x.prediction == 0 else 'malicious'
+
+def obtain_mac(x):
+	return mac_key[x.source_mac]
+
+def protocol_parse(x):
+
+	prot = {"tcp": 1,
+                "udp": 2,
+                "icmp": 3,
+                "arp": 4}
+
+	return prot[x.protocol]
+
+def state_parse(x):
+	state = {"0": 0,
+                 "request": 1,
+                 "reply": 2,
+                 "respond": 2,
+                 "ack": 3,
+                 "finish": 4,
+                 "other": 5}
+
+	return state[x.state]
+
+def mac_src_parse(x):
+
+	# remove :
+	mac_add = x.source_mac.split(":")
+
+	result = 0
+	for i in mac_add:
+		result += int(i, 16)
+
+	mac_key[result] = x.source_mac
+
+	return result
+
+def mac_dst_parse(x):
+
+	# remove :
+	mac_add = x.destination_mac.split(":")
+
+	result = 0
+	for i in mac_add:
+		result += int(i, 16)
+
+	return result
+
+def ip_src_parse(x):
+
+	# remove .
+	ip_add = x.source_ip.split(".")
+
+	return int(ip_add[3])
+
+
+def ip_dst_parse(x):
+
+	# remove .
+	ip_add = x.destination_ip.split(".")
+
+	return int(ip_add[3])
 
 
 def capture_populate_queue():
@@ -101,7 +172,7 @@ def capture_populate_queue():
 
 		# coding=utf-8
 		# OUTPUT of csv file: "timestamp", "protocol", "state", "source_mac", "destination_mac",
-		# "source_ip", "destination_ip", "source_port", "destination_port", "payload"
+		# "source_ip", "destination_ip", "source_port", "destination_port", "payload (length)"
 
 		packet_list = []
 		for packet in capture:
@@ -124,7 +195,7 @@ def capture_populate_queue():
 					packet_src_port = packet_tcp_info.sport
 					packet_dst_port = packet_tcp_info.dport
 					packet_flags = packet_tcp_info.flags
-					packet_payload = packet_tcp_info.payload.original
+					packet_payload = len(packet_tcp_info.payload.original)
 					flagrepr = packet_flags.flagrepr()
 
 					if flagrepr == 'S':
@@ -146,9 +217,9 @@ def capture_populate_queue():
 				if packet_proto == 'udp':
 					packet_state = "0"
 					packet_udp_info = packet[UDP]
-					packet_src_port = packet_udp_info.sport
-					packet_dst_port = packet_udp_info.dport
-					packet_payload = packet_udp_info.payload.original
+					packet_src_port = int(packet_udp_info.sport)
+					packet_dst_port = int(packet_udp_info.dport)
+					packet_payload = len(packet_udp_info.payload.original)
 
 					packet_data = [packet.time, packet_proto, packet_state, packet_src_mac, packet_dst_mac,
 					packet_src_ip, packet_dst_ip, packet_src_port, packet_dst_port, packet_payload]
@@ -159,8 +230,8 @@ def capture_populate_queue():
 				packet_ip_layer = packet[ARP]
 				packet_src_ip = packet_ip_layer.psrc
 				packet_dst_ip = packet_ip_layer.pdst
-				packet_src_port = "65536"
-				packet_dst_port = "65536"
+				packet_src_port = 65536
+				packet_dst_port = 65536
 				packet_payload = "0"
 				opcode = packet_ip_layer.get_field('op')
 				packet_state = opcode.i2s[packet_ip_layer.op]
@@ -182,11 +253,17 @@ def capture_populate_queue():
 
 			packet_list.append(packet_data)
 
+		df = pd.DataFrame(packet_list, columns=data_header)
 
-		print(len(packet_list))
+		df["protocol"] = df.apply(protocol_parse, axis=1)
+		df["state"] = df.apply(state_parse, axis=1)
+		df["source_ip"] = df.apply(ip_src_parse, axis=1)
+		df["destination_ip"] = df.apply(ip_dst_parse, axis=1)
+		df["source_mac"] = df.apply(mac_src_parse, axis=1)
+		df["destination_mac"] = df.apply(mac_dst_parse, axis=1)
 
 		# serialize with pickle (turn to bytes)
-		serialized_cap = pickle.dumps(packet_list)
+		serialized_cap = pickle.dumps(df)
 
 		first_three_bytes = serialized_cap[:3]
 
