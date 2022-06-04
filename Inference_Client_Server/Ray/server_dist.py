@@ -89,17 +89,17 @@ def get_process_metrics():
 
 
 	size = used_mem
-    # 2**10 = 1024
-    power = 2**10
-    n = 0
-    power_labels = {0 : '', 1: 'kilo', 2: 'mega', 3: 'giga', 4: 'tera'}
-    while size > power:
-        size /= power
-        n += 1
+	# 2**10 = 1024
+	power = 2**10
+	n = 0
+	power_labels = {0 : '', 1: 'kilo', 2: 'mega', 3: 'giga', 4: 'tera'}
+	while size > power:
+		size /= power
+		n += 1
 
-    used = size, power_labels[n]+'bytes'
+	used = size, power_labels[n]+'bytes'
 
-    print(f'Memory used: ~{used[0]} {used[1]}\r')
+	print(f'Memory used: ~{used[0]} {used[1]}\r')
 
 
 
