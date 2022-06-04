@@ -18,6 +18,8 @@ import queue
 import pandas as pd
 import numpy as np
 
+import psutil
+
 from nfstream import NFPlugin, NFStreamer
 
 
@@ -59,7 +61,7 @@ def capture_stream():
 
 	# Thread this into a shared queue and have the dataframe be acted upon by all actors in parallel
 	# The dataframes can be placed in to the queue, while this acts in its own thread.
-	streamer = NFStreamer(source=interface, promiscuous_mode=True, active_timeout=15, idle_timeout=15, n_meters=4, accounting_mode=3,statistical_analysis=True, decode_tunnels=False)
+	streamer = NFStreamer(source=interface, promiscuous_mode=True, active_timeout=15, idle_timeout=15, accounting_mode=3,statistical_analysis=True, decode_tunnels=False)
 
 	dataframe = pd.DataFrame(columns=column_names)
 
@@ -78,7 +80,27 @@ def capture_stream():
 		#print(f'l_columns: {len(column_names)}, l_entry: {len(entry)}')
 		flow_count += 1
 
-	
+
+def get_process_metrics():
+
+	process = psutil.Process(os.getpid())
+	# Unique Set Size - Estimates unique memory to this process. 
+	used_mem = process.memory_full_info().uss
+
+
+	size = used_mem
+    # 2**10 = 1024
+    power = 2**10
+    n = 0
+    power_labels = {0 : '', 1: 'kilo', 2: 'mega', 3: 'giga', 4: 'tera'}
+    while size > power:
+        size /= power
+        n += 1
+
+    used = size, power_labels[n]+'bytes'
+
+    print(f'Memory used: ~{used[0]} {used[1]}\r')
+
 
 
 if __name__ == "__main__":
