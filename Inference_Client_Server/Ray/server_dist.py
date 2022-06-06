@@ -13,7 +13,10 @@ import time
 import os
 import sys
 import threading
+from multiprocessing import Process
 import queue
+import signal
+import time
 
 import pandas as pd
 import numpy as np
@@ -22,6 +25,7 @@ import psutil
 
 from nfstream import NFPlugin, NFStreamer
 
+shutdown_flag = False
 
 @ray.remote
 def run_inference_no_batch(dataframe):
@@ -67,6 +71,7 @@ def capture_stream():
 
 	flow_count = 0
 	for flow in streamer:
+
 		if flow_count >= flow_limit:
 			flow_count = 0
 			# Add dataframe to queue 
@@ -83,29 +88,59 @@ def capture_stream():
 
 def get_process_metrics():
 
+	global shutdown_flag
+
 	process = psutil.Process(os.getpid())
-	# Unique Set Size - Estimates unique memory to this process. 
-	used_mem = process.memory_full_info().uss
+
+	while True:
+
+		if shutdown_flag == True:
+			break
+
+		# Unique Set Size - Estimates unique memory to this process. 
+		used_mem = process.memory_full_info().uss
 
 
-	size = used_mem
-	# 2**10 = 1024
-	power = 2**10
-	n = 0
-	power_labels = {0 : '', 1: 'kilo', 2: 'mega', 3: 'giga', 4: 'tera'}
-	while size > power:
-		size /= power
-		n += 1
+		size = used_mem
+		# 2**10 = 1024
+		power = 2**10
+		n = 0
+		power_labels = {0 : ' ', 1: 'K', 2: 'M', 3: 'G', 4: 'T'}
+		while size > power:
+			size /= power
+			n += 1
 
-	used = size, power_labels[n]+'bytes'
+		used = size, power_labels[n]+'B'
 
-	print(f'Memory used: ~{used[0]} {used[1]}\r')
+		print("Memory used: ~%s%s  " % ('{0:.{1}f}'.format(used[0], 2), used[1]), end='\r')
 
 
+def handler(signum, frame):
+
+	global shutdown_flag
+
+	process = psutil.Process(os.getpid())
+	children = process.children()
+
+	for child in children:
+		child.kill()
+
+	shutdown_flag = True
+	
 
 if __name__ == "__main__":
-	# start thread for capture stream
-	capture_stream()
-	# start other thread for serving workers
+
+
+	signal.signal(signal.SIGINT, handler)
+	signal.signal(signal.SIGTERM, handler)
+
+	capture_thread = Process(target=capture_stream, args=())
+	metrics_thread = threading.Thread(target=get_process_metrics, args=())
+				
+	capture_thread.start()
+	metrics_thread.start()
+
+	capture_thread.join()
+
 
 
