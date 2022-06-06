@@ -65,17 +65,19 @@ def capture_stream():
 
 	# Thread this into a shared queue and have the dataframe be acted upon by all actors in parallel
 	# The dataframes can be placed in to the queue, while this acts in its own thread.
-	streamer = NFStreamer(source=interface, promiscuous_mode=True, active_timeout=15, idle_timeout=15, accounting_mode=3,statistical_analysis=True, decode_tunnels=False)
+	streamer = NFStreamer(source=interface, promiscuous_mode=True, active_timeout=15, idle_timeout=15, accounting_mode=3,statistical_analysis=True, decode_tunnels=False, n_meters=2)
 
 	dataframe = pd.DataFrame(columns=column_names)
 
 	flow_count = 0
 	for flow in streamer:
 
+		if shutdown_flag == True:
+			break
+
 		if flow_count >= flow_limit:
 			flow_count = 0
 			# Add dataframe to queue 
-			print(dataframe)
 			# Reset dataframe
 			dataframe = pd.DataFrame(columns=column_names)
 
@@ -112,7 +114,7 @@ def get_process_metrics():
 
 		used = size, power_labels[n]+'B'
 
-		print("Memory used: ~%s%s  " % ('{0:.{1}f}'.format(used[0], 2), used[1]), end='\r')
+		print("Memory used: ~%s%s " % ('{0:.{1}f}'.format(used[0], 2), used[1]), end='\r')
 
 
 def handler(signum, frame):
@@ -126,6 +128,7 @@ def handler(signum, frame):
 		child.kill()
 
 	shutdown_flag = True
+	sys.exit(0)
 	
 
 if __name__ == "__main__":
@@ -134,13 +137,10 @@ if __name__ == "__main__":
 	signal.signal(signal.SIGINT, handler)
 	signal.signal(signal.SIGTERM, handler)
 
-	capture_thread = Process(target=capture_stream, args=())
+	capture_thread = threading.Thread(target=capture_stream, args=())
 	metrics_thread = threading.Thread(target=get_process_metrics, args=())
 				
 	capture_thread.start()
 	metrics_thread.start()
-
-	capture_thread.join()
-
 
 
