@@ -13,7 +13,7 @@ import time
 import os
 import sys
 import threading
-from multiprocessing import Process
+import tempfile
 import queue
 import signal
 import time
@@ -24,6 +24,7 @@ import numpy as np
 import psutil
 
 from nfstream import NFPlugin, NFStreamer
+from scapy.all import *
 
 shutdown_flag = False
 
@@ -36,7 +37,7 @@ OBJ_REF_QUEUE = queue.Queue(maxsize=Q_MAX_SIZE)
 @ray.remote
 def run_inference_no_batch(dataframe):
 	# Remote function to run model inferencing on dataframes 
-	dataframe.loc[len(dataframe)] = ['a'] * 43
+	dataframe.loc[len(dataframe)] = ['a'] * 46
 	return dataframe
 
 # Asynchronous thread to send the work asynchronously to workers
@@ -80,31 +81,29 @@ def capture_stream():
 	#TODO LATER: Change to external output default interface
 	column_names = ['Destination Port', 'Flow Duration', 'Total Fwd Packets', 'Total Backward Packets', 'Total Length of Fwd Packets', 'Total Length of Bwd Packets', 'Fwd Packet Length Max', 'Fwd Packet Length Min', 'Fwd Packet Length Mean', 'Fwd Packet Length Std', 'Bwd Packet Length Max', 'Bwd Packet Length Min', 'Bwd Packet Length Mean', 'Bwd Packet Length Std', 'Flow Bytes/s', 'Flow Packets/s', 'Flow IAT Mean', 'Flow IAT Std', 'Flow IAT Max', 'Flow IAT Min', 'Fwd IAT Mean', 'Fwd IAT Std', 'Fwd IAT Max', 'Fwd IAT Min', 'Bwd IAT Mean', 'Bwd IAT Std', 'Bwd IAT Max', 'Bwd IAT Min', 'Fwd PSH Flags', 'Bwd PSH Flags', 'Fwd URG Flags', 'Bwd URG Flags',  'Fwd Packets/s', 'Bwd Packets/s', 'Min Packet Length', 'Max Packet Length', 'Packet Length Mean', 'Packet Length Std', 'FIN Flag Count', 'SYN Flag Count', 'RST Flag Count', 'PSH Flag Count', 'ACK Flag Count', 'URG Flag Count', 'CWE Flag Count', 'ECE Flag Count']
 	cols_drops = ['Down/Up Ratio', 'Average Packet Size', 'Avg Fwd Segment Size', 'Avg Bwd Segment Size', 'Fwd Header Length', 'Fwd Avg Bytes/Bulk', 'Fwd Avg Packets/Bulk', 'Fwd Avg Bulk Rate', 'Bwd Avg Bytes/Bulk', 'Bwd Avg Packets/Bulk', 'Bwd Avg Bulk Rate', 'Subflow Fwd Packets', 'Subflow Fwd Bytes', 'Subflow Bwd Packets', 'Subflow Bwd Bytes', 'Init_Win_bytes_forward', 'Init_Win_bytes_backward', 'act_data_pkt_fwd', 'min_seg_size_forward', 'Active Mean', 'Active Std', 'Fwd IAT Total', 'Active Max', 'Active Min', 'Idle Mean', 'Idle Std', 'Idle Max', 'Idle Min', 'Bwd IAT Total', 'Fwd Header Length', 'Bwd Header Length', 'Packet Length Variance']
-	interface = "en0"
-	flow_limit = 20
+	
 
-	# Thread this into a shared queue and have the dataframe be acted upon by all actors in parallel
-	# The dataframes can be placed in to the queue, while this acts in its own thread.
-	streamer = NFStreamer(source=interface, promiscuous_mode=True, active_timeout=2, idle_timeout=2, accounting_mode=3, statistical_analysis=True, decode_tunnels=False, n_meters=1)
+	LISTEN_INTERFACE = "en0"
+	flow_limit = 20
+	MAX_PACKET_SNIFF = 200
+
+
+	tmp_file = tempfile.NamedTemporaryFile(mode='wb')
+	tmp_file_name = tmp_file.name
+
 
 	dataframe = pd.DataFrame(columns=column_names)
+	while not shutdown_flag:
+		capture = sniff(count=MAX_PACKET_SNIFF, iface=LISTEN_INTERFACE)
+		wrpcap(tmp_file_name, capture)
 
-	flow_count = 0
-	for flow in streamer:
+		streamer = NFStreamer(source=tmp_file_name, accounting_mode=3, statistical_analysis=True, decode_tunnels=False)
+		
+		for flow in streamer:
+			entry = create_data_frame_entry_from_flow(flow)
+			dataframe.loc[len(dataframe)] = entry
 
-		if shutdown_flag == True:
-			break
-
-		if flow_count >= flow_limit:
-			flow_count = 0
-			QUEUE.put(dataframe)
-			# Reset dataframe
-			dataframe = pd.DataFrame(columns=column_names)
-			
-		entry = create_data_frame_entry_from_flow(flow)
-
-		dataframe.loc[len(dataframe)] = entry
-		flow_count += 1
+		QUEUE.put(dataframe)
 
 
 def get_process_metrics():
@@ -143,6 +142,8 @@ def handler(signum, frame):
 	for child in children:
 		child.kill()
 
+	ray.stop()
+
 	shutdown_flag = True
 	print('Shutting down, please wait.')
 	
@@ -157,7 +158,7 @@ if __name__ == "__main__":
 	serve_thread = threading.Thread(target=serve_workers, args=())
 	results = threading.Thread(target=obtain_results, args=())
 
-	#ray.init()
+	ray.init(address='auto')
 				
 	capture_thread.start()
 	#metrics_thread.start()
