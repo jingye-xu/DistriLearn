@@ -91,9 +91,9 @@ def capture_stream():
 	tmp_file = tempfile.NamedTemporaryFile(mode='wb')
 	tmp_file_name = tmp_file.name
 
-
-	dataframe = pd.DataFrame(columns=column_names)
 	while not shutdown_flag:
+
+		dataframe = pd.DataFrame(columns=column_names)
 		capture = sniff(count=MAX_PACKET_SNIFF, iface=LISTEN_INTERFACE)
 		wrpcap(tmp_file_name, capture)
 
@@ -158,7 +158,7 @@ if __name__ == "__main__":
 	serve_thread = threading.Thread(target=serve_workers, args=())
 	results = threading.Thread(target=obtain_results, args=())
 
-	ray.init(address='auto')
+	ray.init()
 				
 	capture_thread.start()
 	#metrics_thread.start()
