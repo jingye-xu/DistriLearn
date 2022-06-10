@@ -34,4 +34,4 @@ data.columns = cols
 
 
 data.drop(cols_drops, axis=1, inplace=True)
-data.to_csv('aggregate_total_data.csv')
+data.to_csv('aggregate_total_data.csv', index=False)
