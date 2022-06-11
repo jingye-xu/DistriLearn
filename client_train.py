@@ -72,7 +72,9 @@ def test(net, testloader):
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
     loss /= len(testloader.dataset)
-    accuracy = correct / total
+    accuracy = (correct // batch_size) / total
+    print(f'Testing accuracy: {accuracy * 100}%')
+
     return loss, accuracy
 
 
