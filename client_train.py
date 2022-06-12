@@ -87,7 +87,9 @@ def load_data(path=None, filename=None):
         print("file does not exist")
         sys.exit(1)
 
+    pd.options.mode.use_inf_as_na = True
     data_dataframe = pd.read_csv(path + filename + ".csv")
+    data_dataframe.dropna(inplace=True)
 
     # we will let 0 represent benign data
     # we will let 1 represent malicious data
