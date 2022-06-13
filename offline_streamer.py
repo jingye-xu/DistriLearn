@@ -5,14 +5,16 @@ import time
 import pandas as pd
 import torch
 import os
+import numpy as np
 import torch.nn as nn
 import torch.nn.functional as F
 import torchvision.transforms as transforms
+from tabulate import tabulate
 
 column_names = ['Destination Port', 'Flow Duration', 'Total Fwd Packets', 'Total Backward Packets', 'Total Length of Fwd Packets', 'Total Length of Bwd Packets', 'Fwd Packet Length Max', 'Fwd Packet Length Min', 'Fwd Packet Length Mean', 'Fwd Packet Length Std', 'Bwd Packet Length Max', 'Bwd Packet Length Min', 'Bwd Packet Length Mean', 'Bwd Packet Length Std', 'Flow Bytes/s', 'Flow Packets/s', 'Flow IAT Mean', 'Flow IAT Std', 'Flow IAT Max', 'Flow IAT Min', 'Fwd IAT Mean', 'Fwd IAT Std', 'Fwd IAT Max', 'Fwd IAT Min', 'Bwd IAT Mean', 'Bwd IAT Std', 'Bwd IAT Max', 'Bwd IAT Min', 'Fwd PSH Flags', 'Bwd PSH Flags', 'Fwd URG Flags', 'Bwd URG Flags',  'Fwd Packets/s', 'Bwd Packets/s', 'Min Packet Length', 'Max Packet Length', 'Packet Length Mean', 'Packet Length Std', 'FIN Flag Count', 'SYN Flag Count', 'RST Flag Count', 'PSH Flag Count', 'ACK Flag Count', 'URG Flag Count', 'CWE Flag Count', 'ECE Flag Count']
 
-file_name = '/Users/gabem/Desktop/Inference_Client_Server/Pcaps/attack_test3_full_mirrors.pcapng'
-first_model_path = '/Users/gabem/Downloads/MachineLearningCVE/model.pth'
+file_name = '/Users/gabem/Desktop/Inference_Client_Server/Pcaps/attack_test_ssh_brute.pcapng'
+first_model_path = '/Users/gabem/Downloads/MachineLearningCVE/simple_model.pth'
 
 """
 MODEL ARCHITECTURES
@@ -25,21 +27,18 @@ batch_size = 2
 class Net(nn.Module):
 	def __init__(self) -> None:
 		super(Net, self).__init__()
-
-		self.fc1 = nn.Sequential(
-			nn.Linear(in_features=NUM_INPUT, out_features=10),
-			nn.ReLU())
-		self.fc2 = nn.Sequential(
-			nn.Linear(in_features=10, out_features=10),
-			nn.ReLU())
+		self.fc1 = nn.Linear(in_features=NUM_INPUT, out_features=20)
+		self.fc2 = nn.Linear(in_features=20, out_features=10)
 		self.output = nn.Linear(in_features=10, out_features=1)
 
 	def forward(self, x: torch.Tensor) -> torch.Tensor:
 		output = self.fc1(x)
+		output = F.relu(output)
 		output = self.fc2(output)
+		output = F.relu(output)
 		output = self.output(output)
-		return output
 
+		return output
 
 """
 END MODELS
@@ -78,6 +77,9 @@ def size_converter(sz):
 PROFILE STREAMER AND OBTAIN DATAFRAME
 """
 
+source_macs = []
+source_ips = []
+
 print('Starting stream read...')
 print(f'File \"{file_name.split(os.path.sep)[-1]}\" size: {size_converter(os.stat(file_name).st_size)}')
 
@@ -87,14 +89,16 @@ streamer = NFStreamer(source=file_name, accounting_mode=3, statistical_analysis=
 dataframe = pd.DataFrame(columns=column_names)
 limiter = 0 # Can reach hundreds of thousands of flows if not careful, even repetative entries. 
 for flow in streamer:
-	if limiter > 200: # at most 200 flow entries allowed for benchmarking
+	if limiter > 5_000: # at most 200 flow entries allowed for benchmarking
 		break
+	source_macs.append(flow.src_mac)
+	source_ips.append(flow.src_ip)
 	entry = create_data_frame_entry_from_flow(flow)
 	dataframe.loc[len(dataframe)] = entry
+	limiter += 1
 
 stream_read_end = time.time()
 total_time = stream_read_end - stream_read_start
-
 
 print(f'Time to read & convert to dataframe using NFStream: {total_time} seconds\n')
 print(dataframe)
@@ -115,15 +119,60 @@ print(f"Model \"{first_model_path.split(os.path.sep)[-1]}\" size: {size_converte
 model_load_start = time.time()
 model = Net()
 model.load_state_dict(torch.load(first_model_path))
-model.eval()
 model_load_end = time.time()
 print(f"Time to load model: {model_load_end - model_load_start} seconds")
-
+print(f"Space taken by model: {size_converter(model.__sizeof__())}")
 
 # Dataset in dataframe now. Next is inference benchmarking.
 # WE need to inlude source mac or IP for inference only. 
 # SO as we build flow entries, we need to incorporate the address or something along this vein.
 
+model.eval()
+
+# Convert all data to float type
+dataframe = dataframe.astype("float32")
+# Convert data to tensors
+data_tensor = torch.tensor(dataframe.values, dtype=torch.float)
+data_tensor = torch.FloatTensor(data_tensor)
+
+
+# Source IPs/MACs contain the same number of IPs and MACs as there are flows in the table.
+# duplicates are allowed to show.
+print(f'Number of entries (flows) in table: {len(dataframe)}')
+print(f'Space taken by table: {size_converter(dataframe.__sizeof__())}')
+
+results = model(data_tensor)
+results = [0 if result[0] < 0.8 else 1 for result in results.detach().numpy()]
+
+print(' ')
+
+final_results = {}
+
+i = 0
+while i < len(results):
+	pred = results[i]
+	ip = source_ips[i]
+	
+	if not ip in final_results:
+		final_results[ip] = {'benign':0, 'malicious':0}
+	if pred == 0:
+		final_results[ip]['benign'] += 1
+	else:
+		final_results[ip]['malicious'] += 1
+
+	i += 1
+
+res_table_organized = []
+
+for res in final_results.keys():
+	ip = final_results[res]
+	benign = final_results[res]['benign']
+	malicious = final_results[res]['malicious']
+	res_table_organized.append([res, benign, malicious])
+
+table = tabulate(res_table_organized, headers=['source','benign', 'malicious'])
+print(table)
+print()
 
 """
 END BENCHMARKS
