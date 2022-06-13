@@ -13,7 +13,7 @@ from tabulate import tabulate
 
 column_names = ['Destination Port', 'Flow Duration', 'Total Fwd Packets', 'Total Backward Packets', 'Total Length of Fwd Packets', 'Total Length of Bwd Packets', 'Fwd Packet Length Max', 'Fwd Packet Length Min', 'Fwd Packet Length Mean', 'Fwd Packet Length Std', 'Bwd Packet Length Max', 'Bwd Packet Length Min', 'Bwd Packet Length Mean', 'Bwd Packet Length Std', 'Flow Bytes/s', 'Flow Packets/s', 'Flow IAT Mean', 'Flow IAT Std', 'Flow IAT Max', 'Flow IAT Min', 'Fwd IAT Mean', 'Fwd IAT Std', 'Fwd IAT Max', 'Fwd IAT Min', 'Bwd IAT Mean', 'Bwd IAT Std', 'Bwd IAT Max', 'Bwd IAT Min', 'Fwd PSH Flags', 'Bwd PSH Flags', 'Fwd URG Flags', 'Bwd URG Flags',  'Fwd Packets/s', 'Bwd Packets/s', 'Min Packet Length', 'Max Packet Length', 'Packet Length Mean', 'Packet Length Std', 'FIN Flag Count', 'SYN Flag Count', 'RST Flag Count', 'PSH Flag Count', 'ACK Flag Count', 'URG Flag Count', 'CWE Flag Count', 'ECE Flag Count']
 
-file_name = '/Users/gabem/Desktop/Inference_Client_Server/Pcaps/attack_test_ssh_brute.pcapng'
+file_name = '/Users/gabem/Desktop/Inference_Client_Server/Pcaps/full_benign.pcapng'
 first_model_path = '/Users/gabem/Downloads/MachineLearningCVE/simple_model.pth'
 
 """
@@ -27,16 +27,20 @@ batch_size = 2
 class Net(nn.Module):
 	def __init__(self) -> None:
 		super(Net, self).__init__()
-		self.fc1 = nn.Linear(in_features=NUM_INPUT, out_features=20)
-		self.fc2 = nn.Linear(in_features=20, out_features=10)
-		self.output = nn.Linear(in_features=10, out_features=1)
+		self.fc1 = nn.Linear(in_features=NUM_INPUT, out_features=30)
+		self.fc2 = nn.Linear(in_features=30, out_features=20)
+		self.fc3 = nn.Linear(in_features=20, out_features=10)
+		self.fc4 = nn.Linear(in_features=10, out_features=1)
 
 	def forward(self, x: torch.Tensor) -> torch.Tensor:
 		output = self.fc1(x)
-		output = F.relu(output)
+		output = F.tanh(output)
 		output = self.fc2(output)
-		output = F.relu(output)
-		output = self.output(output)
+		output = F.tanh(output)
+		output = self.fc3(output)
+		output = F.tanh(output)
+		output = self.fc4(output)
+		output = F.sigmoid(output)
 
 		return output
 
@@ -142,7 +146,7 @@ print(f'Number of entries (flows) in table: {len(dataframe)}')
 print(f'Space taken by table: {size_converter(dataframe.__sizeof__())}')
 
 results = model(data_tensor)
-results = [0 if result[0] < 0.8 else 1 for result in results.detach().numpy()]
+results = [0 if result[0] < 0.5 else 1 for result in results.detach().numpy()]
 
 print(' ')
 
@@ -170,7 +174,7 @@ for res in final_results.keys():
 	malicious = final_results[res]['malicious']
 	res_table_organized.append([res, benign, malicious])
 
-table = tabulate(res_table_organized, headers=['source','benign', 'malicious'])
+table = tabulate(res_table_organized, headers=['source','benign flows', 'malicious flows'])
 print(table)
 print()
 
