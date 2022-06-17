@@ -76,15 +76,15 @@ def set_initial_params(model):
 	model.classes_ = np.array([i for i in range(n_classes)])
 
 	model.coef_ = np.zeros((n_classes, n_features))
-	if model.fit_intercept:
-		model.intercept_ = np.zeros((n_classes,))
+	model.intercept_ = np.zeros((n_classes,))
 
 
 
 def main():
 	"""Create model, load data, define Flower client, start Flower client."""
 
-	model = LogisticRegression(max_iter=100_000, tol=0.0001, solver='saga')
+	#model = LogisticRegression(max_iter=100_000, tol=0.0001, solver='saga')
+	model = RandomForestClassifier(min_samples_leaf=20)
 	set_initial_params(model)
 
 	# Load data 
@@ -107,12 +107,12 @@ def main():
 			# 	model.set_params(**{st_param: val})
 
 			model.coef_ = parameters[0]
-			model.intercept_ = parameters[1]			
+			model.intercept_ = parameters[1]
 			
 
 		def fit(self, parameters, config):
 
-			modelPath = "./log_reg.pkl"
+			modelPath = "./RandomForest.pkl"
 
 			"""
 			Defines the steps to train the model on the locally held dataset. 
