@@ -9,12 +9,14 @@ from sklearn import metrics
 from sklearn.ensemble import RandomForestClassifier
 
 import joblib
+from joblib import parallel_backend
 import warnings
 import flwr as fl
 import pandas as pd
 import os
 import sys
 import numpy as np
+
 
 def load_data(path=None, filename=None):
 	
@@ -44,7 +46,7 @@ def load_data(path=None, filename=None):
 	Y = Y.astype("float32")
 
 	# 20 % Test set size.
-	X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.3) 
+	X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2, random_state=120) 
 
 	num_examples = {"trainset": len(X_train), "testset": len(X_test)}
 
@@ -53,15 +55,15 @@ def load_data(path=None, filename=None):
 
 def train(model, X_train, Y_train):
 
-	model.fit(X_train, Y_train)
+	model.fit(X_train.values, Y_train.values)
 
 
 
 def test(model, X_test, Y_test):
 	
-	predictions = model.predict(X_test)
-	accuracy = metrics.accuracy_score(Y_test, predictions) 
-	loss = metrics.log_loss(Y_test, predictions)
+	predictions = model.predict(X_test.values)
+	accuracy = metrics.accuracy_score(Y_test.values, predictions) 
+	loss = 0.0 #metrics.log_loss(Y_test.values, predictions)
 	print(f"Testing accuracy: { accuracy * 100.0 }% ")
 
 	return loss, accuracy
@@ -82,7 +84,7 @@ def set_initial_params(model):
 def main():
 	"""Create model, load data, define Flower client, start Flower client."""
 
-	model = LogisticRegression()
+	model = LogisticRegression(max_iter=100_000, tol=0.0001, solver='saga')
 	set_initial_params(model)
 
 	# Load data 
@@ -93,30 +95,41 @@ def main():
 		def get_parameters(self):
 			# return local model parameters
 			# hyperparams = inspect.signature(model.__init__)
-			# return hyperparams
-			return model.get_params()
+			#return hyperparams
+			#return [model.get_params()]
+			return [model.coef_, model.intercept_]
 
 
 		def set_parameters(self, parameters):
-			for parameter in parameters:
-				st_param = str(parameter)
-				val = model.get_params()[st_param]
-				model.set_params(**{st_param: val})
+			# for parameter in parameters[0]:
+			# 	st_param = str(parameter)
+			# 	val = model.get_params()[st_param]
+			# 	model.set_params(**{st_param: val})
+
+			model.coef_ = parameters[0]
+			model.intercept_ = parameters[1]			
 			
-			return model
 
 		def fit(self, parameters, config):
+
+			modelPath = "./log_reg.pkl"
 
 			"""
 			Defines the steps to train the model on the locally held dataset. 
 			It also receives global model parameters and other configuration information from the server.
 			"""
-
-			self.set_parameters(parameters)
-			train(model, X_train, Y_train)
+			try:
+				self.set_parameters(parameters)
+				with warnings.catch_warnings():
+					warnings.simplefilter("ignore")
+					train(model, X_train, Y_train)
+			except:
+				# save model
+				joblib.dump(model, modelPath)
+				print("model saved here after exception.")
+				return self.get_parameters(), num_examples["trainset"], {}
 			
 			# save model
-			modelPath = "./svm.pkl"
 			joblib.dump(model, modelPath)
 			
 
