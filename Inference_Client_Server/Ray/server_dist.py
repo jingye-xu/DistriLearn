@@ -48,11 +48,10 @@ def serve_workers():
 	# Send dataframe to available nodes.
 	while not shutdown_flag:
 		
-		df = QUEUE.get()
-
-		if df == None:
+		if QUEUE.empty():
 			continue
 
+		df = QUEUE.get()
 		obj_ref = run_inference_no_batch.remote(df)
 		OBJ_REF_QUEUE.put(obj_ref)
 
@@ -62,11 +61,10 @@ def obtain_results():
 	
 	while not shutdown_flag:
 
-		obj_ref = OBJ_REF_QUEUE.get()
-
-		if obj_ref == None:
+		if OBJ_REF_QUEUE.empty():
 			continue
 
+		obj_ref = OBJ_REF_QUEUE.get()
 		res = ray.get(obj_ref)
 		print(res)
 
