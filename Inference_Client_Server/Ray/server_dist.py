@@ -3,7 +3,9 @@
 """
 SERVER_DIST.PY: MAIN SCRIPT FOR THE CLUSTER
 
-	* Ray seems to work best with python 3.8.5 
+	* Python version 3.9.10
+	* Ray version 1.13.0
+	* Above versions so far work best
 	* Pyenv to change python versions
 
 """
@@ -28,7 +30,7 @@ from scapy.all import *
 
 shutdown_flag = False
 
-Q_MAX_SIZE = 100
+Q_MAX_SIZE = 1_000
 
 QUEUE = queue.Queue(maxsize=Q_MAX_SIZE)
 OBJ_REF_QUEUE = queue.Queue(maxsize=Q_MAX_SIZE)
@@ -46,7 +48,11 @@ def serve_workers():
 	# Send dataframe to available nodes.
 	while not shutdown_flag:
 		
-		df = QUEUE.get(block=True)
+		df = QUEUE.get()
+
+		if df == None:
+			continue
+
 		obj_ref = run_inference_no_batch.remote(df)
 		OBJ_REF_QUEUE.put(obj_ref)
 
@@ -56,7 +62,11 @@ def obtain_results():
 	
 	while not shutdown_flag:
 
-		obj_ref = OBJ_REF_QUEUE.get(block=True)
+		obj_ref = OBJ_REF_QUEUE.get()
+
+		if obj_ref == None:
+			continue
+
 		res = ray.get(obj_ref)
 		print(res)
 
@@ -97,13 +107,14 @@ def capture_stream():
 		capture = sniff(count=MAX_PACKET_SNIFF, iface=LISTEN_INTERFACE)
 		wrpcap(tmp_file_name, capture)
 
-		streamer = NFStreamer(source=tmp_file_name, accounting_mode=3, statistical_analysis=True, decode_tunnels=False)
+		streamer = NFStreamer(source=tmp_file_name, statistical_analysis=True, decode_tunnels=False)
 		
 		for flow in streamer:
 			entry = create_data_frame_entry_from_flow(flow)
 			dataframe.loc[len(dataframe)] = entry
 
 		QUEUE.put(dataframe)
+
 
 
 def get_process_metrics():
@@ -117,7 +128,7 @@ def get_process_metrics():
 		# Unique Set Size - Estimates unique memory to this process. 
 		used_mem = process.memory_full_info().uss
 
-
+		# Code snippet from Stackoverflow. 
 		size = used_mem
 		# 2**10 = 1024
 		power = 2**10
@@ -142,7 +153,6 @@ def handler(signum, frame):
 	for child in children:
 		child.kill()
 
-	ray.stop()
 
 	shutdown_flag = True
 	print('Shutting down, please wait.')
@@ -158,7 +168,7 @@ if __name__ == "__main__":
 	serve_thread = threading.Thread(target=serve_workers, args=())
 	results = threading.Thread(target=obtain_results, args=())
 
-	ray.init()
+	ray.init(address='auto', _node_ip_address='10.10.0.139')
 				
 	capture_thread.start()
 	#metrics_thread.start()
