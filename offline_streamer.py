@@ -10,10 +10,15 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torchvision.transforms as transforms
 from tabulate import tabulate
+from sklearn import metrics
+import warnings
+
+
+warnings.filterwarnings("ignore")
 
 column_names = ['Destination Port', 'Flow Duration', 'Total Fwd Packets', 'Total Backward Packets', 'Total Length of Fwd Packets', 'Total Length of Bwd Packets', 'Fwd Packet Length Max', 'Fwd Packet Length Min', 'Fwd Packet Length Mean', 'Fwd Packet Length Std', 'Bwd Packet Length Max', 'Bwd Packet Length Min', 'Bwd Packet Length Mean', 'Bwd Packet Length Std', 'Flow Bytes/s', 'Flow Packets/s', 'Flow IAT Mean', 'Flow IAT Std', 'Flow IAT Max', 'Flow IAT Min', 'Fwd IAT Mean', 'Fwd IAT Std', 'Fwd IAT Max', 'Fwd IAT Min', 'Bwd IAT Mean', 'Bwd IAT Std', 'Bwd IAT Max', 'Bwd IAT Min', 'Fwd PSH Flags', 'Bwd PSH Flags', 'Fwd URG Flags', 'Bwd URG Flags',  'Fwd Packets/s', 'Bwd Packets/s', 'Min Packet Length', 'Max Packet Length', 'Packet Length Mean', 'Packet Length Std', 'FIN Flag Count', 'SYN Flag Count', 'RST Flag Count', 'PSH Flag Count', 'ACK Flag Count', 'URG Flag Count', 'CWE Flag Count', 'ECE Flag Count']
 
-file_name = '/Users/gabem/Desktop/Inference_Client_Server/Pcaps/full_benign.pcapng'
+file_name = '/Users/gabem/Desktop/Inference_Client_Server/Pcaps/attack_test_ssh_brute.pcapng'
 first_model_path = '/Users/gabem/Downloads/MachineLearningCVE/simple_model.pth'
 
 """
@@ -77,6 +82,56 @@ def size_converter(sz):
 	return used
 
 
+def get_simple_name(file_path):
+	return file_path.split(os.path.sep)[-1]
+
+
+
+def get_predictions(results):
+	final_results = {}
+
+	i = 0
+	while i < len(results):
+		pred = results[i]
+		ip = source_ips[i]
+		
+		if not ip in final_results:
+			final_results[ip] = {'benign':0, 'malicious':0}
+		if pred == 0:
+			final_results[ip]['benign'] += 1
+		else:
+			final_results[ip]['malicious'] += 1
+
+		i += 1
+
+	res_table_organized = []
+
+	# For preliminary purposes, we shall use the ratio of benign or malicious and collect evidence this way.
+
+	for res in final_results.keys():
+		ip = final_results[res]
+		benign = final_results[res]['benign']
+		malicious = final_results[res]['malicious']
+
+		total_flows = benign + malicious
+		malicious_ratio = malicious / total_flows
+		final_judgement = 'likely benign node'
+		if malicious_ratio > 0.5:
+			final_judgement = 'likely malicious node'
+
+		res_table_organized.append([res, benign, malicious, final_judgement])
+
+	return res_table_organized
+
+
+
+def print_table(results):
+	table = tabulate(get_predictions(results), headers=['source','likely benign flows', 'likely malicious flows', 'final judgment'])
+	print(table)
+	print('\n')
+
+
+
 """
 PROFILE STREAMER AND OBTAIN DATAFRAME
 """
@@ -85,7 +140,7 @@ source_macs = []
 source_ips = []
 
 print('Starting stream read...')
-print(f'File \"{file_name.split(os.path.sep)[-1]}\" size: {size_converter(os.stat(file_name).st_size)}')
+print(f'File \"{get_simple_name(file_name)}\" size: {size_converter(os.stat(file_name).st_size)}')
 
 stream_read_start = time.time()
 streamer = NFStreamer(source=file_name, accounting_mode=3, statistical_analysis=True, decode_tunnels=False, active_timeout=150, idle_timeout=150)
@@ -104,9 +159,11 @@ for flow in streamer:
 stream_read_end = time.time()
 total_time = stream_read_end - stream_read_start
 
+# Convert all data to float type
+dataframe = dataframe.astype("float32")
+
 print(f'Time to read & convert to dataframe using NFStream: {total_time} seconds\n')
 print(dataframe)
-
 
 
 """
@@ -115,17 +172,17 @@ END PROFILE
 
 
 """
-MODEL BENCHMARKS
+MODEL BENCHMARKS - PyTorch
 """
 print("\n")
-print("Benchmarking simple model...")
-print(f"Model \"{first_model_path.split(os.path.sep)[-1]}\" size: {size_converter(os.stat(first_model_path).st_size)}")
+print("Benchmarking simple Pytorch model...")
+print(f"Model \"{first_model_path.split(os.path.sep)[-1]}\" disk size: {size_converter(os.stat(first_model_path).st_size)}")
 model_load_start = time.time()
 model = Net()
 model.load_state_dict(torch.load(first_model_path))
 model_load_end = time.time()
 print(f"Time to load model: {model_load_end - model_load_start} seconds")
-print(f"Space taken by model: {size_converter(model.__sizeof__())}")
+print(f"Approx memory space taken by model: {size_converter(model.__sizeof__())}")
 
 # Dataset in dataframe now. Next is inference benchmarking.
 # WE need to inlude source mac or IP for inference only. 
@@ -133,8 +190,7 @@ print(f"Space taken by model: {size_converter(model.__sizeof__())}")
 
 model.eval()
 
-# Convert all data to float type
-dataframe = dataframe.astype("float32")
+
 # Convert data to tensors
 data_tensor = torch.tensor(dataframe.values, dtype=torch.float)
 data_tensor = torch.FloatTensor(data_tensor)
@@ -143,39 +199,68 @@ data_tensor = torch.FloatTensor(data_tensor)
 # Source IPs/MACs contain the same number of IPs and MACs as there are flows in the table.
 # duplicates are allowed to show.
 print(f'Number of entries (flows) in table: {len(dataframe)}')
-print(f'Space taken by table: {size_converter(dataframe.__sizeof__())}')
+print(f'Approx memory space taken by table: {size_converter(dataframe.__sizeof__())}')
 
+
+
+inf_time_start = time.time()
 results = model(data_tensor)
+inf_time_end = time.time()
+
+print(f'Pytorch inference time: {inf_time_end - inf_time_start} seconds')
+
+
 results = [0 if result[0] < 0.5 else 1 for result in results.detach().numpy()]
 
-print(' ')
+print('')
 
-final_results = {}
+print_table(results)
 
-i = 0
-while i < len(results):
-	pred = results[i]
-	ip = source_ips[i]
-	
-	if not ip in final_results:
-		final_results[ip] = {'benign':0, 'malicious':0}
-	if pred == 0:
-		final_results[ip]['benign'] += 1
-	else:
-		final_results[ip]['malicious'] += 1
+"""
+END BENCHMARKS
+"""
 
-	i += 1
 
-res_table_organized = []
+"""
+MODEL BENCHMARKS -  Scikit 
+"""
 
-for res in final_results.keys():
-	ip = final_results[res]
-	benign = final_results[res]['benign']
-	malicious = final_results[res]['malicious']
-	res_table_organized.append([res, benign, malicious])
+def benchmark_model(model_path):
 
-table = tabulate(res_table_organized, headers=['source','benign flows', 'malicious flows'])
-print(table)
+	import joblib
+
+	print(f'Benchmarking scikit model: {get_simple_name(model_path)}...')
+	print(f'Model disk size: {size_converter(os.stat(model_path).st_size)}')
+
+	model_load_start = time.time()
+	sci_model = joblib.load(model_path)
+	model_load_end = time.time()
+
+	print(f'Model load time: {model_load_end - model_load_start} seconds')
+	print(f'Approx model memory space: {size_converter(sci_model.__sizeof__())}')
+
+	predict_time_st = time.time()
+	predictions = sci_model.predict(dataframe.values)
+	predict_time_end = time.time()
+
+	print(f'Time to inference scikit model: {predict_time_end - predict_time_st} seconds')
+	print()
+
+	results = [0 if result < 0.5 else 1 for result in predictions]
+
+	print('')
+
+	print_table(results)
+
+
+
+
+
+logistic_path = "/Users/gabem/Downloads/MachineLearningCVE/log_reg.pkl"
+random_forest_path = "/Users/gabem/Downloads/MachineLearningCVE/RandomForest.pkl"
+
+benchmark_model(logistic_path)
+benchmark_model(random_forest_path)
 print()
 
 """
