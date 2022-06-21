@@ -3,9 +3,8 @@
 """
 SERVER_DIST.PY: MAIN SCRIPT FOR THE CLUSTER
 
-	* Python version 3.9.10
-	* Ray version 1.13.0
-	* Above versions so far work best
+	* tested using Python version 3.9.10
+	* Dask 
 	* Pyenv to change python versions
 
 """
@@ -25,22 +24,24 @@ import numpy as np
 import psutil
 
 from nfstream import NFPlugin, NFStreamer
+from dask.distributed import Client
 from scapy.all import *
 
 shutdown_flag = False
 
 Q_MAX_SIZE = 1_000
 
-QUEUE = queue.Queue(maxsize=Q_MAX_SIZE)
-OBJ_REF_QUEUE = queue.Queue(maxsize=Q_MAX_SIZE)
+QUEUE = queue.Queue()
+OBJ_REF_QUEUE = queue.Queue()
 
+#TODO: Change IP address based on testbed node
+client = Client("tcp://10.10.0.139:8786")
 
-@ray.remote
 def run_inference_no_batch(dataframe):
 	# Remote function to run model inferencing on dataframes 
 	# dataframe.loc[len(dataframe)] = ['a'] * 46
 	import platform
-	return platform.system()
+	return str(platform.uname())
 
 # Asynchronous thread to send the work asynchronously to workers
 def serve_workers():
@@ -52,8 +53,8 @@ def serve_workers():
 			continue
 
 		df = QUEUE.get()
-		obj_ref = run_inference_no_batch.remote(df)
-		OBJ_REF_QUEUE.put(obj_ref)
+		dask_future = client.submit(run_inference_no_batch, df)
+		OBJ_REF_QUEUE.put(dask_future)
 
 
 # Asynchronous thread to obtain results from worker nodes
@@ -64,9 +65,8 @@ def obtain_results():
 		if OBJ_REF_QUEUE.empty():
 			continue
 
-		obj_ref = OBJ_REF_QUEUE.get()
-		res = ray.get(obj_ref)
-		print(res)
+		dask_future = OBJ_REF_QUEUE.get()
+		res = dask_future.result()
 
 
 def create_data_frame_entry_from_flow(flow):
@@ -93,7 +93,7 @@ def capture_stream():
 
 	LISTEN_INTERFACE = "en0"
 	flow_limit = 20
-	MAX_PACKET_SNIFF = 600
+	MAX_PACKET_SNIFF = 200
 
 
 	tmp_file = tempfile.NamedTemporaryFile(mode='wb')
@@ -102,14 +102,23 @@ def capture_stream():
 	while not shutdown_flag:
 
 		dataframe = pd.DataFrame(columns=column_names)
+
+		capture_start = time.time()
 		capture = sniff(count=MAX_PACKET_SNIFF, iface=LISTEN_INTERFACE)
 		wrpcap(tmp_file_name, capture)
+		capture_end = time.time()
+		print(f'Time to capture {MAX_PACKET_SNIFF} packets and write to tmp file: {capture_end - capture_start}')
 
 		streamer = NFStreamer(source=tmp_file_name, statistical_analysis=True, decode_tunnels=False)
 		
+		flow_start = time.time()
 		for flow in streamer:
 			entry = create_data_frame_entry_from_flow(flow)
 			dataframe.loc[len(dataframe)] = entry
+		flow_end = time.time()
+
+		print(f'Time to create flow table: {flow_end - flow_start}')
+		print(f'Queue length: {QUEUE.qsize()}')
 
 		QUEUE.put(dataframe)
 
@@ -165,8 +174,6 @@ if __name__ == "__main__":
 	#metrics_thread = threading.Thread(target=get_process_metrics, args=())
 	serve_thread = threading.Thread(target=serve_workers, args=())
 	results = threading.Thread(target=obtain_results, args=())
-
-	ray.init(address='auto', _node_ip_address='10.10.0.139')
 				
 	capture_thread.start()
 	#metrics_thread.start()
@@ -176,4 +183,3 @@ if __name__ == "__main__":
 	capture_thread.join()
 	serve_thread.join()
 	results.join()
-
