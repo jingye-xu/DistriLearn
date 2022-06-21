@@ -24,7 +24,7 @@ import numpy as np
 import psutil
 
 from nfstream import NFPlugin, NFStreamer
-from dask.distributed import Client
+from dask.distributed import Client, Queue
 from scapy.all import *
 
 shutdown_flag = False
@@ -67,6 +67,7 @@ def obtain_results():
 
 		dask_future = OBJ_REF_QUEUE.get()
 		res = dask_future.result()
+		print(res)
 
 
 def create_data_frame_entry_from_flow(flow):
@@ -93,7 +94,7 @@ def capture_stream():
 
 	LISTEN_INTERFACE = "en0"
 	flow_limit = 20
-	MAX_PACKET_SNIFF = 200
+	MAX_PACKET_SNIFF = 100
 
 
 	tmp_file = tempfile.NamedTemporaryFile(mode='wb')
@@ -183,3 +184,4 @@ if __name__ == "__main__":
 	capture_thread.join()
 	serve_thread.join()
 	results.join()
+
