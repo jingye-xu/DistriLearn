@@ -39,9 +39,13 @@ client = Client("tcp://10.10.0.139:8786")
 
 def run_inference_no_batch(dataframe):
 	# Remote function to run model inferencing on dataframes 
-	# dataframe.loc[len(dataframe)] = ['a'] * 46
-	import platform
-	return str(platform.uname())
+
+	import socket
+	h_name = socket.gethostname()
+	IP_addres = socket.gethostbyname(h_name)
+
+	
+	return IP_addres
 
 # Asynchronous thread to send the work asynchronously to workers
 def serve_workers():
