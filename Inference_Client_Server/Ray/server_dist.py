@@ -1,57 +1,72 @@
 #!/usr/bin/env python3
 
-from nfstream import NFStreamer
+"""
+SERVER_DIST.PY: MAIN SCRIPT FOR THE CLUSTER
+
+	* Python version 3.9.10
+	* Ray version 1.13.0
+	* Above versions so far work best
+	* Pyenv to change python versions
+
+"""
+
 import time
-import pandas as pd
-import torch
 import os
+import sys
+import threading
+import tempfile
+import queue
+import signal
+import time
+
+import pandas as pd
 import numpy as np
-import torch.nn as nn
-import torch.nn.functional as F
-import torchvision.transforms as transforms
-from tabulate import tabulate
-from sklearn import metrics
-import warnings
+
+import psutil
+
+from nfstream import NFPlugin, NFStreamer
+from scapy.all import *
+
+shutdown_flag = False
+
+Q_MAX_SIZE = 1_000
+
+QUEUE = queue.Queue(maxsize=Q_MAX_SIZE)
+OBJ_REF_QUEUE = queue.Queue(maxsize=Q_MAX_SIZE)
 
 
-warnings.filterwarnings("ignore")
+@ray.remote
+def run_inference_no_batch(dataframe):
+	# Remote function to run model inferencing on dataframes 
+	# dataframe.loc[len(dataframe)] = ['a'] * 46
+	import platform
+	return platform.system()
 
-column_names = ['Destination Port', 'Flow Duration', 'Total Fwd Packets', 'Total Backward Packets', 'Total Length of Fwd Packets', 'Total Length of Bwd Packets', 'Fwd Packet Length Max', 'Fwd Packet Length Min', 'Fwd Packet Length Mean', 'Fwd Packet Length Std', 'Bwd Packet Length Max', 'Bwd Packet Length Min', 'Bwd Packet Length Mean', 'Bwd Packet Length Std', 'Flow Bytes/s', 'Flow Packets/s', 'Flow IAT Mean', 'Flow IAT Std', 'Flow IAT Max', 'Flow IAT Min', 'Fwd IAT Mean', 'Fwd IAT Std', 'Fwd IAT Max', 'Fwd IAT Min', 'Bwd IAT Mean', 'Bwd IAT Std', 'Bwd IAT Max', 'Bwd IAT Min', 'Fwd PSH Flags', 'Bwd PSH Flags', 'Fwd URG Flags', 'Bwd URG Flags',  'Fwd Packets/s', 'Bwd Packets/s', 'Min Packet Length', 'Max Packet Length', 'Packet Length Mean', 'Packet Length Std', 'FIN Flag Count', 'SYN Flag Count', 'RST Flag Count', 'PSH Flag Count', 'ACK Flag Count', 'URG Flag Count', 'CWE Flag Count', 'ECE Flag Count']
+# Asynchronous thread to send the work asynchronously to workers
+def serve_workers():
 
-file_name = '/Users/gabem/Desktop/Inference_Client_Server/Pcaps/attack_test_ssh_brute.pcapng'
-first_model_path = '/Users/gabem/Downloads/MachineLearningCVE/simple_model.pth'
+	# Send dataframe to available nodes.
+	while not shutdown_flag:
+		
+		if QUEUE.empty():
+			continue
 
-"""
-MODEL ARCHITECTURES
-"""
+		df = QUEUE.get()
+		obj_ref = run_inference_no_batch.remote(df)
+		OBJ_REF_QUEUE.put(obj_ref)
 
-NUM_INPUT = 46
-batch_size = 2
 
-# Simple Model 3-layer NN 
-class Net(nn.Module):
-	def __init__(self) -> None:
-		super(Net, self).__init__()
-		self.fc1 = nn.Linear(in_features=NUM_INPUT, out_features=30)
-		self.fc2 = nn.Linear(in_features=30, out_features=20)
-		self.fc3 = nn.Linear(in_features=20, out_features=10)
-		self.fc4 = nn.Linear(in_features=10, out_features=1)
+# Asynchronous thread to obtain results from worker nodes
+def obtain_results():
+	
+	while not shutdown_flag:
 
-	def forward(self, x: torch.Tensor) -> torch.Tensor:
-		output = self.fc1(x)
-		output = F.tanh(output)
-		output = self.fc2(output)
-		output = F.tanh(output)
-		output = self.fc3(output)
-		output = F.tanh(output)
-		output = self.fc4(output)
-		output = F.sigmoid(output)
+		if OBJ_REF_QUEUE.empty():
+			continue
 
-		return output
-
-"""
-END MODELS
-"""
+		obj_ref = OBJ_REF_QUEUE.get()
+		res = ray.get(obj_ref)
+		print(res)
 
 
 def create_data_frame_entry_from_flow(flow):
@@ -66,203 +81,99 @@ def create_data_frame_entry_from_flow(flow):
 	return entry
 
 
-# Function from Stackoverflow. 
-def size_converter(sz):
-	size = sz
-	# 2**10 = 1024
-	power = 2**10
-	n = 0
-	power_labels = {0 : ' ', 1: 'K', 2: 'M', 3: 'G', 4: 'T'}
-	while size > power:
-		size /= power
-		n += 1
+# Capture traffic into a flow and send as work to the worker nodes.
+def capture_stream():
 
-	used = str(size) + " " + power_labels[n]+'B'
+	print('[*] Beginning stream capture.')
 
-	return used
+	#TODO LATER: Change to external output default interface
+	column_names = ['Destination Port', 'Flow Duration', 'Total Fwd Packets', 'Total Backward Packets', 'Total Length of Fwd Packets', 'Total Length of Bwd Packets', 'Fwd Packet Length Max', 'Fwd Packet Length Min', 'Fwd Packet Length Mean', 'Fwd Packet Length Std', 'Bwd Packet Length Max', 'Bwd Packet Length Min', 'Bwd Packet Length Mean', 'Bwd Packet Length Std', 'Flow Bytes/s', 'Flow Packets/s', 'Flow IAT Mean', 'Flow IAT Std', 'Flow IAT Max', 'Flow IAT Min', 'Fwd IAT Mean', 'Fwd IAT Std', 'Fwd IAT Max', 'Fwd IAT Min', 'Bwd IAT Mean', 'Bwd IAT Std', 'Bwd IAT Max', 'Bwd IAT Min', 'Fwd PSH Flags', 'Bwd PSH Flags', 'Fwd URG Flags', 'Bwd URG Flags',  'Fwd Packets/s', 'Bwd Packets/s', 'Min Packet Length', 'Max Packet Length', 'Packet Length Mean', 'Packet Length Std', 'FIN Flag Count', 'SYN Flag Count', 'RST Flag Count', 'PSH Flag Count', 'ACK Flag Count', 'URG Flag Count', 'CWE Flag Count', 'ECE Flag Count']
+	cols_drops = ['Down/Up Ratio', 'Average Packet Size', 'Avg Fwd Segment Size', 'Avg Bwd Segment Size', 'Fwd Header Length', 'Fwd Avg Bytes/Bulk', 'Fwd Avg Packets/Bulk', 'Fwd Avg Bulk Rate', 'Bwd Avg Bytes/Bulk', 'Bwd Avg Packets/Bulk', 'Bwd Avg Bulk Rate', 'Subflow Fwd Packets', 'Subflow Fwd Bytes', 'Subflow Bwd Packets', 'Subflow Bwd Bytes', 'Init_Win_bytes_forward', 'Init_Win_bytes_backward', 'act_data_pkt_fwd', 'min_seg_size_forward', 'Active Mean', 'Active Std', 'Fwd IAT Total', 'Active Max', 'Active Min', 'Idle Mean', 'Idle Std', 'Idle Max', 'Idle Min', 'Bwd IAT Total', 'Fwd Header Length', 'Bwd Header Length', 'Packet Length Variance']
+	
 
-
-def get_simple_name(file_path):
-	return file_path.split(os.path.sep)[-1]
+	LISTEN_INTERFACE = "en0"
+	flow_limit = 20
+	MAX_PACKET_SNIFF = 600
 
 
+	tmp_file = tempfile.NamedTemporaryFile(mode='wb')
+	tmp_file_name = tmp_file.name
 
-def get_predictions(results):
-	final_results = {}
+	while not shutdown_flag:
 
-	i = 0
-	while i < len(results):
-		pred = results[i]
-		ip = source_ips[i]
+		dataframe = pd.DataFrame(columns=column_names)
+		capture = sniff(count=MAX_PACKET_SNIFF, iface=LISTEN_INTERFACE)
+		wrpcap(tmp_file_name, capture)
+
+		streamer = NFStreamer(source=tmp_file_name, statistical_analysis=True, decode_tunnels=False)
 		
-		if not ip in final_results:
-			final_results[ip] = {'benign':0, 'malicious':0}
-		if pred == 0:
-			final_results[ip]['benign'] += 1
-		else:
-			final_results[ip]['malicious'] += 1
+		for flow in streamer:
+			entry = create_data_frame_entry_from_flow(flow)
+			dataframe.loc[len(dataframe)] = entry
 
-		i += 1
-
-	res_table_organized = []
-
-	# For preliminary purposes, we shall use the ratio of benign or malicious and collect evidence this way.
-
-	for res in final_results.keys():
-		ip = final_results[res]
-		benign = final_results[res]['benign']
-		malicious = final_results[res]['malicious']
-
-		total_flows = benign + malicious
-		malicious_ratio = malicious / total_flows
-		final_judgement = 'likely benign node'
-		if malicious_ratio > 0.5:
-			final_judgement = 'likely malicious node'
-
-		res_table_organized.append([res, benign, malicious, final_judgement])
-
-	return res_table_organized
+		QUEUE.put(dataframe)
 
 
 
-def print_table(results):
-	table = tabulate(get_predictions(results), headers=['source','likely benign flows', 'likely malicious flows', 'final judgment'])
-	print(table)
-	print('\n')
+def get_process_metrics():
+
+	global shutdown_flag
+
+	process = psutil.Process(os.getpid())
+
+	while not shutdown_flag:
+
+		# Unique Set Size - Estimates unique memory to this process. 
+		used_mem = process.memory_full_info().uss
+
+		# Code snippet from Stackoverflow. 
+		size = used_mem
+		# 2**10 = 1024
+		power = 2**10
+		n = 0
+		power_labels = {0 : ' ', 1: 'K', 2: 'M', 3: 'G', 4: 'T'}
+		while size > power:
+			size /= power
+			n += 1
+
+		used = size, power_labels[n]+'B'
+
+		print("Memory used: ~%s%s " % ('{0:.{1}f}'.format(used[0], 2), used[1]), end='\r')
 
 
+def handler(signum, frame):
 
-"""
-PROFILE STREAMER AND OBTAIN DATAFRAME
-"""
+	global shutdown_flag
 
-source_macs = []
-source_ips = []
+	process = psutil.Process(os.getpid())
+	children = process.children()
 
-print('Starting stream read...')
-print(f'File \"{get_simple_name(file_name)}\" size: {size_converter(os.stat(file_name).st_size)}')
-
-stream_read_start = time.time()
-streamer = NFStreamer(source=file_name, accounting_mode=3, statistical_analysis=True, decode_tunnels=False, active_timeout=150, idle_timeout=150)
-
-dataframe = pd.DataFrame(columns=column_names)
-limiter = 0 # Can reach hundreds of thousands of flows if not careful, even repetative entries. 
-for flow in streamer:
-	if limiter > 5_000: # at most 200 flow entries allowed for benchmarking
-		break
-	source_macs.append(flow.src_mac)
-	source_ips.append(flow.src_ip)
-	entry = create_data_frame_entry_from_flow(flow)
-	dataframe.loc[len(dataframe)] = entry
-	limiter += 1
-
-stream_read_end = time.time()
-total_time = stream_read_end - stream_read_start
-
-# Convert all data to float type
-dataframe = dataframe.astype("float32")
-
-print(f'Time to read & convert to dataframe using NFStream: {total_time} seconds\n')
-print(dataframe)
+	for child in children:
+		child.kill()
 
 
-"""
-END PROFILE
-"""
+	shutdown_flag = True
+	print('Shutting down, please wait.')
+	
 
+if __name__ == "__main__":
 
-"""
-MODEL BENCHMARKS - PyTorch
-"""
-print("\n")
-print("Benchmarking simple Pytorch model...")
-print(f"Model \"{first_model_path.split(os.path.sep)[-1]}\" disk size: {size_converter(os.stat(first_model_path).st_size)}")
-model_load_start = time.time()
-model = Net()
-model.load_state_dict(torch.load(first_model_path))
-model_load_end = time.time()
-print(f"Time to load model: {model_load_end - model_load_start} seconds")
-print(f"Approx memory space taken by model: {size_converter(model.__sizeof__())}")
+	signal.signal(signal.SIGINT, handler)
+	signal.signal(signal.SIGTERM, handler)
 
-# Dataset in dataframe now. Next is inference benchmarking.
-# WE need to inlude source mac or IP for inference only. 
-# SO as we build flow entries, we need to incorporate the address or something along this vein.
+	capture_thread = threading.Thread(target=capture_stream, args=())
+	#metrics_thread = threading.Thread(target=get_process_metrics, args=())
+	serve_thread = threading.Thread(target=serve_workers, args=())
+	results = threading.Thread(target=obtain_results, args=())
 
-model.eval()
+	ray.init(address='auto', _node_ip_address='10.10.0.139')
+				
+	capture_thread.start()
+	#metrics_thread.start()
+	serve_thread.start()
+	results.start()
 
+	capture_thread.join()
+	serve_thread.join()
+	results.join()
 
-# Convert data to tensors
-data_tensor = torch.tensor(dataframe.values, dtype=torch.float)
-data_tensor = torch.FloatTensor(data_tensor)
-
-
-# Source IPs/MACs contain the same number of IPs and MACs as there are flows in the table.
-# duplicates are allowed to show.
-print(f'Number of entries (flows) in table: {len(dataframe)}')
-print(f'Approx memory space taken by table: {size_converter(dataframe.__sizeof__())}')
-
-
-
-inf_time_start = time.time()
-results = model(data_tensor)
-inf_time_end = time.time()
-
-print(f'Pytorch inference time: {inf_time_end - inf_time_start} seconds')
-
-
-results = [0 if result[0] < 0.5 else 1 for result in results.detach().numpy()]
-
-print('')
-
-print_table(results)
-
-"""
-END BENCHMARKS
-"""
-
-
-"""
-MODEL BENCHMARKS -  Scikit 
-"""
-
-def benchmark_model(model_path):
-
-	import joblib
-
-	print(f'Benchmarking scikit model: {get_simple_name(model_path)}...')
-	print(f'Model disk size: {size_converter(os.stat(model_path).st_size)}')
-
-	model_load_start = time.time()
-	sci_model = joblib.load(model_path)
-	model_load_end = time.time()
-
-	print(f'Model load time: {model_load_end - model_load_start} seconds')
-	print(f'Approx model memory space: {size_converter(sci_model.__sizeof__())}')
-
-	predict_time_st = time.time()
-	predictions = sci_model.predict(dataframe.values)
-	predict_time_end = time.time()
-
-	print(f'Time to inference scikit model: {predict_time_end - predict_time_st} seconds')
-	print()
-
-	results = [0 if result < 0.5 else 1 for result in predictions]
-
-	print('')
-
-	print_table(results)
-
-
-
-
-
-logistic_path = "/Users/gabem/Downloads/MachineLearningCVE/log_reg.pkl"
-random_forest_path = "/Users/gabem/Downloads/MachineLearningCVE/RandomForest.pkl"
-
-benchmark_model(logistic_path)
-benchmark_model(random_forest_path)
-print()
-
-"""
-END BENCHMARKS
-"""
