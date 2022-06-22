@@ -44,7 +44,7 @@ def run_inference_no_batch(dataframe):
 	h_name = socket.gethostname()
 	IP_addres = socket.gethostbyname(h_name)
 
-	
+
 	return IP_addres
 
 # Asynchronous thread to send the work asynchronously to workers
@@ -52,9 +52,6 @@ def serve_workers():
 
 	# Send dataframe to available nodes.
 	while not shutdown_flag:
-		
-		if QUEUE.empty():
-			continue
 
 		df = QUEUE.get()
 		dask_future = client.submit(run_inference_no_batch, df)
@@ -65,9 +62,6 @@ def serve_workers():
 def obtain_results():
 	
 	while not shutdown_flag:
-
-		if OBJ_REF_QUEUE.empty():
-			continue
 
 		dask_future = OBJ_REF_QUEUE.get()
 		res = dask_future.result()
@@ -98,7 +92,7 @@ def capture_stream():
 
 	LISTEN_INTERFACE = "en0"
 	flow_limit = 20
-	MAX_PACKET_SNIFF = 100
+	MAX_PACKET_SNIFF = 300
 
 
 	tmp_file = tempfile.NamedTemporaryFile(mode='wb')
@@ -112,21 +106,20 @@ def capture_stream():
 		capture = sniff(count=MAX_PACKET_SNIFF, iface=LISTEN_INTERFACE)
 		wrpcap(tmp_file_name, capture)
 		capture_end = time.time()
+
 		print(f'Time to capture {MAX_PACKET_SNIFF} packets and write to tmp file: {capture_end - capture_start}')
 
-		streamer = NFStreamer(source=tmp_file_name, statistical_analysis=True, decode_tunnels=False)
-		
 		flow_start = time.time()
+		streamer = NFStreamer(source=tmp_file_name, statistical_analysis=True, decode_tunnels=False, active_timeout=80, idle_timeout=80)
+		
 		for flow in streamer:
 			entry = create_data_frame_entry_from_flow(flow)
 			dataframe.loc[len(dataframe)] = entry
 		flow_end = time.time()
 
-		print(f'Time to create flow table: {flow_end - flow_start}')
-		print(f'Queue length: {QUEUE.qsize()}')
+		print(f'Time to create flow table: {flow_end - flow_start:.02f}')
 
 		QUEUE.put(dataframe)
-
 
 
 def get_process_metrics():
