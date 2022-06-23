@@ -53,7 +53,7 @@ def serve_workers():
 	# Send dataframe to available nodes.
 	while not shutdown_flag:
 
-		df = QUEUE.get()
+		df = QUEUE.get(timeout=30)
 		dask_future = client.submit(run_inference_no_batch, df)
 		OBJ_REF_QUEUE.put(dask_future)
 
@@ -63,7 +63,7 @@ def obtain_results():
 	
 	while not shutdown_flag:
 
-		dask_future = OBJ_REF_QUEUE.get()
+		dask_future = OBJ_REF_QUEUE.get(timeout=30)
 		res = dask_future.result()
 		print(res)
 
@@ -104,10 +104,15 @@ def capture_stream():
 
 		capture_start = time.time()
 		capture = sniff(count=MAX_PACKET_SNIFF, iface=LISTEN_INTERFACE)
-		wrpcap(tmp_file_name, capture)
 		capture_end = time.time()
 
-		print(f'Time to capture {MAX_PACKET_SNIFF} packets and write to tmp file: {capture_end - capture_start}')
+		write_start = time.time()
+		wrpcap(tmp_file_name, capture)
+		write_end = time.time()
+
+		print(f'Time to capture {MAX_PACKET_SNIFF} packets: {capture_end - capture_start:.02f}')
+		print(f'Time to write to pcap: {write_end - write_start:.02f}')
+		print(f'Size of pcap: {size_converter(os.stat(tmp_file_name).st_size)}')
 
 		flow_start = time.time()
 		streamer = NFStreamer(source=tmp_file_name, statistical_analysis=True, decode_tunnels=False, active_timeout=80, idle_timeout=80)
@@ -118,8 +123,9 @@ def capture_stream():
 		flow_end = time.time()
 
 		print(f'Time to create flow table: {flow_end - flow_start:.02f}')
-
+		print(f'Flow table size: {size_converter(dataframe.__sizeof__())}')
 		QUEUE.put(dataframe)
+		print(f'Queue size: {QUEUE.qsize()}')
 
 
 def get_process_metrics():
@@ -130,22 +136,28 @@ def get_process_metrics():
 
 	while not shutdown_flag:
 
-		# Unique Set Size - Estimates unique memory to this process. 
 		used_mem = process.memory_full_info().uss
+		size = size_converter(used_mem)
 
-		# Code snippet from Stackoverflow. 
-		size = used_mem
-		# 2**10 = 1024
-		power = 2**10
-		n = 0
-		power_labels = {0 : ' ', 1: 'K', 2: 'M', 3: 'G', 4: 'T'}
-		while size > power:
-			size /= power
-			n += 1
+		print(f"Memory used: ~{size:.02f}", end='\r')
 
-		used = size, power_labels[n]+'B'
 
-		print("Memory used: ~%s%s " % ('{0:.{1}f}'.format(used[0], 2), used[1]), end='\r')
+
+# Function from Stackoverflow. 
+def size_converter(sz):
+	size = sz
+	# 2**10 = 1024
+	power = 2**10
+	n = 0
+	power_labels = {0 : ' ', 1: 'K', 2: 'M', 3: 'G', 4: 'T'}
+	while size > power:
+		size /= power
+		n += 1
+
+	used = str(size) + " " + power_labels[n]+'B'
+
+	return used
+
 
 
 def handler(signum, frame):
