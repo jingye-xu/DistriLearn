@@ -17,6 +17,8 @@ import tempfile
 import queue
 import signal
 import time
+import joblib
+
 
 import pandas as pd
 import numpy as np
@@ -29,13 +31,85 @@ from scapy.all import *
 
 shutdown_flag = False
 
-Q_MAX_SIZE = 1_000
+Q_MAX_SIZE = 100_000
+MODEL_TYPE = 0 # 0 for scikit, 1 for pytorch - should be enum instead but python isn't clean like that
+SCIKIT_MODEL_PATH = "./log_reg.pkl"
+PYTORCH_MODEL_PATH = "./simple_model.pth"
 
-QUEUE = queue.Queue()
+
+QUEUE = queue.Queue(maxsize=0)
 OBJ_REF_QUEUE = queue.Queue()
 
 #TODO: Change IP address based on testbed node
 client = Client("tcp://10.10.0.139:8786")
+
+
+
+class ModelDriver:
+
+	def __init__(self, path):
+		self.model_path = path
+		self.model = None
+
+	def get_instance(self):
+		pass
+
+	def load_model(self):
+		pass
+
+	def predict(self, dataframe):
+		pass
+
+
+class ScikitModelDriver(ModelDriver):
+
+	def __init__(self, model_path):
+		super().__init__(model_path)
+
+	def get_instance(self):		
+		if self.model == None:
+			self.load_model()
+
+	def load_model(self):
+		sci_model = joblib.load(self.model_path)
+		self.model = sci_model
+
+	def predict(self, dataframe):
+		predictions = self.model.predict(dataframe.values)
+		return predictions
+
+
+class PyTorchModelDriver(ModelDriver):
+
+	def __init__(self, model_path, net_class):
+		super().__init__(model_path)
+		self.net = net_class()
+
+	def get_instance(self):
+		if self.model == None:
+			self.load_model()
+
+	def load_model(self):
+		model = self.net()
+		model.load_state_dict(torch.load(self.model_path))
+		model.eval()
+		self.model = model
+
+	def predict(self, dataframe):
+		data_tensor = torch.tensor(dataframe.values, dtype=torch.float)
+		data_tensor = torch.FloatTensor(data_tensor)
+		results = self.model(data_tensor)
+		return predictions
+
+
+model_driver = None
+
+if MODEL_TYPE == 0:
+	model_driver = ScikitModelDriver(SCIKIT_MODEL_PATH)
+else:
+	model_driver = PyTorchModelDriver(PYTORCH_MODEL_PATH, list)
+
+
 
 def run_inference_no_batch(dataframe):
 	# Remote function to run model inferencing on dataframes 
@@ -44,8 +118,12 @@ def run_inference_no_batch(dataframe):
 	h_name = socket.gethostname()
 	IP_addres = socket.gethostbyname(h_name)
 
+	model_driver.load_model()
+	predictions = model_driver.predict(dataframe)
 
-	return IP_addres
+
+	return f'Predicted {predictions}\n({len(predictions)}) from {IP_addres}'
+
 
 # Asynchronous thread to send the work asynchronously to workers
 def serve_workers():
@@ -53,9 +131,12 @@ def serve_workers():
 	# Send dataframe to available nodes.
 	while not shutdown_flag:
 
-		df = QUEUE.get(timeout=30)
-		dask_future = client.submit(run_inference_no_batch, df)
-		OBJ_REF_QUEUE.put(dask_future)
+		try:
+			df = QUEUE.get(timeout=20)
+			dask_future = client.submit(run_inference_no_batch, df)
+			OBJ_REF_QUEUE.put(dask_future, timeout=60)
+		except Empty:
+			pass
 
 
 # Asynchronous thread to obtain results from worker nodes
@@ -63,9 +144,13 @@ def obtain_results():
 	
 	while not shutdown_flag:
 
-		dask_future = OBJ_REF_QUEUE.get(timeout=30)
-		res = dask_future.result()
-		print(res)
+		try:
+			dask_future = OBJ_REF_QUEUE.get(timeout=20)
+			res = dask_future.result()
+			print(res)
+		except Empty:
+			pass
+
 
 
 def create_data_frame_entry_from_flow(flow):
@@ -92,7 +177,7 @@ def capture_stream():
 
 	LISTEN_INTERFACE = "en0"
 	flow_limit = 20
-	MAX_PACKET_SNIFF = 300
+	MAX_PACKET_SNIFF = 100
 
 
 	tmp_file = tempfile.NamedTemporaryFile(mode='wb')
@@ -115,16 +200,18 @@ def capture_stream():
 		print(f'Size of pcap: {size_converter(os.stat(tmp_file_name).st_size)}')
 
 		flow_start = time.time()
-		streamer = NFStreamer(source=tmp_file_name, statistical_analysis=True, decode_tunnels=False, active_timeout=80, idle_timeout=80)
+		streamer = NFStreamer(source=tmp_file_name, statistical_analysis=True, decode_tunnels=False, active_timeout=40, idle_timeout=40)
 		
 		for flow in streamer:
 			entry = create_data_frame_entry_from_flow(flow)
 			dataframe.loc[len(dataframe)] = entry
 		flow_end = time.time()
+		dataframe = dataframe.astype("float32")
 
 		print(f'Time to create flow table: {flow_end - flow_start:.02f}')
-		print(f'Flow table size: {size_converter(dataframe.__sizeof__())}')
-		QUEUE.put(dataframe)
+		print(f'Flow table memory size: {size_converter(dataframe.__sizeof__())}')
+		print(f'Flow table sample size: {len(dataframe)}')
+		QUEUE.put(dataframe, timeout=60)
 		print(f'Queue size: {QUEUE.qsize()}')
 
 
@@ -190,7 +277,4 @@ if __name__ == "__main__":
 	serve_thread.start()
 	results.start()
 
-	capture_thread.join()
-	serve_thread.join()
-	results.join()
 
