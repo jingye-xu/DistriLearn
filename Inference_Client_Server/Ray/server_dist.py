@@ -138,6 +138,7 @@ def run_inference_no_batch(dataframe):
 	predictions = model_driver.predict(dataframe.iloc[:,1:])
 
 	# One-to-one mapping from dataframe to array rows
+	res = 0
 	ip_idx = 0
 	while ip_idx < len(dataframe):
 		ip = dataframe['Source Mac'][ip_idx]
@@ -151,6 +152,14 @@ def run_inference_no_batch(dataframe):
 		else:
 			evidence_buffer[ip]['malicious'] += 1
 
+		# Check evidence threshold, whichever surpasses first
+		if evidence_buffer[ip]['benign'] >= MAX_COMPUTE_NODE_EVIDENCE_THRESHOLD:
+			res = {ip : 'benign'}
+			break
+		if evidence_buffer[ip]['malicious'] >= MAX_COMPUTE_NODE_EVIDENCE_THRESHOLD:
+			res = {ip : 'malicious'}
+			break
+
 		ip_idx += 1
 		
 
@@ -159,7 +168,8 @@ def run_inference_no_batch(dataframe):
 		evidence_buffer = {}
 
 
-	return f'Model {model_driver} predicted {evidence_buffer} \n ({len(predictions)}) from {IP_addres}.\n'
+	# f'Model {model_driver} predicted {evidence_buffer} \n ({len(predictions)}) from {IP_addres}.\n'
+	return res
 
 
 # Asynchronous thread to send the work asynchronously to workers
@@ -248,7 +258,10 @@ def capture_stream():
 		print(f'Time to create flow table: {flow_end - flow_start:.02f}')
 		print(f'Flow table memory size: {size_converter(dataframe.__sizeof__())}')
 		print(f'Flow table sample size: {len(dataframe)}')
-		QUEUE.put(dataframe, timeout=60)
+		try:
+			QUEUE.put(dataframe, timeout=60)
+		except Full:
+			pass
 		print(f'Queue size: {QUEUE.qsize()}')
 
 
