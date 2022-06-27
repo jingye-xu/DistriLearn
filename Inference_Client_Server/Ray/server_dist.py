@@ -155,9 +155,11 @@ def run_inference_no_batch(dataframe):
 		# Check evidence threshold, whichever surpasses first
 		if evidence_buffer[ip]['benign'] >= MAX_COMPUTE_NODE_EVIDENCE_THRESHOLD:
 			res = {ip : 'benign'}
+			evidence_buffer[ip]['benign'] = 0
 			break
 		if evidence_buffer[ip]['malicious'] >= MAX_COMPUTE_NODE_EVIDENCE_THRESHOLD:
 			res = {ip : 'malicious'}
+			evidence_buffer[ip]['malicious'] = 0
 			break
 
 		ip_idx += 1
@@ -175,6 +177,8 @@ def run_inference_no_batch(dataframe):
 # Asynchronous thread to send the work asynchronously to workers
 def serve_workers():
 
+	global shutdown_flag
+
 	# Send dataframe to available nodes.
 	while not shutdown_flag:
 
@@ -188,13 +192,45 @@ def serve_workers():
 
 # Asynchronous thread to obtain results from worker nodes
 def obtain_results():
+
+	global evidence_buffer
+	global shutdown_flag
 	
 	while not shutdown_flag:
 
 		try:
 			dask_future = OBJ_REF_QUEUE.get(timeout=20)
 			res = dask_future.result()
-			print(res)
+			# we get back 0 - if nodes are not ready to give any inference
+			# we get back {mac : benign/malicious} if enough evidence has been collected 
+			if res == 0:
+				print(f'[*] Buffer state: {len(evidence_buffer)} collections.')
+				print(evidence_buffer)
+				continue
+			else:
+				mac = list(res)[0]
+				pred = 0 if res[mac] == 'benign' else 1
+
+				if mac not in evidence_buffer:
+					evidence_buffer[mac] = {'benign': 0, 'malicious' : 1}
+
+				if pred == 0:
+					evidence_buffer[mac]['benign'] += 1
+				else: 
+					evidence_buffer[mac]['malicious'] += 1
+
+				if evidence_buffer[mac]['benign'] >= MAX_MASTER_NODE_EVIDENCE_THRESHOLD:
+					print(f'[! Inference notice !] {mac} found to be benign')
+					evidence_buffer[mac]['benign'] = 0
+
+				if evidence_buffer[mac]['malicious'] >= MAX_MASTER_NODE_EVIDENCE_THRESHOLD:
+					print(f'[! Inference notice !] {mac} found to be malicious')
+					evidence_buffer[mac]['malicious'] = 0
+
+				if len(evidence_buffer) >= MAX_MASTER_NODE_ENTRIES:
+					evidence_buffer = {}
+
+
 		except Empty:
 			pass
 
@@ -242,9 +278,11 @@ def capture_stream():
 		wrpcap(tmp_file_name, capture)
 		write_end = time.time()
 
+		"""
 		print(f'Time to capture {MAX_PACKET_SNIFF} packets: {capture_end - capture_start:.02f}')
 		print(f'Time to write to pcap: {write_end - write_start:.02f}')
 		print(f'Size of pcap: {size_converter(os.stat(tmp_file_name).st_size)}')
+		"""
 
 		flow_start = time.time()
 		streamer = NFStreamer(source=tmp_file_name, statistical_analysis=True, decode_tunnels=False, active_timeout=40, idle_timeout=40)
@@ -253,16 +291,21 @@ def capture_stream():
 			entry = create_data_frame_entry_from_flow(flow)
 			dataframe.loc[len(dataframe)] = entry
 		flow_end = time.time()
+
 		dataframe.iloc[:,1:] = dataframe.iloc[:,1:].astype("float32")
+
+		"""
 
 		print(f'Time to create flow table: {flow_end - flow_start:.02f}')
 		print(f'Flow table memory size: {size_converter(dataframe.__sizeof__())}')
 		print(f'Flow table sample size: {len(dataframe)}')
+
+		"""
+		
 		try:
 			QUEUE.put(dataframe, timeout=60)
 		except Full:
 			pass
-		print(f'Queue size: {QUEUE.qsize()}')
 
 
 def get_process_metrics():
