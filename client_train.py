@@ -49,6 +49,26 @@ class Net(nn.Module):
 		return output
 
 
+# https://github.com/KelvinHong/svm-pytorch/blob/main/model.py
+class SVM(nn.Module):
+    def __init__(self):
+        super(SVM, self).__init__()
+        self.input_dim = NUM_INPUT
+        self.linear = nn.Linear(NUM_INPUT, 1)
+        
+    def forward(self, input):
+        # Expect input to be shape (N, self.input_dim)
+        output = self.linear(input) # Shape (N, 1)
+        output = output.flatten() # Shape (N)
+        return output 
+
+def HingeLoss(pred, truth):
+    loss_tensor = nn.ReLU()(1-pred*truth)
+    return torch.mean(loss_tensor)
+
+###########################################
+
+
 def train(net, trainloader, epochs):
 	"""Train the network on the training set."""
 	loss_fn = torch.nn.BCELoss()
@@ -157,6 +177,7 @@ def main():
 	"""Create model, load data, define Flower client, start Flower client."""
 
 	# Load model
+	# net = Net().to(DEVICE)
 	net = Net().to(DEVICE)
 
 	# Load data 
@@ -177,7 +198,7 @@ def main():
 			train(net, trainloader, epochs=1)
 			
 			# save model
-			modelPath = "./simple_model.pth"
+			modelPath = "./svm.pth"
 			torch.save(net.state_dict(), modelPath)
 
 			print("model saved here")
