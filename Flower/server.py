@@ -7,6 +7,10 @@ if __name__ == "__main__":
     strategy = fl.server.strategy.FedAvg(
         fraction_fit=0.5,
         fraction_eval=0.5,
+        # followings are used when only 1 client
+        # min_fit_clients=1,
+        # min_eval_clients=1,
+        # min_available_clients=1,
     )
 
     # Start server
