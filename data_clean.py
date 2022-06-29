@@ -3,7 +3,7 @@ import sys
 import os
 
 
-def dataclean(path=None, filename=None, save=False):
+def data_clean(path=None, filename=None, save=False):
     """
     this function is used to drop those rows that contains inf, blank, and any other invalid valurs
     :param path: orginal file path
@@ -36,4 +36,4 @@ def dataclean(path=None, filename=None, save=False):
 
 
 if __name__ == "__main__":
-    dataclean(filename="aggregate_total_data", save=True)
+    data_clean(filename="aggregate_total_data", save=True)
