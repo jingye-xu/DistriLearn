@@ -59,7 +59,7 @@ def data_normalization_file(path=None, filename=None, label_name=None, mu=None, 
     return data_normalized_with_label, mu, std
 
 
-def data_normalization(x: np.ndarray or pd.DataFrame, mu=None, std=None):
+def data_normalization(x: np.ndarray or pd.DataFrame, mu=None, std=None, save=False):
     """
     this function takes np.ndarray | dataframe type as input to calculate normalized data
     :param x: input: np.ndarray | dataframe
@@ -90,37 +90,31 @@ def data_normalization(x: np.ndarray or pd.DataFrame, mu=None, std=None):
 
     print(f"x_norm: \n {x_norm} \n mean: \n {mu} \n std: \n {std} \n")
 
+    if save:
+        pd.DataFrame(mu).to_csv("./" + "zscore_mean.csv", header=False, index=False)
+        pd.DataFrame(std).to_csv("./" + "zscore_std.csv", header=False, index=False)
+
     return x_norm, mu, std
 
 
 if __name__ == "__main__":
-    # a = np.random.random_sample((8, 6))
-    # b = pd.DataFrame(a)
-    # # test case 1: nparray
-    # data_normalization(a)
-    # # test case 2: dataframe
-    # data_normalization(b)
-    #
-    # mu = [0.48130356, 0.60656946, 0.46602288, 0.62920112, 0.42316389, 0.60163084]
-    # std = [0.3656252,  0.18669239, 0.30053784, 0.29270538, 0.25004703, 0.29321477]
-    #
-    # # test case 3: nparray + list: mean and std
-    # data_normalization(a, mu, std)
-    #
-    # # test case 4: dataframe + list: mean and std
-    # data_normalization(b, mu, std)
-    #
-    # mu_df = pd.DataFrame(mu)
-    # print(mu_df)
-    # std_df = pd.DataFrame(std)
-    #
-    # # test case 5: nparray + df: mean and std
-    # data_normalization(a, mu_df, std_df)
-    #
-    # test case 6: dataframe + df: mean and std
-    # data_normalization(b, mu_df, std_df)
+    np.set_printoptions(precision=1)
+    a = np.random.random_sample((8, 6))
+    b = pd.DataFrame(a)
+    # test case 1: nparray
+    data_normalization(a)
+    # test case 2: dataframe
+    data_normalization(b)
 
-    # data_normalization_file("./", filename="aggregate_total_data_cleaned", save=True)
+    mu = [0.48130356, 0.60656946, 0.46602288, 0.62920112, 0.42316389, 0.60163084]
+    std = [0.3656252,  0.18669239, 0.30053784, 0.29270538, 0.25004703, 0.29321477]
+
+    # test case 3: nparray + list: mean and std
+    data_normalization(a, mu, std)
+
+    # test case 4: dataframe + list: mean and std
+    data_normalization(b, mu, std)
+
+    data_normalization_file("./", filename="aggregate_total_data_cleaned", save=True)
 
     data_normalization_file("./", filename="aggregate_total_data_cleaned", mu="zscore_mean", std="zscore_std", save=True)
-
