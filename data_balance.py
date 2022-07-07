@@ -11,6 +11,7 @@ def data_balance_dropping(path=None, filename=None, label_name=None, save=False)
     :param filename: original file prefix - without suffix
     :param label_name: specifiy which header is used to balance data
     :param save: boolean, Ture: save balanced data and return it, False: only return
+
     :return: dataframe type dataset
     """
     # default value
@@ -58,4 +59,5 @@ def data_balance_dropping(path=None, filename=None, label_name=None, save=False)
 
 
 if __name__ == "__main__":
+    # test
     data_balance_dropping(filename="aggregate_total_data_cleaned", label_name="Label", save=True)
