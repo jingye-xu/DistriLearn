@@ -12,14 +12,14 @@ import torchvision.transforms as transforms
 from tabulate import tabulate
 from sklearn import metrics
 import warnings
+from net_structs import Net
 
-
-warnings.filterwarnings("ignore")
+#warnings.filterwarnings("ignore")
 
 column_names = ['Destination Port', 'Flow Duration', 'Total Fwd Packets', 'Total Backward Packets', 'Total Length of Fwd Packets', 'Total Length of Bwd Packets', 'Fwd Packet Length Max', 'Fwd Packet Length Min', 'Fwd Packet Length Mean', 'Fwd Packet Length Std', 'Bwd Packet Length Max', 'Bwd Packet Length Min', 'Bwd Packet Length Mean', 'Bwd Packet Length Std', 'Flow Bytes/s', 'Flow Packets/s', 'Flow IAT Mean', 'Flow IAT Std', 'Flow IAT Max', 'Flow IAT Min', 'Fwd IAT Mean', 'Fwd IAT Std', 'Fwd IAT Max', 'Fwd IAT Min', 'Bwd IAT Mean', 'Bwd IAT Std', 'Bwd IAT Max', 'Bwd IAT Min', 'Fwd PSH Flags', 'Bwd PSH Flags', 'Fwd URG Flags', 'Bwd URG Flags',  'Fwd Packets/s', 'Bwd Packets/s', 'Min Packet Length', 'Max Packet Length', 'Packet Length Mean', 'Packet Length Std', 'FIN Flag Count', 'SYN Flag Count', 'RST Flag Count', 'PSH Flag Count', 'ACK Flag Count', 'URG Flag Count', 'CWE Flag Count', 'ECE Flag Count']
 
 file_name = '/Users/gabem/Downloads/Thursday-WorkingHours.pcap' 
-first_model_path = '/Users/gabem/Downloads/MachineLearningCVE/simple_model.pth'
+first_model_path = '/Users/gabem/Downloads/MachineLearningCVE/simple_model_v1.pth'
 
 """
 MODEL ARCHITECTURES
@@ -27,31 +27,6 @@ MODEL ARCHITECTURES
 
 NUM_INPUT = 46
 batch_size = 2
-
-# Simple Model 3-layer NN 
-class Net(nn.Module):
-	def __init__(self) -> None:
-		super(Net, self).__init__()
-		self.fc1 = nn.Linear(in_features=NUM_INPUT, out_features=30)
-		self.fc2 = nn.Linear(in_features=30, out_features=20)
-		self.fc3 = nn.Linear(in_features=20, out_features=10)
-		self.fc4 = nn.Linear(in_features=10, out_features=1)
-
-	def forward(self, x: torch.Tensor) -> torch.Tensor:
-		output = self.fc1(x)
-		output = F.tanh(output)
-		output = self.fc2(output)
-		output = F.tanh(output)
-		output = self.fc3(output)
-		output = F.tanh(output)
-		output = self.fc4(output)
-		output = F.sigmoid(output)
-
-		return output
-
-"""
-END MODELS
-"""
 
 
 def create_data_frame_entry_from_flow(flow):
@@ -258,10 +233,10 @@ def benchmark_model(model_path):
 
 logistic_path = "/Users/gabem/Downloads/MachineLearningCVE/log_reg.pkl"
 random_forest_reduced_path = "/Users/gabem/Downloads/MachineLearningCVE/RandomForest_Reduced2.pkl"
-KNPath = "/Users/gabem/Downloads/MachineLearningCVE/KNeighbors.pkl.pkl"
+KNPath = "/Users/gabem/Downloads/MachineLearningCVE/KNeighbors.pkl"
 svm_path = "/Users/gabem/Downloads/MachineLearningCVE/support_vector.pkl"
 
-random_forest_path = "/Users/gabem/Downloads/MachineLearningCVE/RandomForest.pkl"
+# random_forest_path = "/Users/gabem/Downloads/MachineLearningCVE/RandomForest.pkl"
 
 model_paths = [logistic_path, random_forest_reduced_path, KNPath, svm_path]
 
