@@ -31,17 +31,17 @@ from scapy.all import *
 
 shutdown_flag = False
 
-Q_MAX_SIZE = 100_000
+Q_MAX_SIZE = 500_000
 MODEL_TYPE = 0 # 0 for scikit, 1 for pytorch - should be enum instead but python isn't clean like that
-SCIKIT_MODEL_PATH = "./log_reg.pkl"
+SCIKIT_MODEL_PATH = "./RandomForest_Reduced2.pkl"
 PYTORCH_MODEL_PATH = "./simple_model.pth"
 
 
-QUEUE = queue.Queue(maxsize=0)
+QUEUE = queue.Queue(maxsize=Q_MAX_SIZE)
 OBJ_REF_QUEUE = queue.Queue()
 
 #TODO: Change IP address based on testbed node
-client = Client("tcp://10.10.0.139:8786")
+client = Client("tcp://127.0.1.1:8786")
 
 
 
@@ -49,6 +49,7 @@ class ModelDriver:
 
 	def __init__(self, path):
 		self.model_path = path
+		print(f'Loaded: {path}')
 		self.model = None
 
 	def get_instance(self):
@@ -76,7 +77,7 @@ class ScikitModelDriver(ModelDriver):
 
 	def predict(self, dataframe):
 		predictions = self.model.predict(dataframe.values)
-		results = [0 if result < 0.5 else 1 for result in predictions]
+		results = [0 if result < 0.4 else 1 for result in predictions]
 		return results
 
 
@@ -100,7 +101,7 @@ class PyTorchModelDriver(ModelDriver):
 		data_tensor = torch.tensor(dataframe.values, dtype=torch.float)
 		data_tensor = torch.FloatTensor(data_tensor)
 		results = self.model(data_tensor)
-		results = [0 if result[0] < 0.5 else 1 for result in results.detach().numpy()]
+		results = [0 if result[0] < 0.4 else 1 for result in results.detach().numpy()]
 		return results
 
 
@@ -114,10 +115,10 @@ else:
 
 
 MAX_COMPUTE_NODE_ENTRIES = 50
-MAX_COMPUTE_NODE_EVIDENCE_THRESHOLD = 40
+MAX_COMPUTE_NODE_EVIDENCE_THRESHOLD = 12
 
 MAX_MASTER_NODE_ENTRIES = 50
-MAX_MASTER_NODE_EVIDENCE_THRESHOLD = 50
+MAX_MASTER_NODE_EVIDENCE_THRESHOLD = 15
 
 evidence_buffer = {}
 
@@ -164,7 +165,7 @@ def run_inference_no_batch(dataframe):
 
 		ip_idx += 1
 		
-
+	print(f'DF: {len(dataframe)} IP: {IP_addres} buffer state: {evidence_buffer}')
 	# Flush the buffer to reduce memory usage
 	if len(evidence_buffer) >= MAX_COMPUTE_NODE_ENTRIES:
 		evidence_buffer = {}
@@ -183,10 +184,10 @@ def serve_workers():
 	while not shutdown_flag:
 
 		try:
-			df = QUEUE.get(timeout=20)
+			df = QUEUE.get(timeout=50)
 			dask_future = client.submit(run_inference_no_batch, df)
 			OBJ_REF_QUEUE.put(dask_future, timeout=60)
-		except Empty:
+		except Exception:
 			pass
 
 
@@ -199,7 +200,7 @@ def obtain_results():
 	while not shutdown_flag:
 
 		try:
-			dask_future = OBJ_REF_QUEUE.get(timeout=20)
+			dask_future = OBJ_REF_QUEUE.get(timeout=40)
 			res = dask_future.result()
 			# we get back 0 - if nodes are not ready to give any inference
 			# we get back {mac : benign/malicious} if enough evidence has been collected 
@@ -212,7 +213,7 @@ def obtain_results():
 				pred = 0 if res[mac] == 'benign' else 1
 
 				if mac not in evidence_buffer:
-					evidence_buffer[mac] = {'benign': 0, 'malicious' : 1}
+					evidence_buffer[mac] = {'benign': 0, 'malicious' : 0}
 
 				if pred == 0:
 					evidence_buffer[mac]['benign'] += 1
@@ -231,7 +232,7 @@ def obtain_results():
 					evidence_buffer = {}
 
 
-		except Empty:
+		except Exception:
 			pass
 
 
@@ -239,10 +240,10 @@ def obtain_results():
 def create_data_frame_entry_from_flow(flow):
 	# Create dataframe entry with fields respective to model only.
 	
-	bytes_sec = flow.bidirectional_bytes / ((flow.bidirectional_duration_ms + 0.000001) * 0.001)
-	packets_sec = flow.bidirectional_packets / ((flow.bidirectional_duration_ms + 0.000001) * 0.001)
-	fwd_packets_sec = flow.src2dst_packets / ((flow.src2dst_duration_ms + 0.00000001) * 0.0001)
-	bwd_packets_sec = flow.dst2src_packets / ((flow.dst2src_duration_ms + 0.0000001) * 0.0001)
+	bytes_sec = flow.bidirectional_bytes / ((flow.bidirectional_duration_ms + 0.000000000001) * 0.001)
+	packets_sec = flow.bidirectional_packets / ((flow.bidirectional_duration_ms + 0.000000000001) * 0.001)
+	fwd_packets_sec = flow.src2dst_packets / ((flow.src2dst_duration_ms + 0.000000000001) * 0.0001)
+	bwd_packets_sec = flow.dst2src_packets / ((flow.dst2src_duration_ms + 0.000000000001) * 0.0001)
 
 	entry = [flow.src_mac, flow.dst_port, flow.bidirectional_duration_ms, flow.src2dst_packets, flow.dst2src_packets, flow.src2dst_bytes, flow.dst2src_bytes, flow.src2dst_max_ps, flow.src2dst_min_ps, flow.src2dst_mean_ps, flow.src2dst_stddev_ps, flow.dst2src_max_ps, flow.dst2src_min_ps, flow.dst2src_mean_ps, flow.dst2src_stddev_ps, bytes_sec, packets_sec, flow.bidirectional_mean_piat_ms, flow.bidirectional_stddev_piat_ms, flow.bidirectional_max_piat_ms, flow.bidirectional_min_piat_ms, flow.src2dst_mean_piat_ms, flow.src2dst_stddev_piat_ms, flow.src2dst_max_piat_ms, flow.src2dst_min_piat_ms, flow.dst2src_mean_piat_ms, flow.dst2src_stddev_piat_ms, flow.dst2src_max_piat_ms, flow.dst2src_min_piat_ms, flow.src2dst_psh_packets, flow.dst2src_psh_packets, flow.src2dst_urg_packets, flow.dst2src_urg_packets, fwd_packets_sec, bwd_packets_sec, flow.bidirectional_min_ps, flow.bidirectional_max_ps, flow.bidirectional_mean_ps, flow.bidirectional_stddev_ps, flow.bidirectional_fin_packets, flow.bidirectional_syn_packets, flow.bidirectional_rst_packets, flow.bidirectional_psh_packets, flow.bidirectional_ack_packets, flow.bidirectional_urg_packets, flow.bidirectional_cwr_packets, flow.bidirectional_ece_packets]
 	return entry
@@ -258,9 +259,9 @@ def capture_stream():
 	cols_drops = ['Down/Up Ratio', 'Average Packet Size', 'Avg Fwd Segment Size', 'Avg Bwd Segment Size', 'Fwd Header Length', 'Fwd Avg Bytes/Bulk', 'Fwd Avg Packets/Bulk', 'Fwd Avg Bulk Rate', 'Bwd Avg Bytes/Bulk', 'Bwd Avg Packets/Bulk', 'Bwd Avg Bulk Rate', 'Subflow Fwd Packets', 'Subflow Fwd Bytes', 'Subflow Bwd Packets', 'Subflow Bwd Bytes', 'Init_Win_bytes_forward', 'Init_Win_bytes_backward', 'act_data_pkt_fwd', 'min_seg_size_forward', 'Active Mean', 'Active Std', 'Fwd IAT Total', 'Active Max', 'Active Min', 'Idle Mean', 'Idle Std', 'Idle Max', 'Idle Min', 'Bwd IAT Total', 'Fwd Header Length', 'Bwd Header Length', 'Packet Length Variance']
 	
 
-	LISTEN_INTERFACE = "en0"
+	LISTEN_INTERFACE = "enp0s3"
 	flow_limit = 20
-	MAX_PACKET_SNIFF = 100
+	MAX_PACKET_SNIFF = 90
 
 
 	tmp_file = tempfile.NamedTemporaryFile(mode='wb')
@@ -271,21 +272,25 @@ def capture_stream():
 		dataframe = pd.DataFrame(columns=column_names)
 
 		capture_start = time.time()
-		capture = sniff(count=MAX_PACKET_SNIFF, iface=LISTEN_INTERFACE)
+		# capture = sniff(count=MAX_PACKET_SNIFF, iface=LISTEN_INTERFACE)
+
+		# Temporary sniffing workaround for VM environment:
+		bin_data = os.system(f"sshpass -p \"admin\" ssh root@192.168.1.1 \"tcpdump -i vtnet1 -c {MAX_PACKET_SNIFF} -w - \'not (src 192.168.1.100 and port 22) and not (src 192.168.1.1 and dst 192.168.1.100 and port 22)\'\" 2> /dev/null > {tmp_file_name}")
+
 		capture_end = time.time()
 
 		write_start = time.time()
-		wrpcap(tmp_file_name, capture)
+		# wrpcap(tmp_file_name, capture)
 		write_end = time.time()
 
-		"""
-		print(f'Time to capture {MAX_PACKET_SNIFF} packets: {capture_end - capture_start:.02f}')
-		print(f'Time to write to pcap: {write_end - write_start:.02f}')
-		print(f'Size of pcap: {size_converter(os.stat(tmp_file_name).st_size)}')
-		"""
+		
+		#print(f'Time to capture {MAX_PACKET_SNIFF} packets: {capture_end - capture_start:.02f}')
+		#print(f'Time to write to pcap: {write_end - write_start:.02f}')
+		#print(f'Size of pcap: {size_converter(os.stat(tmp_file_name).st_size)}')
+		
 
 		flow_start = time.time()
-		streamer = NFStreamer(source=tmp_file_name, statistical_analysis=True, decode_tunnels=False, active_timeout=40, idle_timeout=40)
+		streamer = NFStreamer(source=tmp_file_name, statistical_analysis=True, decode_tunnels=False, active_timeout=100_300, idle_timeout=10_920, accounting_mode=3)
 		
 		for flow in streamer:
 			entry = create_data_frame_entry_from_flow(flow)
@@ -294,16 +299,14 @@ def capture_stream():
 
 		dataframe.iloc[:,1:] = dataframe.iloc[:,1:].astype("float32")
 
-		"""
+		#print(f'Time to create flow table: {flow_end - flow_start:.02f}')
+		#print(f'Flow table memory size: {size_converter(dataframe.__sizeof__())}')
+		#print(f'Flow table sample size: {len(dataframe)}')
 
-		print(f'Time to create flow table: {flow_end - flow_start:.02f}')
-		print(f'Flow table memory size: {size_converter(dataframe.__sizeof__())}')
-		print(f'Flow table sample size: {len(dataframe)}')
-
-		"""
+		
 		
 		try:
-			QUEUE.put(dataframe, timeout=60)
+			QUEUE.put(dataframe, timeout=30)
 		except Full:
 			pass
 
@@ -353,7 +356,7 @@ def handler(signum, frame):
 
 	shutdown_flag = True
 	print('Shutting down, please wait.')
-	
+	sys.exit(0)
 
 if __name__ == "__main__":
 
