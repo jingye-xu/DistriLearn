@@ -8,19 +8,22 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torchvision.transforms as transforms
+
+from sklearn.metrics import confusion_matrix
 from torch.utils.data import DataLoader, TensorDataset
+from sklearn.preprocessing import StandardScaler, MinMaxScaler
+from sklearn import metrics
+
 import pandas as pd
 import os
 import sys
 
-transform = transforms.Compose(
-	[transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
 
 warnings.filterwarnings("ignore", category=UserWarning)
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 NUM_INPUT = 46
-batch_size = 3
+batch_size = 1
 
 # #############################################################################
 # 1. PyTorch pipeline: model/train/test/dataloader
@@ -33,87 +36,98 @@ class Net(nn.Module):
 		super(Net, self).__init__()
 		self.fc1 = nn.Linear(in_features=NUM_INPUT, out_features=30)
 		self.fc2 = nn.Linear(in_features=30, out_features=20)
-		self.fc3 = nn.Linear(in_features=20, out_features=10)
-		self.fc4 = nn.Linear(in_features=10, out_features=1)
+		self.fc3 = nn.Linear(in_features=20, out_features=1)
 
 	def forward(self, x: torch.Tensor) -> torch.Tensor:
 		output = self.fc1(x)
-		output = F.tanh(output)
+		output = torch.relu(output)
 		output = self.fc2(output)
-		output = F.tanh(output)
+		output = torch.relu(output)
 		output = self.fc3(output)
-		output = F.tanh(output)
-		output = self.fc4(output)
-		output = F.sigmoid(output)
+		output = torch.sigmoid(output)
 
 		return output
 
 
-# https://github.com/KelvinHong/svm-pytorch/blob/main/model.py
-class SVM(nn.Module):
-    def __init__(self):
-        super(SVM, self).__init__()
-        self.input_dim = NUM_INPUT
-        self.linear = nn.Linear(NUM_INPUT, 1)
-        
-    def forward(self, input):
-        # Expect input to be shape (N, self.input_dim)
-        output = self.linear(input) # Shape (N, 1)
-        output = output.flatten() # Shape (N)
-        return output 
+# Train/test loops adapted from: credit - https://github.com/AnupamMicrosoft/PyTorch-Classification/blob/master/LogisticsRegressionPyTorch.py
 
-def HingeLoss(pred, truth):
-    loss_tensor = nn.ReLU()(1-pred*truth)
-    return torch.mean(loss_tensor)
-
-###########################################
-
-
-def train(net, trainloader, epochs):
+def train(net, train_loader, epochs):
 	"""Train the network on the training set."""
 	loss_fn = torch.nn.BCELoss()
-	optimizer = torch.optim.Adam(net.parameters(), lr=0.00001, weight_decay=0.002)
+	optimizer = torch.optim.SGD(net.parameters(), lr=0.0001, weight_decay=0.03) 
 	net.train()
-	
-	for _ in range(epochs):
-		
-		for images, labels in trainloader:
-			running_loss = 0.0
-			images, labels = images.to(DEVICE), labels.to(DEVICE)
+
+	for epoch in range(epochs):
+		avg_loss_epoch = 0
+		batch_loss = 0
+		total_batches = 0
+
+		for i, (features, labels) in enumerate(train_loader):
+			outputs = net(features)               
+			loss = loss_fn(outputs, labels)    
+			
+			# Backward and optimize
 			optimizer.zero_grad()
-
-			predicted = net(images)
-			loss = loss_fn(predicted, labels)
 			loss.backward()
-			optimizer.step()
-			torch.nn.utils.clip_grad_norm_(net.parameters(),  max_norm=10, norm_type=2.0)
+			optimizer.step()   
 
-			running_loss += loss.item()
+			total_batches += 1     
+			batch_loss += loss.item()
 
-			if running_loss <= 0.01:
-				break
+		avg_loss_epoch = batch_loss/total_batches
+		print ('Epoch [{}/{}], Averge Loss: for epoch[{}, {:.4f}]' 
+					   .format(epoch+1, epochs, epoch+1, avg_loss_epoch ))
+	
 
-			print(f'Running Loss: {running_loss}', end='\r')
+
+def test(net, test_loader):
+
+	y_pred = []
+	y_true = []
+
+	correct = 0.
+	total = 0.
+	for features, labels in test_loader:
+
+		outputs_test = net(features)
+
+		y_true.extend(labels.data.cpu().numpy())
+
+		predicted = outputs_test.data >= 0.5 
+
+		y_pred.extend(predicted.detach().numpy())
+	 
+		total += labels.size(0) 
+		
+		correct += (predicted.view(-1).long() == labels).sum()
 
 
-def test(net, testloader):
-	"""Validate the network on the entire test set."""
-	loss_fn = torch.nn.BCELoss()
-	correct, total, loss = 0, 0, 0.0
-	net.eval()
-	with torch.no_grad():
-		for images, labels in testloader:
-			images, labels = images.to(DEVICE), labels.to(DEVICE)
-			outputs = net(images)
-			loss += loss_fn(outputs, labels).item()
-			_, predicted = torch.max(outputs.data, 1)
-			total += labels.size(0)
-			correct += (predicted == labels).sum().item()
-	loss /= len(testloader.dataset)
-	accuracy = (correct // batch_size) / total
-	print(f'Testing accuracy: {accuracy * 100}%')
+		
+	accuracy = (100 * (correct.float() / total))
+	tn, fp, fn, tp = metrics.confusion_matrix(y_true, y_pred).ravel()
+	f1_score = metrics.f1_score(y_true, y_pred)
+	precision = metrics.precision_score(y_true, y_pred)
+	recall = metrics.recall_score(y_true, y_pred)
 
-	return loss, accuracy
+
+	test_length = len(test_loader)
+	print('Accuracy of the model on the samples: %f %%' % accuracy)
+	print(f"number of total test samples {total}")
+	print(f"numbers of correctly predicted test samples {correct} out of {len(test_loader)}")
+	print(f"Calculated ({correct} / {total}) * 100.0 = {accuracy}")
+	print(f"F1 score: {f1_score}")
+	print(f"Precision - for malicious: {precision * 100.0}%")
+	print(f"Recall - for malicious: {recall * 100.0}%")
+	print(f"-=-=-=-=-=-=-=-=-=-=-")
+	print(f"True positives/malicious: {tp} out of {tp + fp + fn + tn} ({ (tp / (tp + fp + fn + tn)) * 100.0 }%)")
+	print(f"False positives/malicious: {fp} out of {tp + fp + fn + tn} ({ (fp / (tp + fp + fn + tn)) * 100.0 }%)")
+	print(f"True negatives/benign: {tn} out of {tp + fp + fn + tn} ({ (tn / (tp + fp + fn + tn)) * 100.0 }%)")
+	print(f"False negatives/benign: {fn} out of {tp + fp + fn + tn} ({ (fn / (tp + fp + fn + tn)) * 100.0 }%)")
+
+
+	print()
+
+	return 0.0, accuracy
 
 
 def load_data(path=None, filename=None):
@@ -128,6 +142,7 @@ def load_data(path=None, filename=None):
 	pd.options.mode.use_inf_as_na = True
 	data_dataframe = pd.read_csv(path + filename + ".csv")
 	data_dataframe.dropna(inplace=True)
+	data_dataframe = data_dataframe.sample(frac = 1)
 
 	# we will let 0 represent benign data
 	# we will let 1 represent malicious data
@@ -142,17 +157,19 @@ def load_data(path=None, filename=None):
 	X = X.astype("float32")
 	Y = Y.astype("float32")
 
+	scaler = StandardScaler()
+	X = scaler.fit_transform(X)
+
 	# Convert data to tensors
-	X = torch.tensor(X.values, dtype=torch.float)
-	Y = torch.tensor(Y.values, dtype=torch.float)
+	X = torch.tensor(X, dtype=torch.float)
+	Y = torch.tensor(Y, dtype=torch.float)
 
 	X = torch.FloatTensor(X)
 	Y = torch.unsqueeze(torch.FloatTensor(Y), dim=1)
 
-	X = torch.nn.functional.normalize(X)
 
 	# split to train and test subset
-	train_size = int(0.8 * len(Y))
+	train_size = int(0.75 * len(Y))
 	test_size = len(Y) - train_size
 
 	Y_train, Y_test = torch.split(Y, [train_size, test_size])
@@ -181,7 +198,7 @@ def main():
 	net = Net().to(DEVICE)
 
 	# Load data 
-	trainloader, testloader, num_examples = load_data(filename='aggregate_total_data')
+	trainloader, testloader, num_examples = load_data(filename='aggregate_total_data_balanced_drop')
 
 	# Flower client
 	class ClientTrainer(fl.client.NumPyClient):
@@ -198,10 +215,10 @@ def main():
 			train(net, trainloader, epochs=1)
 			
 			# save model
-			modelPath = "./svm.pth"
+			modelPath = "./simple_model.pth"
 			torch.save(net.state_dict(), modelPath)
 
-			print("model saved here")
+			print(f"model saved here {modelPath}")
 			return self.get_parameters(), num_examples["trainset"], {}
 
 		def evaluate(self, parameters, config):
