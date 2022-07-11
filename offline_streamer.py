@@ -18,7 +18,7 @@ warnings.filterwarnings("ignore")
 
 column_names = ['Destination Port', 'Flow Duration', 'Total Fwd Packets', 'Total Backward Packets', 'Total Length of Fwd Packets', 'Total Length of Bwd Packets', 'Fwd Packet Length Max', 'Fwd Packet Length Min', 'Fwd Packet Length Mean', 'Fwd Packet Length Std', 'Bwd Packet Length Max', 'Bwd Packet Length Min', 'Bwd Packet Length Mean', 'Bwd Packet Length Std', 'Flow Bytes/s', 'Flow Packets/s', 'Flow IAT Mean', 'Flow IAT Std', 'Flow IAT Max', 'Flow IAT Min', 'Fwd IAT Mean', 'Fwd IAT Std', 'Fwd IAT Max', 'Fwd IAT Min', 'Bwd IAT Mean', 'Bwd IAT Std', 'Bwd IAT Max', 'Bwd IAT Min', 'Fwd PSH Flags', 'Bwd PSH Flags', 'Fwd URG Flags', 'Bwd URG Flags',  'Fwd Packets/s', 'Bwd Packets/s', 'Min Packet Length', 'Max Packet Length', 'Packet Length Mean', 'Packet Length Std', 'FIN Flag Count', 'SYN Flag Count', 'RST Flag Count', 'PSH Flag Count', 'ACK Flag Count', 'URG Flag Count', 'CWE Flag Count', 'ECE Flag Count']
 
-file_name = '/Users/gabem/Desktop/Inference_Client_Server/Pcaps/attack_test_ssh_brute.pcapng'
+file_name = '/Users/gabem/Downloads/Thursday-WorkingHours.pcap' 
 first_model_path = '/Users/gabem/Downloads/MachineLearningCVE/simple_model.pth'
 
 """
@@ -143,7 +143,7 @@ print('Starting stream read...')
 print(f'File \"{get_simple_name(file_name)}\" size: {size_converter(os.stat(file_name).st_size)}')
 
 stream_read_start = time.time()
-streamer = NFStreamer(source=file_name, accounting_mode=3, statistical_analysis=True, decode_tunnels=False, active_timeout=150, idle_timeout=150)
+streamer = NFStreamer(source=file_name, accounting_mode=3, statistical_analysis=True, decode_tunnels=False, active_timeout=250, idle_timeout=250)
 
 dataframe = pd.DataFrame(columns=column_names)
 limiter = 0 # Can reach hundreds of thousands of flows if not careful, even repetative entries. 
@@ -257,11 +257,18 @@ def benchmark_model(model_path):
 
 
 logistic_path = "/Users/gabem/Downloads/MachineLearningCVE/log_reg.pkl"
+random_forest_reduced_path = "/Users/gabem/Downloads/MachineLearningCVE/RandomForest_Reduced2.pkl"
+KNPath = "/Users/gabem/Downloads/MachineLearningCVE/KNeighbors.pkl.pkl"
+svm_path = "/Users/gabem/Downloads/MachineLearningCVE/support_vector.pkl"
+
 random_forest_path = "/Users/gabem/Downloads/MachineLearningCVE/RandomForest.pkl"
 
-benchmark_model(logistic_path)
-benchmark_model(random_forest_path)
-print()
+model_paths = [logistic_path, random_forest_reduced_path, KNPath, svm_path]
+
+# Benchmark all scikit-based models
+for path in model_paths:
+	benchmark_model(path)
+
 
 """
 END BENCHMARKS
