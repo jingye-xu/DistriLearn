@@ -8,6 +8,10 @@ from torch.utils.data import DataLoader, TensorDataset
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn import metrics
 
+
+NUM_INPUT = 46
+batch_size = 1
+
 class Net(nn.Module):
 	def __init__(self) -> None:
 		super(Net, self).__init__()
