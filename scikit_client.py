@@ -7,6 +7,10 @@ from sklearn import svm
 from sklearn.linear_model import LogisticRegression
 from sklearn import metrics
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.preprocessing import StandardScaler, MinMaxScaler
+from sklearn import neighbors
+
+import sklearn
 
 import joblib
 from joblib import parallel_backend
@@ -32,6 +36,7 @@ def load_data(path=None, filename=None):
 	data_dataframe = pd.read_csv(path + filename + ".csv")
 	data_dataframe.dropna(inplace=True)
 
+
 	# we will let 0 represent benign data
 	# we will let 1 represent malicious data
 
@@ -45,8 +50,16 @@ def load_data(path=None, filename=None):
 	X = X.astype("float32")
 	Y = Y.astype("float32")
 
+	#X = sklearn.preprocessing.normalize(X)
+
+	percent_split = 0.25
+
+	print(f"Size of whole dataset: {len(X)}")
+	print(f"Size of test dataset: {len(X) * percent_split}")
+	print(f"Size of train dataset: {len(X)  - (len(X) * percent_split)}")
+
 	# 20 % Test set size.
-	X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2, random_state=120) 
+	X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=percent_split, shuffle=True) 
 
 	num_examples = {"trainset": len(X_train), "testset": len(X_test)}
 
@@ -62,9 +75,31 @@ def train(model, X_train, Y_train):
 def test(model, X_test, Y_test):
 	
 	predictions = model.predict(X_test.values)
-	accuracy = metrics.accuracy_score(Y_test.values, predictions) 
-	loss = 0.0 #metrics.log_loss(Y_test.values, predictions)
+
+	# balanced accuracy score is applied on unbalanced datasets.
+	# accuracy is better for close-to-balanced sets.
+	test_length = len(Y_test.values)
+	loss = 0.0
+
+	accuracy = metrics.balanced_accuracy_score(Y_test.values, predictions) 
+	f1_score = metrics.f1_score(Y_test.values, predictions)
+	precision = metrics.precision_score(Y_test.values, predictions)
+	recall = metrics.recall_score(Y_test.values, predictions)
+
+	tn, fp, fn, tp = metrics.confusion_matrix(Y_test.values, predictions).ravel()
+
+	print(f"Number of test samples: {test_length}")
 	print(f"Testing accuracy: { accuracy * 100.0 }% ")
+	print(f"F1 score: {f1_score}")
+	print(f"Precision - for malicious: {precision * 100.0}%")
+	print(f"Recall - for malicious: {recall * 100.0}%")
+	print(f"-=-=-=-=-=-=-=-=-=-=-")
+	print(f"True positives/malicious: {tp} out of {tp + fp + fn + tn} ({ (tp / test_length) * 100.0 }%)")
+	print(f"False positives/malicious: {fp} out of {tp + fp + fn + tn} ({ (fp / test_length) * 100.0 }%)")
+	print(f"True negatives/benign: {tn} out of {tp + fp + fn + tn} ({ (tn / test_length) * 100.0 }%)")
+	print(f"False negatives/benign: {fn} out of {tp + fp + fn + tn} ({ (fn / test_length) * 100.0 }%)")
+	print()
+
 
 	return loss, accuracy
 
@@ -83,12 +118,15 @@ def set_initial_params(model):
 def main():
 	"""Create model, load data, define Flower client, start Flower client."""
 
-	#model = LogisticRegression(max_iter=100_000, tol=0.0001, solver='saga')
-	model = RandomForestClassifier(min_samples_leaf=20)
+	#model = LogisticRegression(max_iter=550_000, solver='lbfgs', class_weight='balanced', C=0.28)
+	#model = svm.LinearSVC(class_weight='balanced', C=0.52, max_iter=940, tol=0.0008)
+	#model = RandomForestClassifier(n_estimators=40, max_depth=5, class_weight='balanced')
+	model = neighbors.KNeighborsClassifier(algorithm='kd_tree')
+
 	set_initial_params(model)
 
 	# Load data 
-	X_train, X_test, Y_train, Y_test, num_examples = load_data(filename='aggregate_total_data')
+	X_train, X_test, Y_train, Y_test, num_examples = load_data(filename='aggregate_total_data_balanced_drop')
 
 	# Flower client
 	class ClientTrainer(fl.client.NumPyClient):
@@ -112,7 +150,7 @@ def main():
 
 		def fit(self, parameters, config):
 
-			modelPath = "./RandomForest.pkl"
+			modelPath = "./KNeighbors.pkl"
 
 			"""
 			Defines the steps to train the model on the locally held dataset. 
@@ -126,14 +164,21 @@ def main():
 			except:
 				# save model
 				joblib.dump(model, modelPath)
-				print("model saved here after exception.")
+				print("fmodel saved here after exception. {modelPath}")
+
 				return self.get_parameters(), num_examples["trainset"], {}
 			
 			# save model
 			joblib.dump(model, modelPath)
 			
+			# # get importance
+			# importance = model.feature_importances_
+			# # summarize feature importance
+			# for i,v in enumerate(importance):
+			# 	print('Feature: %0d %s, Score: %.5f' % (i, X_train.columns[i], v))
+					
 
-			print("model saved here")
+			print(f"model saved here: {modelPath}")
 			return self.get_parameters(), num_examples["trainset"], {}
 
 
@@ -146,6 +191,7 @@ def main():
 
 	# Start client
 	fl.client.start_numpy_client("127.0.0.1:8080", client=ClientTrainer())
+
 
 
 if __name__ == "__main__":
