@@ -42,13 +42,17 @@ PYTORCH_MODEL_PATH = "./simple_model.pth"
 QUEUE = queue.Queue(maxsize=Q_MAX_SIZE)
 OBJ_REF_QUEUE = queue.Queue()
 
-#TODO: Change IP address based on testbed node
-client = Client("tcp://10.10.0.139:8786")
+# Configurations for specific network
 pfsense_wan_ip = "10.10.0.178"
 pfsense_lan_ip = "192.168.1.1"
 lan_nic = "vtnet1"
 ssh_client_ip = "10.10.0.139"
 ssh_client_port = "22"
+dask_scheduler_ip = "10.10.0.139"
+dask_scheduler_port = "8786"
+
+#TODO: Change IP address based on testbed node
+client = Client(f"tcp://{dask_scheduler_ip}:{dask_scheduler_port}")
 
 
 NUM_INPUT = 38
