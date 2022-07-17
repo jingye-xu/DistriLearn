@@ -27,7 +27,7 @@ import psutil
 from nfstream import NFPlugin, NFStreamer
 from dask.distributed import Client, Queue
 from scapy.all import *
-from net_structs import Net
+
 
 shutdown_flag = False
 
@@ -43,15 +43,34 @@ OBJ_REF_QUEUE = queue.Queue()
 #TODO: Change IP address based on testbed node
 client = Client("tcp://10.10.0.139:8786")
 
+NUM_INPUT = 38
+batch_size = 1
 
+class Net(nn.Module):
+	def __init__(self) -> None:
+		super(Net, self).__init__()
+		self.fc1 = nn.Linear(in_features=NUM_INPUT, out_features=30)
+		self.fc2 = nn.Linear(in_features=30, out_features=20)
+		self.fc3 = nn.Linear(in_features=20, out_features=1)
+
+	def forward(self, x: torch.Tensor) -> torch.Tensor:
+		output = self.fc1(x)
+		output = torch.relu(output)
+		output = self.fc2(output)
+		output = torch.relu(output)
+		output = self.fc3(output)
+		output = torch.sigmoid(output)
+
+		return output
 
 class ModelDriver:
 
 	def __init__(self, path, scaler_path):
 		self.model_path = path
-		print(f'Loaded: {path}')
+		print(f'Loaded model: {path}')
 		self.model = None
 		self.scaler = joblib.load(scaler_path)
+		print(f'Loaded scaler: {scaler}')
 
 	def get_instance(self):
 		pass
@@ -113,7 +132,7 @@ model_driver = None
 if MODEL_TYPE == 0:
 	model_driver = ScikitModelDriver(SCIKIT_MODEL_PATH)
 else:
-	model_driver = PyTorchModelDriver(PYTORCH_MODEL_PATH, list)
+	model_driver = PyTorchModelDriver(PYTORCH_MODEL_PATH, Net())
 
 
 
