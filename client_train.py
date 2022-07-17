@@ -1,5 +1,5 @@
-#!/usr/bin/env python3 
-
+#!/usr/bin/env python3
+import time
 from collections import OrderedDict
 import warnings
 
@@ -81,7 +81,7 @@ def train(net, train_loader, epochs):
 			batch_loss += loss.item()
 
 		avg_loss_epoch = batch_loss/total_batches
-		print ('Epoch [{}/{}], Averge Loss: for epoch[{}, {:.4f}]' 
+		print ('Epoch [{}/{}], Average Loss: for epoch [{}, {:.4f}]'
 					   .format(epoch+1, epochs, epoch+1, avg_loss_epoch ))
 	
 
@@ -118,8 +118,8 @@ def test(net, test_loader):
 
 	test_length = len(test_loader)
 	print('Accuracy of the model on the samples: %f %%' % accuracy)
-	print(f"number of total test samples {total}")
-	print(f"numbers of correctly predicted test samples {correct} out of {len(test_loader)}")
+	print(f"Number of total test samples {total}")
+	print(f"Numbers of correctly predicted test samples {correct} out of {len(test_loader)}")
 	print(f"Calculated ({correct} / {total}) * 100.0 = {accuracy}")
 	print(f"F1 score: {f1_score}")
 	print(f"Precision - for malicious: {precision * 100.0}%")
@@ -128,10 +128,7 @@ def test(net, test_loader):
 	print(f"True positives/malicious: {tp} out of {tp + fp + fn + tn} ({ (tp / (tp + fp + fn + tn)) * 100.0 }%)")
 	print(f"False positives/malicious: {fp} out of {tp + fp + fn + tn} ({ (fp / (tp + fp + fn + tn)) * 100.0 }%)")
 	print(f"True negatives/benign: {tn} out of {tp + fp + fn + tn} ({ (tn / (tp + fp + fn + tn)) * 100.0 }%)")
-	print(f"False negatives/benign: {fn} out of {tp + fp + fn + tn} ({ (fn / (tp + fp + fn + tn)) * 100.0 }%)")
-
-
-	print()
+	print(f"False negatives/benign: {fn} out of {tp + fp + fn + tn} ({ (fn / (tp + fp + fn + tn)) * 100.0 }%)\n")
 
 	return 0.0, accuracy
 
@@ -142,7 +139,7 @@ def load_data(path=None, filename=None):
 	if filename is None:
 		filename = "package_result_processed"
 	if not os.path.exists(path + filename + ".csv"):
-		print("file does not exist")
+		print("File does not exist")
 		sys.exit(1)
 
 	print(f'Loading dataset from : {filename}')
@@ -255,7 +252,7 @@ def main():
 	net = Net().to(DEVICE)
 
 	# Load data 
-	trainloader, testloader, num_examples = load_data(filename='./CICIDS17/aggregate_2017_cleaned_numerical_nonbalanced_balanced_drop')
+	trainloader, testloader, num_examples = load_data(filename='17_18_merged_no_dup_1')
 
 	# Flower client
 	class ClientTrainer(fl.client.NumPyClient):
@@ -269,18 +266,27 @@ def main():
 
 		def fit(self, parameters, config):
 			self.set_parameters(parameters)
+
+			train_s = time.time()
 			train(net, trainloader, epochs=1)
-			
+			train_e = time.time()
+			print(f"Train duration time of this round is {train_e - train_s}")
+
 			# save model
 			modelPath = "./simple_nn_17.pth"
 			torch.save(net.state_dict(), modelPath)
 
-			print(f"model saved here {modelPath}")
+			print(f"Model saved here {modelPath}")
 			return self.get_parameters(), num_examples["trainset"], {}
 
 		def evaluate(self, parameters, config):
 			self.set_parameters(parameters)
+
+			test_s = time.time()
 			loss, accuracy = test(net, testloader)
+			test_e = time.time()
+			print(f"Test duration time of this round is {test_e - test_s}\n\n")
+
 			return float(loss), num_examples["testset"], {"accuracy": float(accuracy)}
 
 	# Start client
