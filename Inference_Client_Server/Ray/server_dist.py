@@ -44,6 +44,12 @@ OBJ_REF_QUEUE = queue.Queue()
 
 #TODO: Change IP address based on testbed node
 client = Client("tcp://10.10.0.139:8786")
+pfsense_wan_ip = "10.10.0.178"
+pfsense_lan_ip = "192.168.1.1"
+lan_nic = "vtnet1"
+ssh_client_ip = "10.10.0.139"
+ssh_client_port = "22"
+
 
 NUM_INPUT = 38
 batch_size = 1
@@ -298,7 +304,7 @@ def capture_stream():
 		#capture = sniff(count=MAX_PACKET_SNIFF, iface=LISTEN_INTERFACE)
 
 		# Temporary sniffing workaround for VM environment:
-		os.system(f"sshpass -p \"admin\" ssh root@10.10.0.178 \"tcpdump -i vtnet1 -c {MAX_PACKET_SNIFF} -w - \'not (src 10.10.0.139 and port 22) and not (src 192.168.1.1 and dst 10.10.0.139 and port 22)\'\" 2>/dev/null > {tmp_file_name}")
+		os.system(f"sshpass -p \"admin\" ssh root@{pfsense_wan_ip} \"tcpdump -i {lan_nic} -c {MAX_PACKET_SNIFF} -w - \'not (src {ssh_client_ip} and port {ssh_client_port}) and not (src {pfsense_lan_ip} and dst {ssh_client_ip} and port 22)\'\" 2>/dev/null > {tmp_file_name}")
 
 		capture_end = time.time()
 
