@@ -72,7 +72,7 @@ class ModelDriver:
 		print(f'Loaded model: {path}')
 		self.model = None
 		self.scaler = joblib.load(scaler_path)
-		print(f'Loaded scaler: {scaler}')
+		print(f'Loaded scaler: {self.scaler}')
 
 	def get_instance(self):
 		pass
