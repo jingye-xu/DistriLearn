@@ -263,13 +263,13 @@ def create_data_frame_entry_from_flow(flow):
 	packets_sec = flow.bidirectional_packets / ((flow.bidirectional_duration_ms + 1) / 1000)
 	fwd_packets_sec = flow.src2dst_packets / ((flow.src2dst_duration_ms + 1) / 1000)  
 	bwd_packets_sec = flow.dst2src_packets / ((flow.dst2src_duration_ms + 1) / 1000)  
-	fwd_iat_total = 0 
-	bwd_iat_total = 0
-	avg_packet_size = 0
-	packet_length_variance = 0 
+	fwd_iat_total = flow.src2dst_max_piat_ms # total time between two packets in forward direction
+	bwd_iat_total = flow.dst2src_max_piat_ms # total time between two packets in the backward direction
+	avg_packet_size = flow.bidirectional_bytes / flow.bidirectional_packets
+	packet_length_variance = flow.bidirectional_stddev_ps ** 2
 	
 	return [flow.src_mac, flow.dst_port, flow.bidirectional_duration_ms, flow.src2dst_packets, flow.dst2src_packets, flow.src2dst_bytes, flow.dst2src_bytes, flow.src2dst_max_ps, flow.src2dst_min_ps, flow.src2dst_mean_ps, flow.src2dst_stddev_ps, flow.dst2src_max_ps, flow.dst2src_min_ps, flow.dst2src_mean_ps, flow.dst2src_stddev_ps, bytes_sec, packets_sec, flow.bidirectional_mean_piat_ms, flow.bidirectional_max_piat_ms, flow.bidirectional_min_piat_ms, fwd_iat_total, flow.src2dst_mean_piat_ms, flow.src2dst_stddev_piat_ms, flow.src2dst_max_piat_ms, flow.src2dst_min_piat_ms, bwd_iat_total, flow.dst2src_mean_piat_ms, flow.dst2src_stddev_piat_ms, flow.dst2src_max_piat_ms, flow.dst2src_min_piat_ms, fwd_packets_sec, bwd_packets_sec, flow.bidirectional_min_ps, flow.bidirectional_max_ps, flow.bidirectional_mean_ps, flow.bidirectional_stddev_ps, packet_length_variance, flow.bidirectional_rst_packets, avg_packet_size]
-	
+
 
 # Capture traffic into a flow and send as work to the worker nodes.
 def capture_stream():
