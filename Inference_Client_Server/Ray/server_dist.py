@@ -17,6 +17,8 @@ import queue
 import signal
 import time
 import joblib
+import torch
+import torch.nn as nn
 
 
 import pandas as pd
