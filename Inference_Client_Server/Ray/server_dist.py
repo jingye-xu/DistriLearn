@@ -6,7 +6,6 @@ SERVER_DIST.PY: MAIN SCRIPT FOR THE CLUSTER
 	* tested using Python version 3.9.10
 	* Dask 
 	* Pyenv to change python versions
-
 """
 
 import time
@@ -28,12 +27,13 @@ import psutil
 from nfstream import NFPlugin, NFStreamer
 from dask.distributed import Client, Queue
 from scapy.all import *
+from net_structs import Net
 
 shutdown_flag = False
 
-Q_MAX_SIZE = 500_000
+Q_MAX_SIZE = 200_000
 MODEL_TYPE = 0 # 0 for scikit, 1 for pytorch - should be enum instead but python isn't clean like that
-SCIKIT_MODEL_PATH = "./RandomForest_Reduced2.pkl"
+SCIKIT_MODEL_PATH = "./support_vector.pkl"
 PYTORCH_MODEL_PATH = "./simple_model.pth"
 
 
@@ -41,16 +41,17 @@ QUEUE = queue.Queue(maxsize=Q_MAX_SIZE)
 OBJ_REF_QUEUE = queue.Queue()
 
 #TODO: Change IP address based on testbed node
-client = Client("tcp://127.0.1.1:8786")
+client = Client("tcp://10.10.0.139:8786")
 
 
 
 class ModelDriver:
 
-	def __init__(self, path):
+	def __init__(self, path, scaler_path):
 		self.model_path = path
 		print(f'Loaded: {path}')
 		self.model = None
+		self.scaler = joblib.load(scaler_path)
 
 	def get_instance(self):
 		pass
@@ -64,11 +65,11 @@ class ModelDriver:
 
 class ScikitModelDriver(ModelDriver):
 
-	def __init__(self, model_path):
-		super().__init__(model_path)
+	def __init__(self, model_path, scaler_path):
+		super().__init__(model_path, scaler_path)
 
 	def get_instance(self):		
-		if self.model == None:
+		if self.model is None:
 			self.load_model()
 
 	def load_model(self):
@@ -76,8 +77,9 @@ class ScikitModelDriver(ModelDriver):
 		self.model = sci_model
 
 	def predict(self, dataframe):
-		predictions = self.model.predict(dataframe.values)
-		results = [0 if result < 0.4 else 1 for result in predictions]
+		vals = self.scaler.transform(dataframe.values)
+		predictions = self.model.predict(vals)
+		results = [0 if result < 0.3 else 1 for result in predictions]
 		return results
 
 
@@ -98,10 +100,11 @@ class PyTorchModelDriver(ModelDriver):
 		self.model = model
 
 	def predict(self, dataframe):
-		data_tensor = torch.tensor(dataframe.values, dtype=torch.float)
+		vals = self.scaler.transform(dataframe.values)
+		data_tensor = torch.tensor(vals, dtype=torch.float)
 		data_tensor = torch.FloatTensor(data_tensor)
 		results = self.model(data_tensor)
-		results = [0 if result[0] < 0.4 else 1 for result in results.detach().numpy()]
+		results = [0 if result[0] < 0.3 else 1 for result in results.detach().numpy()]
 		return results
 
 
@@ -115,10 +118,12 @@ else:
 
 
 MAX_COMPUTE_NODE_ENTRIES = 50
-MAX_COMPUTE_NODE_EVIDENCE_THRESHOLD = 12
+MAX_COMPUTE_NODE_EVIDENCE_MALICIOUS_THRESHOLD = 12
+MAX_COMPUTE_NODE_EVIDENCE_BENIGN_THRESHOLD = 18
 
 MAX_MASTER_NODE_ENTRIES = 50
-MAX_MASTER_NODE_EVIDENCE_THRESHOLD = 15
+MAX_MASTER_NODE_EVIDENCE_MALICIOUS_THRESHOLD = 8
+MAX_MASTER_NODE_EVIDENCE_BENIGN_THRESHOLD = 18
 
 evidence_buffer = {}
 
@@ -127,11 +132,7 @@ def run_inference_no_batch(dataframe):
 
 	global evidence_buffer
 
-	import socket
-	h_name = socket.gethostname()
-	IP_addres = socket.gethostbyname(h_name)
-
-	model_driver.load_model()
+	model_driver.get_instance()
 
 	# Before predicting on the dataframe, we only pass in the dataframe WITHOUT the source mac (first column).
 	# Because to all the models, that is the expected input dimension.
@@ -142,7 +143,7 @@ def run_inference_no_batch(dataframe):
 	res = 0
 	ip_idx = 0
 	while ip_idx < len(dataframe):
-		ip = dataframe['Source Mac'][ip_idx]
+		ip = dataframe[0][ip_idx]
 		prediction = predictions[ip_idx]
 
 		if ip not in evidence_buffer:
@@ -154,18 +155,18 @@ def run_inference_no_batch(dataframe):
 			evidence_buffer[ip]['malicious'] += 1
 
 		# Check evidence threshold, whichever surpasses first
-		if evidence_buffer[ip]['benign'] >= MAX_COMPUTE_NODE_EVIDENCE_THRESHOLD:
+		if evidence_buffer[ip]['benign'] >= MAX_COMPUTE_NODE_EVIDENCE_BENIGN_THRESHOLD:
 			res = {ip : 'benign'}
 			evidence_buffer[ip]['benign'] = 0
 			break
-		if evidence_buffer[ip]['malicious'] >= MAX_COMPUTE_NODE_EVIDENCE_THRESHOLD:
+		if evidence_buffer[ip]['malicious'] >= MAX_COMPUTE_NODE_EVIDENCE_MALICIOUS_THRESHOLD:
 			res = {ip : 'malicious'}
 			evidence_buffer[ip]['malicious'] = 0
 			break
 
 		ip_idx += 1
 		
-	print(f'DF: {len(dataframe)} IP: {IP_addres} buffer state: {evidence_buffer}')
+	print(f'DF: {len(dataframe)} buffer state: {evidence_buffer}')
 	# Flush the buffer to reduce memory usage
 	if len(evidence_buffer) >= MAX_COMPUTE_NODE_ENTRIES:
 		evidence_buffer = {}
@@ -184,9 +185,9 @@ def serve_workers():
 	while not shutdown_flag:
 
 		try:
-			df = QUEUE.get(timeout=50)
+			df = QUEUE.get(timeout=1)
 			dask_future = client.submit(run_inference_no_batch, df)
-			OBJ_REF_QUEUE.put(dask_future, timeout=60)
+			OBJ_REF_QUEUE.put(dask_future, timeout=1)
 		except Exception:
 			pass
 
@@ -200,13 +201,12 @@ def obtain_results():
 	while not shutdown_flag:
 
 		try:
-			dask_future = OBJ_REF_QUEUE.get(timeout=40)
+			dask_future = OBJ_REF_QUEUE.get(timeout=1)
 			res = dask_future.result()
 			# we get back 0 - if nodes are not ready to give any inference
 			# we get back {mac : benign/malicious} if enough evidence has been collected 
 			if res == 0:
-				print(f'[*] Buffer state: {len(evidence_buffer)} collections.')
-				print(evidence_buffer)
+				print(f'[*] Buffer state: {len(evidence_buffer)} collections: {evidence_buffer}')
 				continue
 			else:
 				mac = list(res)[0]
@@ -220,11 +220,11 @@ def obtain_results():
 				else: 
 					evidence_buffer[mac]['malicious'] += 1
 
-				if evidence_buffer[mac]['benign'] >= MAX_MASTER_NODE_EVIDENCE_THRESHOLD:
+				if evidence_buffer[mac]['benign'] >= MAX_MASTER_NODE_EVIDENCE_BENIGN_THRESHOLD:
 					print(f'[! Inference notice !] {mac} found to be benign')
 					evidence_buffer[mac]['benign'] = 0
 
-				if evidence_buffer[mac]['malicious'] >= MAX_MASTER_NODE_EVIDENCE_THRESHOLD:
+				if evidence_buffer[mac]['malicious'] >= MAX_MASTER_NODE_EVIDENCE_MALICIOUS_THRESHOLD:
 					print(f'[! Inference notice !] {mac} found to be malicious')
 					evidence_buffer[mac]['malicious'] = 0
 
@@ -239,27 +239,25 @@ def obtain_results():
 
 def create_data_frame_entry_from_flow(flow):
 	# Create dataframe entry with fields respective to model only.
+	# old * 0.001
+	bytes_sec = flow.bidirectional_bytes / ((flow.bidirectional_duration_ms + 1) / 1000) 
+	packets_sec = flow.bidirectional_packets / ((flow.bidirectional_duration_ms + 1) / 1000)
+	fwd_packets_sec = flow.src2dst_packets / ((flow.src2dst_duration_ms + 1) / 1000)  
+	bwd_packets_sec = flow.dst2src_packets / ((flow.dst2src_duration_ms + 1) / 1000)  
 	
-	bytes_sec = flow.bidirectional_bytes / ((flow.bidirectional_duration_ms + 0.000000000001) * 0.001)
-	packets_sec = flow.bidirectional_packets / ((flow.bidirectional_duration_ms + 0.000000000001) * 0.001)
-	fwd_packets_sec = flow.src2dst_packets / ((flow.src2dst_duration_ms + 0.000000000001) * 0.0001)
-	bwd_packets_sec = flow.dst2src_packets / ((flow.dst2src_duration_ms + 0.000000000001) * 0.0001)
-
-	entry = [flow.src_mac, flow.dst_port, flow.bidirectional_duration_ms, flow.src2dst_packets, flow.dst2src_packets, flow.src2dst_bytes, flow.dst2src_bytes, flow.src2dst_max_ps, flow.src2dst_min_ps, flow.src2dst_mean_ps, flow.src2dst_stddev_ps, flow.dst2src_max_ps, flow.dst2src_min_ps, flow.dst2src_mean_ps, flow.dst2src_stddev_ps, bytes_sec, packets_sec, flow.bidirectional_mean_piat_ms, flow.bidirectional_stddev_piat_ms, flow.bidirectional_max_piat_ms, flow.bidirectional_min_piat_ms, flow.src2dst_mean_piat_ms, flow.src2dst_stddev_piat_ms, flow.src2dst_max_piat_ms, flow.src2dst_min_piat_ms, flow.dst2src_mean_piat_ms, flow.dst2src_stddev_piat_ms, flow.dst2src_max_piat_ms, flow.dst2src_min_piat_ms, flow.src2dst_psh_packets, flow.dst2src_psh_packets, flow.src2dst_urg_packets, flow.dst2src_urg_packets, fwd_packets_sec, bwd_packets_sec, flow.bidirectional_min_ps, flow.bidirectional_max_ps, flow.bidirectional_mean_ps, flow.bidirectional_stddev_ps, flow.bidirectional_fin_packets, flow.bidirectional_syn_packets, flow.bidirectional_rst_packets, flow.bidirectional_psh_packets, flow.bidirectional_ack_packets, flow.bidirectional_urg_packets, flow.bidirectional_cwr_packets, flow.bidirectional_ece_packets]
-	return entry
+	return [flow.src_mac, flow.dst_port, flow.bidirectional_duration_ms, flow.src2dst_packets, flow.dst2src_packets, flow.src2dst_bytes, flow.dst2src_bytes, flow.src2dst_max_ps, flow.src2dst_min_ps, flow.src2dst_mean_ps, flow.src2dst_stddev_ps, flow.dst2src_max_ps, flow.dst2src_min_ps, flow.dst2src_mean_ps, flow.dst2src_stddev_ps, bytes_sec, packets_sec, flow.bidirectional_mean_piat_ms, flow.bidirectional_stddev_piat_ms, flow.bidirectional_max_piat_ms, flow.bidirectional_min_piat_ms, flow.src2dst_mean_piat_ms, flow.src2dst_stddev_piat_ms, flow.src2dst_max_piat_ms, flow.src2dst_min_piat_ms, flow.dst2src_mean_piat_ms, flow.dst2src_stddev_piat_ms, flow.dst2src_max_piat_ms, flow.dst2src_min_piat_ms, flow.src2dst_psh_packets, flow.dst2src_psh_packets, flow.src2dst_urg_packets, flow.dst2src_urg_packets, fwd_packets_sec, bwd_packets_sec, flow.bidirectional_min_ps, flow.bidirectional_max_ps, flow.bidirectional_mean_ps, flow.bidirectional_stddev_ps, flow.bidirectional_fin_packets, flow.bidirectional_syn_packets, flow.bidirectional_rst_packets, flow.bidirectional_psh_packets, flow.bidirectional_ack_packets, flow.bidirectional_urg_packets, flow.bidirectional_cwr_packets, flow.bidirectional_ece_packets]
 
 
 # Capture traffic into a flow and send as work to the worker nodes.
 def capture_stream():
 
+
 	print('[*] Beginning stream capture.')
 
 	#TODO LATER: Change to external output default interface
-	column_names = ['Source Mac', 'Destination Port', 'Flow Duration', 'Total Fwd Packets', 'Total Backward Packets', 'Total Length of Fwd Packets', 'Total Length of Bwd Packets', 'Fwd Packet Length Max', 'Fwd Packet Length Min', 'Fwd Packet Length Mean', 'Fwd Packet Length Std', 'Bwd Packet Length Max', 'Bwd Packet Length Min', 'Bwd Packet Length Mean', 'Bwd Packet Length Std', 'Flow Bytes/s', 'Flow Packets/s', 'Flow IAT Mean', 'Flow IAT Std', 'Flow IAT Max', 'Flow IAT Min', 'Fwd IAT Mean', 'Fwd IAT Std', 'Fwd IAT Max', 'Fwd IAT Min', 'Bwd IAT Mean', 'Bwd IAT Std', 'Bwd IAT Max', 'Bwd IAT Min', 'Fwd PSH Flags', 'Bwd PSH Flags', 'Fwd URG Flags', 'Bwd URG Flags',  'Fwd Packets/s', 'Bwd Packets/s', 'Min Packet Length', 'Max Packet Length', 'Packet Length Mean', 'Packet Length Std', 'FIN Flag Count', 'SYN Flag Count', 'RST Flag Count', 'PSH Flag Count', 'ACK Flag Count', 'URG Flag Count', 'CWE Flag Count', 'ECE Flag Count']
-	cols_drops = ['Down/Up Ratio', 'Average Packet Size', 'Avg Fwd Segment Size', 'Avg Bwd Segment Size', 'Fwd Header Length', 'Fwd Avg Bytes/Bulk', 'Fwd Avg Packets/Bulk', 'Fwd Avg Bulk Rate', 'Bwd Avg Bytes/Bulk', 'Bwd Avg Packets/Bulk', 'Bwd Avg Bulk Rate', 'Subflow Fwd Packets', 'Subflow Fwd Bytes', 'Subflow Bwd Packets', 'Subflow Bwd Bytes', 'Init_Win_bytes_forward', 'Init_Win_bytes_backward', 'act_data_pkt_fwd', 'min_seg_size_forward', 'Active Mean', 'Active Std', 'Fwd IAT Total', 'Active Max', 'Active Min', 'Idle Mean', 'Idle Std', 'Idle Max', 'Idle Min', 'Bwd IAT Total', 'Fwd Header Length', 'Bwd Header Length', 'Packet Length Variance']
-	
+	column_names = ['Source Mac', 'Destination Port', 'Flow Duration', 'Total Fwd Packets', 'Total Backward Packets', 'Total Length of Fwd Packets', 'Total Length of Bwd Packets', 'Fwd Packet Length Max', 'Fwd Packet Length Min', 'Fwd Packet Length Mean', 'Fwd Packet Length Std', 'Bwd Packet Length Max', 'Bwd Packet Length Min', 'Bwd Packet Length Mean', 'Bwd Packet Length Std', 'Flow Bytes/s', 'Flow Packets/s', 'Flow IAT Mean', 'Flow IAT Std', 'Flow IAT Max', 'Flow IAT Min', 'Fwd IAT Mean', 'Fwd IAT Std', 'Fwd IAT Max', 'Fwd IAT Min', 'Bwd IAT Mean', 'Bwd IAT Std', 'Bwd IAT Max', 'Bwd IAT Min', 'Fwd PSH Flags', 'Bwd PSH Flags', 'Fwd URG Flags', 'Bwd URG Flags',  'Fwd Packets/s', 'Bwd Packets/s', 'Min Packet Length', 'Max Packet Length', 'Packet Length Mean', 'Packet Length Std', 'FIN Flag Count', 'SYN Flag Count', 'RST Flag Count', 'PSH Flag Count', 'ACK Flag Count', 'URG Flag Count', 'CWE Flag Count', 'ECE Flag Count']	
 
-	LISTEN_INTERFACE = "enp0s3"
+	LISTEN_INTERFACE = "en0"
 	flow_limit = 20
 	MAX_PACKET_SNIFF = 90
 
@@ -269,18 +267,18 @@ def capture_stream():
 
 	while not shutdown_flag:
 
-		dataframe = pd.DataFrame(columns=column_names)
+		#dataframe = pd.DataFrame(columns=column_names)
 
 		capture_start = time.time()
-		# capture = sniff(count=MAX_PACKET_SNIFF, iface=LISTEN_INTERFACE)
+		#capture = sniff(count=MAX_PACKET_SNIFF, iface=LISTEN_INTERFACE)
 
 		# Temporary sniffing workaround for VM environment:
-		bin_data = os.system(f"sshpass -p \"admin\" ssh root@192.168.1.1 \"tcpdump -i vtnet1 -c {MAX_PACKET_SNIFF} -w - \'not (src 192.168.1.100 and port 22) and not (src 192.168.1.1 and dst 192.168.1.100 and port 22)\'\" 2> /dev/null > {tmp_file_name}")
+		os.system(f"sshpass -p \"admin\" ssh root@10.10.0.178 \"tcpdump -i vtnet1 -c {MAX_PACKET_SNIFF} -w - \'not (src 10.10.0.139 and port 22) and not (src 192.168.1.1 and dst 10.10.0.139 and port 22)\'\" 2>/dev/null > {tmp_file_name}")
 
 		capture_end = time.time()
 
 		write_start = time.time()
-		# wrpcap(tmp_file_name, capture)
+		#wrpcap(tmp_file_name, capture)
 		write_end = time.time()
 
 		
@@ -290,25 +288,25 @@ def capture_stream():
 		
 
 		flow_start = time.time()
-		streamer = NFStreamer(source=tmp_file_name, statistical_analysis=True, decode_tunnels=False, active_timeout=100_300, idle_timeout=10_920, accounting_mode=3)
+		streamer = NFStreamer(source=tmp_file_name, statistical_analysis=True, decode_tunnels=False, active_timeout=10_300, idle_timeout=10_920, accounting_mode=3)
 		
-		for flow in streamer:
-			entry = create_data_frame_entry_from_flow(flow)
-			dataframe.loc[len(dataframe)] = entry
+		mapped = map(create_data_frame_entry_from_flow, iter(streamer))
+
+		dataframe = pd.DataFrame(mapped)
 		flow_end = time.time()
 
-		dataframe.iloc[:,1:] = dataframe.iloc[:,1:].astype("float32")
 
-		#print(f'Time to create flow table: {flow_end - flow_start:.02f}')
+		print(f"Time to capture: {capture_end - capture_start}; Serving dataframe of size: {len(dataframe)}; Time to create flow table: {flow_end - flow_start}")
 		#print(f'Flow table memory size: {size_converter(dataframe.__sizeof__())}')
 		#print(f'Flow table sample size: {len(dataframe)}')
 
 		
 		
 		try:
-			QUEUE.put(dataframe, timeout=30)
+			QUEUE.put(dataframe, timeout=1)
 		except Full:
 			pass
+
 
 
 def get_process_metrics():
@@ -358,10 +356,12 @@ def handler(signum, frame):
 	print('Shutting down, please wait.')
 	sys.exit(0)
 
+
 if __name__ == "__main__":
 
 	signal.signal(signal.SIGINT, handler)
 	signal.signal(signal.SIGTERM, handler)
+
 
 	capture_thread = threading.Thread(target=capture_stream, args=())
 	#metrics_thread = threading.Thread(target=get_process_metrics, args=())
