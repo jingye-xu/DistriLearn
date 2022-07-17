@@ -14,6 +14,11 @@ from torch.utils.data import DataLoader, TensorDataset
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn import metrics
 
+import sklearn
+
+import joblib
+from joblib import parallel_backend
+
 import pandas as pd
 import os
 import sys
@@ -22,7 +27,8 @@ import sys
 warnings.filterwarnings("ignore", category=UserWarning)
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-NUM_INPUT = 46
+# was 46 features.
+NUM_INPUT = 38
 batch_size = 1
 
 # #############################################################################
@@ -139,16 +145,19 @@ def load_data(path=None, filename=None):
 		print("file does not exist")
 		sys.exit(1)
 
-	pd.options.mode.use_inf_as_na = True
+	print(f'Loading dataset from : {filename}')
+	#pd.options.mode.use_inf_as_na = True
 	data_dataframe = pd.read_csv(path + filename + ".csv")
-	data_dataframe.dropna(inplace=True)
+	#data_dataframe.dropna(inplace=True)
 	data_dataframe = data_dataframe.sample(frac = 1)
+
+	print('Done loading.')
 
 	# we will let 0 represent benign data
 	# we will let 1 represent malicious data
 
-	data_dataframe.loc[data_dataframe['Label'] == 'BENIGN', 'Label'] = 0.0
-	data_dataframe.loc[data_dataframe['Label'] == 'MALICIOUS', 'Label'] = 1.0
+	#data_dataframe.loc[data_dataframe['Label'] == 'BENIGN', 'Label'] = 0.0
+	#data_dataframe.loc[data_dataframe['Label'] == 'MALICIOUS', 'Label'] = 1.0
 
 	X = data_dataframe.iloc[:, 0:-1] # Features
 	Y = data_dataframe.iloc[:, -1] # Labels
@@ -157,8 +166,55 @@ def load_data(path=None, filename=None):
 	X = X.astype("float32")
 	Y = Y.astype("float32")
 
+	cols = ['Fwd PSH Flags',
+'Bwd PSH Flags',
+'Bwd URG Flags',
+'SYN Flag Count',
+'Fwd Avg Bytes/Bulk',
+'Fwd Avg Packets/Bulk',
+'Fwd Avg Bulk Rate',
+'Bwd Avg Bytes/Bulk',
+'Bwd Avg Packets/Bulk',
+'Bwd Avg Bulk Rate',
+'URG Flag Count',
+'CWE Flag Count',
+'Fwd URG Flags',
+'FIN Flag Count',
+'Down/Up Ratio',
+'Active Min',
+'ECE Flag Count',
+'Idle Mean',
+'act_data_pkt_fwd',
+'Flow IAT Std',
+'Idle Std',
+'Active Mean',
+'Idle Max',
+'Active Std',
+'ACK Flag Count',
+'PSH Flag Count',
+'Avg Bwd Segment Size',
+'Idle Min',
+'Active Max',
+'Subflow Fwd Bytes',
+'Subflow Bwd Bytes',
+'Avg Fwd Segment Size',
+'Subflow Bwd Packets',
+'Subflow Fwd Packets',
+'Bwd Header Length',
+'Fwd Header Length',
+'min_seg_size_forward',
+'Init_Win_bytes_backward',
+'Init_Win_bytes_forward']
+
+	
+	X.drop(columns=cols, axis=1, inplace=True)
+
 	scaler = StandardScaler()
 	X = scaler.fit_transform(X)
+
+	print('Saving scaler.')
+	joblib.dump(scaler, f'scaler_nn_17.pkl')
+	print('Saved scaler.')
 
 	# Convert data to tensors
 	X = torch.tensor(X, dtype=torch.float)
@@ -172,6 +228,7 @@ def load_data(path=None, filename=None):
 	train_size = int(0.75 * len(Y))
 	test_size = len(Y) - train_size
 
+	print('Splitting.')
 	Y_train, Y_test = torch.split(Y, [train_size, test_size])
 	X_train, X_test = torch.split(X, [train_size, test_size])
 
@@ -198,7 +255,7 @@ def main():
 	net = Net().to(DEVICE)
 
 	# Load data 
-	trainloader, testloader, num_examples = load_data(filename='aggregate_total_data_balanced_drop')
+	trainloader, testloader, num_examples = load_data(filename='./CICIDS17/aggregate_2017_cleaned_numerical_nonbalanced_balanced_drop')
 
 	# Flower client
 	class ClientTrainer(fl.client.NumPyClient):
@@ -215,7 +272,7 @@ def main():
 			train(net, trainloader, epochs=1)
 			
 			# save model
-			modelPath = "./simple_model.pth"
+			modelPath = "./simple_nn_17.pth"
 			torch.save(net.state_dict(), modelPath)
 
 			print(f"model saved here {modelPath}")
