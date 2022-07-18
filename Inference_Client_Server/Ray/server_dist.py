@@ -41,12 +41,12 @@ QUEUE = queue.Queue(maxsize=Q_MAX_SIZE)
 OBJ_REF_QUEUE = queue.Queue()
 
 # Configurations for specific network
-pfsense_wan_ip = "10.10.0.178"
+pfsense_wan_ip = "172.16.42.119"
 pfsense_lan_ip = "192.168.1.1"
 lan_nic = "vtnet1"
-ssh_client_ip = "10.10.0.139"
+ssh_client_ip = "172.16.42.131"
 ssh_client_port = "22"
-dask_scheduler_ip = "10.10.0.139"
+dask_scheduler_ip = "172.16.42.131"
 dask_scheduler_port = "8786"
 
 # TODO: Change IP address based on testbed node
