@@ -116,8 +116,8 @@ class ScikitModelDriver(ModelDriver):
 
 class PyTorchModelDriver(ModelDriver):
 
-	def __init__(self, model_path, net_class):
-		super().__init__(model_path)
+	def __init__(self, model_path, net_class, scaler_path):
+		super().__init__(model_path, scaler_path)
 		self.net = net_class()
 
 	def get_instance(self):
@@ -142,10 +142,9 @@ class PyTorchModelDriver(ModelDriver):
 model_driver = None
 
 if MODEL_TYPE == 0:
-	model_driver = ScikitModelDriver(SCIKIT_MODEL_PATH)
+	model_driver = ScikitModelDriver(SCIKIT_MODEL_PATH, SCALER_PATH)
 else:
-	model_driver = PyTorchModelDriver(PYTORCH_MODEL_PATH, Net())
-
+	model_driver = PyTorchModelDriver(PYTORCH_MODEL_PATH, Net(), SCALER_PATH)
 
 
 MAX_COMPUTE_NODE_ENTRIES = 50
