@@ -20,12 +20,10 @@ import joblib
 from read_local_var import var_read_json
 import scapy.config
 
-"""
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torchvision.transforms as transforms
-"""
 
 
 import pandas as pd
@@ -76,7 +74,6 @@ client = Client(f"tcp://{dask_scheduler_ip}:{dask_scheduler_port}")
 NUM_INPUT = 38
 batch_size = 1
 
-"""
 class Net(nn.Modudle):
         def __init__(self) -> None:
                 super(Net, self).__init__()
@@ -94,7 +91,6 @@ class Net(nn.Modudle):
 
                 return output
 
-"""
 class ModelDriver:
 
         def __init__(self, path, scaler_path):
