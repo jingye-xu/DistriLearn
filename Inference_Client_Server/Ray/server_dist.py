@@ -17,6 +17,7 @@ import queue
 import signal
 import time
 import joblib
+from read_local_var import var_read_json
 import scapy.config
 
 """
@@ -54,18 +55,19 @@ QUEUE = queue.Queue()
 OBJ_REF_QUEUE = queue.Queue()
 
 
-# Configurations for specific network
-pfsense_wan_ip = "172.16.42.119"
-pfsense_pass = "1"
-pfsense_lan_ip = "192.168.1.1"
+# obtain var from local file
+var = var_read_json()
+pfsense_wan_ip = var["pfsense_wan_ip"]
+pfsense_pass = var["pfsense_pass"]
+pfsense_lan_ip = var["pfsense_lan_ip"]
 
-lan_nic = "vtnet1"
+lan_nic = var["lan_nic"]
 
-ssh_client_ip = "172.16.42.121"
-ssh_client_port = "22"
+ssh_client_ip = var["ssh_client_ip"]
+ssh_client_port = var["ssh_client_port"]
 
-dask_scheduler_ip = "192.168.0.41"
-dask_scheduler_port = "8786"
+dask_scheduler_ip = var["dask_scheduler_ip"]
+dask_scheduler_port = var["dask_scheduler_port"]
 
 # TODO: Change IP address based on testbed node
 client = Client(f"tcp://{dask_scheduler_ip}:{dask_scheduler_port}")
