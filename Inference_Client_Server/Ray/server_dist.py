@@ -55,7 +55,6 @@ client = Client(f"tcp://{dask_scheduler_ip}:{dask_scheduler_port}")
 NUM_INPUT = 38
 batch_size = 1
 
-
 class Net(nn.Module):
     def __init__(self) -> None:
         super(Net, self).__init__()
