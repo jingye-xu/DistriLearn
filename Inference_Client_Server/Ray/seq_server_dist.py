@@ -223,7 +223,7 @@ def run_inference_no_batch(dataframe):
 	print(f"Map time: {map_end - map_start}")
 	print()
 
-	# print(f'DF: {len(dataframe)} buffer state: {evidence_buffer}')
+	print(f'[*THREAD STATE*] DF: {len(dataframe)} buffer state: {evidence_buffer}')
 	# Flush the buffer to reduce memory usage
 	if len(evidence_buffer) >= MAX_COMPUTE_NODE_ENTRIES:
 		evidence_buffer = {}
