@@ -9,3 +9,5 @@ venv
 *.csv
 
 Inference_Client_Server/Ray/server_dist_variable.json
+
+__pycache__/
