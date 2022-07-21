@@ -39,20 +39,19 @@ from nfstream import NFPlugin, NFStreamer
 from dask.distributed import Client, Queue
 from scapy.all import *
 
-conf.bufsize = 1000536
+conf.bufsize = 65536
 conf.ipv6_enabed = False
 conf.promisc = True
-conf.recv_poll_rate = 0.03
-conf.layers.filter([Ether, IP, TCP]) 
+conf.recv_poll_rate = 0.02
 
 shutdown_flag = False
 
-Q_MAX_SIZE = 20_000
-OBJ_MAX_SIZE = 4_000
+Q_MAX_SIZE = 200_000
+OBJ_MAX_SIZE = 10_000
 
 MODEL_TYPE = 0 # 0 for scikit, 1 for pytorch - should be enum instead but python isn't clean like that
-SCIKIT_MODEL_PATH = "./ModelPack/clean_17_models/Log regression/log_reg_2017.pkl"
-SCALER_PATH = "./ModelPack/clean_17_models/Log regression/scaler_log_reg_17.pkl"
+SCIKIT_MODEL_PATH = "./ModelPack/clean_17_models/SVM/lin_svm_2017.pkl"
+SCALER_PATH = "./ModelPack/clean_17_models/SVM/scaler_lin_svm_17.pkl"
 PYTORCH_MODEL_PATH = "./ModelPack/clean_17_models/NN/simple_nn_17.pth"
 
 
@@ -135,7 +134,7 @@ class ScikitModelDriver(ModelDriver):
 		def predict(self, dataframe):
 				vals = self.scaler.transform(dataframe.values)
 				predictions = self.model.predict(vals)
-				results = [0 if result < 0.3 else 1 for result in predictions]
+				results = [0 if result < 0.5 else 1 for result in predictions]
 				return results
 
 
@@ -160,7 +159,7 @@ class PyTorchModelDriver(ModelDriver):
 				data_tensor = torch.tensor(vals, dtype=torch.float)
 				data_tensor = torch.FloatTensor(data_tensor)
 				results = self.model(data_tensor)
-				results = [0 if result[0] < 0.3 else 1 for result in results.detach().numpy()]
+				results = [0 if result[0] < 0.6 else 1 for result in results.detach().numpy()]
 				return results
 
 model_driver = None
@@ -173,8 +172,8 @@ else:
 
 
 MAX_COMPUTE_NODE_ENTRIES = 50
-MAX_COMPUTE_NODE_EVIDENCE_MALICIOUS_THRESHOLD = 12
-MAX_COMPUTE_NODE_EVIDENCE_BENIGN_THRESHOLD = 18
+MAX_COMPUTE_NODE_EVIDENCE_MALICIOUS_THRESHOLD = 35
+MAX_COMPUTE_NODE_EVIDENCE_BENIGN_THRESHOLD = 20
 
 MAX_MASTER_NODE_ENTRIES = 50
 MAX_MASTER_NODE_EVIDENCE_MALICIOUS_THRESHOLD = 8
@@ -189,11 +188,11 @@ exit = 0
 def run_inference_no_batch(dataframe):
 
 		global evidence_buffer
-		# global entry
-		# global exit
+		global entry
+		global exit
 
-		# entry = time.time()
-		#print(f"Reentry time: {entry - exit}")
+		entry = time.time()
+		print(f"Reentry time: {entry - exit}")
 
 	   
 		if dataframe is None or len(dataframe) == 0:
@@ -223,7 +222,6 @@ def run_inference_no_batch(dataframe):
 		while ip_idx < len(dataframe):
 				ip = dataframe[0][ip_idx]
 				prediction = predictions[ip_idx]
-
 				if ip not in evidence_buffer:
 						evidence_buffer[ip] = {0: 0, 1: 0}
 
@@ -236,7 +234,7 @@ def run_inference_no_batch(dataframe):
 						break
 				if evidence_buffer[ip][1] >= MAX_COMPUTE_NODE_EVIDENCE_MALICIOUS_THRESHOLD:
 						res = {ip : (1, evidence_buffer[ip][1])} # 1 is encoded as malicious
-						evidence_buffer[ip][1] = 0
+						evidence_buffer[ip][1] //= evidence_buffer[ip][1]
 						break
 
 				ip_idx += 1
@@ -249,7 +247,7 @@ def run_inference_no_batch(dataframe):
 		# Flush the buffer to reduce memory usage
 		if len(evidence_buffer) >= MAX_COMPUTE_NODE_ENTRIES:
 				evidence_buffer = {}
-		# exit = time.time()
+		exit = time.time()
 
 		return res
 
@@ -287,6 +285,7 @@ def obtain_results():
 
 			if dask_future.status == 'pending':
 				OBJ_REF_QUEUE.put(dask_future)
+				continue
 
 			res = dask_future.result()
 			del dask_future
@@ -294,7 +293,6 @@ def obtain_results():
 			 # we get back 0 - if nodes are not ready to give any inference
 			 # we get back {mac : benign/malicious} if enough evidence has been collected 
 			if res == 0:
-				print(f'[*] Res: {res}', end='\r')
 				continue
 			else:
 				mac = list(res)[0]
@@ -384,15 +382,11 @@ def capture_stream():
 				df = pd.DataFrame(mapped)
 				dataframe = pd.concat([dataframe,df], ignore_index=True)
 
-				if len(dataframe) >= 10:
-					splits = np.array_split(dataframe, 50)
-					for split in splits:
-						QUEUE.put(dataframe)
-					dataframe = None
-					dataframe = pd.DataFrame()
-				else:
+				splits = np.array_split(dataframe, 25)
+				for split in splits:
 					QUEUE.put(dataframe)
-
+				dataframe = df
+				
 				flow_end = time.time()
 
 
