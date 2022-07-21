@@ -27,6 +27,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torchvision.transforms as transforms
 
+from read_local_var import var_read_json
 
 
 import pandas as pd
@@ -47,6 +48,8 @@ conf.layers.filter([Ether, IP, TCP])
 shutdown_flag = False
 
 Q_MAX_SIZE = 20_000
+OBJ_MAX_SIZE = 4_000
+
 MODEL_TYPE = 0 # 0 for scikit, 1 for pytorch - should be enum instead but python isn't clean like that
 SCIKIT_MODEL_PATH = "./ModelPack/clean_17_models/Log regression/log_reg_2017.pkl"
 SCALER_PATH = "./ModelPack/clean_17_models/Log regression/scaler_log_reg_17.pkl"
@@ -54,7 +57,7 @@ PYTORCH_MODEL_PATH = "./ModelPack/clean_17_models/NN/simple_nn_17.pth"
 
 
 QUEUE = queue.Queue(maxsize=Q_MAX_SIZE)
-OBJ_REF_QUEUE = queue.Queue(maxsize=Q_MAX_SIZE)
+OBJ_REF_QUEUE = queue.Queue(maxsize=OBJ_MAX_SIZE)
 
 var = var_read_json()
 pfsense_wan_ip = var["pfsense_wan_ip"]
@@ -79,7 +82,7 @@ NUM_INPUT = 38
 batch_size = 1
 
 
-class Net(nn.Modudle):
+class Net(nn.Module):
 		def __init__(self) -> None:
 				super(Net, self).__init__()
 				self.fc1 = nn.Linear(in_features=NUM_INPUT, out_features=30)
@@ -186,11 +189,11 @@ exit = 0
 def run_inference_no_batch(dataframe):
 
 		global evidence_buffer
-		global entry
-		global exit
+		# global entry
+		# global exit
 
-		entry = time.time()
-		print(f"Reentry time: {entry - exit}")
+		# entry = time.time()
+		#print(f"Reentry time: {entry - exit}")
 
 	   
 		if dataframe is None or len(dataframe) == 0:
@@ -201,7 +204,7 @@ def run_inference_no_batch(dataframe):
 		model_driver.get_instance()
 		instance_end = time.time()
 		
-		print(f"Time to obtain model object: {instance_end - instance_start}")
+		# print(f"Time to obtain model object: {instance_end - instance_start}")
 
 		# Before predicting on the dataframe, we only pass in the dataframe WITHOUT the source mac (first column).
 		# Because to all the models, that is the expected input dimension.
@@ -228,25 +231,25 @@ def run_inference_no_batch(dataframe):
 
 				# Check evidence threshold, whichever surpasses first
 				if evidence_buffer[ip][0] >= MAX_COMPUTE_NODE_EVIDENCE_BENIGN_THRESHOLD:
-						res = {ip : 0} # 0 is encoded as benign
+						res = {ip : (0, evidence_buffer[ip][0])} # 0 is encoded as benign
 						evidence_buffer[ip][0] = 0
 						break
 				if evidence_buffer[ip][1] >= MAX_COMPUTE_NODE_EVIDENCE_MALICIOUS_THRESHOLD:
-						res = {ip : 1} # 1 is encoded as malicious
+						res = {ip : (1, evidence_buffer[ip][1])} # 1 is encoded as malicious
 						evidence_buffer[ip][1] = 0
 						break
 
 				ip_idx += 1
 		
 		map_end = time.time()
-		print(f"Map time: {map_end - map_start}")
-		print()
+		# print(f"Map time: {map_end - map_start}")
+		# print()
 
-		#print(f'DF: {len(dataframe)} buffer state: {evidence_buffer}')
+		print(f'DF: {len(dataframe)} buffer state: {evidence_buffer}')
 		# Flush the buffer to reduce memory usage
 		if len(evidence_buffer) >= MAX_COMPUTE_NODE_ENTRIES:
 				evidence_buffer = {}
-		exit = time.time()
+		# exit = time.time()
 
 		return res
 
@@ -265,12 +268,8 @@ def serve_workers():
 				continue
 
 			dask_future = client.submit(run_inference_no_batch, df, pure=False)
-		
+			OBJ_REF_QUEUE.put(dask_future)
 
-			if dask_future is None:
-				QUEUE.put(df)
-			else:
-				OBJ_REF_QUEUE.put(dask_future)
 
 
 # Asynchronous thread to obtain results from worker nodes
@@ -281,40 +280,43 @@ def obtain_results():
 		
 		while not shutdown_flag:
 
-			dask_future_outer = None
-
 			dask_future = OBJ_REF_QUEUE.get()
 
-			if dask_future_outer is None:
+			if dask_future is None:
 				continue
 
+			if dask_future.status == 'pending':
+				OBJ_REF_QUEUE.put(dask_future)
+
 			res = dask_future.result()
+			del dask_future
+			
 			 # we get back 0 - if nodes are not ready to give any inference
 			 # we get back {mac : benign/malicious} if enough evidence has been collected 
 			if res == 0:
-				print(f'[*] Buffer state: {len(evidence_buffer)} collections: {evidence_buffer}')
+				print(f'[*] Res: {res}', end='\r')
 				continue
 			else:
 				mac = list(res)[0]
-				pred = res[mac]
+				pred = res[mac][0]
+				pred_num = res[mac][1]
 
 				if mac not in evidence_buffer:
 					evidence_buffer[mac] = {0: 0, 1: 0}
 
-					evidence_buffer[mac][pred] += 1
+				evidence_buffer[mac][pred] += pred_num
 
-					if evidence_buffer[mac][0] >= MAX_MASTER_NODE_EVIDENCE_BENIGN_THRESHOLD:
-						print(f'[! Inference notice !] {mac} has been benign.')
-						evidence_buffer[mac][0] = 0
+				if evidence_buffer[mac][0] >= MAX_MASTER_NODE_EVIDENCE_BENIGN_THRESHOLD:
+					print(f'[! Inference notice !] {mac} has been benign.')
+					evidence_buffer[mac][0] = 0
 
-					if evidence_buffer[mac][1] >= MAX_MASTER_NODE_EVIDENCE_MALICIOUS_THRESHOLD:
-						print(f'[! Inference notice !] {mac} has been detected to have malicious activity.')
-						evidence_buffer[mac][1] = 0
+				if evidence_buffer[mac][1] >= MAX_MASTER_NODE_EVIDENCE_MALICIOUS_THRESHOLD:
+					print(f'[! Inference notice !] {mac} has been detected to have malicious activity.')
+					evidence_buffer[mac][1] = 0
 
-					if len(evidence_buffer) >= MAX_MASTER_NODE_ENTRIES:
-						evidence_buffer = {}
+				if len(evidence_buffer) >= MAX_MASTER_NODE_ENTRIES:
+					evidence_buffer = {}
 
-			print(f"[*] Buffer State: {evidence_buffer}")
 
 
 def create_data_frame_entry_from_flow(flow):
@@ -394,7 +396,7 @@ def capture_stream():
 				flow_end = time.time()
 
 
-				print(f"Time to capture: {capture_end - capture_start}; Serving dataframe of size: {len(dataframe)}; Time to create flow table: {flow_end - flow_start}")
+				#print(f"Time to capture: {capture_end - capture_start}; Time to create flow table: {flow_end - flow_start}")
 				#print(f'Flow table memory size: {size_converter(dataframe.__sizeof__())}')
 				#print(f'Flow table sample size: {len(dataframe)}')
 
@@ -447,7 +449,6 @@ def handler(signum, frame):
 		process = os.getpid()
 		os.system(f"kill -9 {process}")
 
-
 if __name__ == "__main__":
 
 		signal.signal(signal.SIGINT, handler)
@@ -464,4 +465,9 @@ if __name__ == "__main__":
 		serve_thread.start()
 		results.start()
 
+
+		capture_thread.join()
+		#metrics_thread.start()
+		serve_thread.join()
+		results.join()
 
