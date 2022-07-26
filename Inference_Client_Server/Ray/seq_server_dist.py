@@ -42,15 +42,10 @@ conf.recv_poll_rate = 0.02
 
 shutdown_flag = False
 
-Q_MAX_SIZE = 2_000_000
 MODEL_TYPE = 0 # 0 for scikit, 1 for pytorch - should be enum instead but python isn't clean like that
 SCIKIT_MODEL_PATH = "./ModelPack/clean_17_models/Log regression/log_reg_2017.pkl"
 SCALER_PATH = "./ModelPack/clean_17_models/Log regression/scaler_log_reg_17.pkl"
 PYTORCH_MODEL_PATH = "./ModelPack/clean_17_models/NN/simple_nn_17.pth"
-
-
-QUEUE = queue.Queue()
-RES_BUFFER = queue.Queue()
 
 
 # obtain var from local file
@@ -70,119 +65,112 @@ dask_scheduler_port = var["dask_scheduler_port"]
 NUM_INPUT = 38
 batch_size = 1
 
+
 class Net(nn.Module):
-	def __init__(self) -> None:
-		super(Net, self).__init__()
-		self.fc1 = nn.Linear(in_features=NUM_INPUT, out_features=30)
-		self.fc2 = nn.Linear(in_features=30, out_features=20)
-		self.fc3 = nn.Linear(in_features=20, out_features=1)
+		def __init__(self) -> None:
+				super(Net, self).__init__()
+				self.fc1 = nn.Linear(in_features=NUM_INPUT, out_features=30)
+				self.fc2 = nn.Linear(in_features=30, out_features=20)
+				self.fc3 = nn.Linear(in_features=20, out_features=1)
 
-	def forward(self, x: torch.Tensor) -> torch.Tensor:
-		output = self.fc1(x)
-		output = torch.relu(output)
-		output = self.fc2(output)
-		output = torch.relu(output)
-		output = self.fc3(output)
-		output = torch.sigmoid(output)
+		def forward(self, x: torch.Tensor) -> torch.Tensor:
+				output = self.fc1(x)
+				output = torch.relu(output)
+				output = self.fc2(output)
+				output = torch.relu(output)
+				output = self.fc3(output)
+				output = torch.sigmoid(output)
 
-		return output
+				return output
+
 
 class ModelDriver:
 
-	def __init__(self, path, scaler_path):
-		self.model_path = path
-		print(f'Loaded model: {path}')
-		self.model = None
-		self.scaler = joblib.load(scaler_path)
-		print(f'Loaded scaler: {self.scaler}')
+		def __init__(self, path, scaler_path):
+				self.model_path = path
+				print(f'Loaded model: {path}')
+				self.model = None
+				self.scaler = joblib.load(scaler_path)
+				print(f'Loaded scaler: {self.scaler}')
 
-	def get_instance(self):
-		pass
+		def get_instance(self):
+				pass
 
-	def load_model(self):
-		pass
+		def load_model(self):
+				pass
 
-	def predict(self, dataframe):
-		pass
+		def predict(self, dataframe):
+				pass
 
 
 class ScikitModelDriver(ModelDriver):
 
-	def __init__(self, model_path, scaler_path):
-		super().__init__(model_path, scaler_path)
+		def __init__(self, model_path, scaler_path):
+				super().__init__(model_path, scaler_path)
 
-	def get_instance(self):         
-		if self.model is None:
-			self.load_model()
+		def get_instance(self):         
+				if self.model is None:
+						self.load_model()
 
-	def load_model(self):
-		sci_model = joblib.load(self.model_path)
-		self.model = sci_model
+		def load_model(self):
+				sci_model = joblib.load(self.model_path)
+				self.model = sci_model
 
-	def predict(self, dataframe):
-		vals = self.scaler.transform(dataframe.values)
-		predictions = self.model.predict(vals)
-		results = [0 if result < 0.3 else 1 for result in predictions]
-		return results
+		def predict(self, dataframe):
+				vals = self.scaler.transform(dataframe.values)
+				predictions = self.model.predict(vals)
+				results = [0 if result < 0.5 else 1 for result in predictions]
+				return results
 
 
 class PyTorchModelDriver(ModelDriver):
 
-	def __init__(self, model_path, net_class, scaler_path):
-		super().__init__(model_path, scaler_path)
-		self.net = net_class
+		def __init__(self, model_path, net_class, scaler_path):
+				super().__init__(model_path, scaler_path)
+				self.net = net_class
 
-	def get_instance(self):
-		if self.model == None:
-			self.load_model()
+		def get_instance(self):
+				if self.model == None:
+						self.load_model()
 
-	def load_model(self):
-		model = self.net
-		model.load_state_dict(torch.load(self.model_path))
-		model.eval()
-		self.model = model
+		def load_model(self):
+				model = self.net
+				model.load_state_dict(torch.load(self.model_path))
+				model.eval()
+				self.model = model
 
-	def predict(self, dataframe):
-		vals = self.scaler.transform(dataframe.values)
-		data_tensor = torch.tensor(vals, dtype=torch.float)
-		data_tensor = torch.FloatTensor(data_tensor)
-		results = self.model(data_tensor)
-		results = [0 if result[0] < 0.3 else 1 for result in results.detach().numpy()]
-		return results
+		def predict(self, dataframe):
+				vals = self.scaler.transform(dataframe.values)
+				data_tensor = torch.tensor(vals, dtype=torch.float)
+				data_tensor = torch.FloatTensor(data_tensor)
+				results = self.model(data_tensor)
+				results = [0 if result[0] < 0.6 else 1 for result in results.detach().numpy()]
+				return results
 
 model_driver = None
 
 if MODEL_TYPE == 0:
-	model_driver = ScikitModelDriver(SCIKIT_MODEL_PATH, SCALER_PATH)
+		model_driver = ScikitModelDriver(SCIKIT_MODEL_PATH, SCALER_PATH)
 else:
-	model_driver = PyTorchModelDriver(PYTORCH_MODEL_PATH, Net(), SCALER_PATH)
+		model_driver = PyTorchModelDriver(PYTORCH_MODEL_PATH, Net(), SCALER_PATH)
 
-
-
-MAX_COMPUTE_NODE_ENTRIES = 50
-MAX_COMPUTE_NODE_EVIDENCE_MALICIOUS_THRESHOLD = 12
-MAX_COMPUTE_NODE_EVIDENCE_BENIGN_THRESHOLD = 18
-
-MAX_MASTER_NODE_ENTRIES = 50
-MAX_MASTER_NODE_EVIDENCE_MALICIOUS_THRESHOLD = 8
-MAX_MASTER_NODE_EVIDENCE_BENIGN_THRESHOLD = 18
-
-evidence_buffer = {}
 
 # Remote function for compute cluster
 def run_inference_no_batch(dataframe):
 
-	global evidence_buffer
+
+	from datetime import datetime
+
+	dt_string = datetime.now()
 
 	if dataframe is None or len(dataframe) == 0:
 		return 0
-
 
 	instance_start = time.time()
 	model_driver.get_instance()
 	instance_end = time.time()
 	
-	print(f"Time to obtain model object: {instance_end - instance_start}")
+	#print(f"Time to obtain model object: {instance_end - instance_start}")
 
 	# Before predicting on the dataframe, we only pass in the dataframe WITHOUT the source mac (first column).
 	# Because to all the models, that is the expected input dimension.
@@ -191,114 +179,45 @@ def run_inference_no_batch(dataframe):
 	predictions = model_driver.predict(dataframe.iloc[:,1:])
 	pred_end = time.time()
 
-	print(f"Time to inference sequentially: {pred_end - pred_start}")
+	#print(f"Time to inference sequentially: {pred_end - pred_start}")
 
-
-	map_start = time.time()
-	# One-to-one mapping from dataframe to array rows
-	res = 0
 	ip_idx = 0
 	while ip_idx < len(dataframe):
-		ip = dataframe[0][ip_idx]
+		mac = dataframe[0][ip_idx]
 		prediction = predictions[ip_idx]
 
-		if ip not in evidence_buffer:
-			evidence_buffer[ip] = {0: 0, 1: 0}
-
-		evidence_buffer[ip][prediction] += 1
-
-		# Check evidence threshold, whichever surpasses first
-		if evidence_buffer[ip][0] >= MAX_COMPUTE_NODE_EVIDENCE_BENIGN_THRESHOLD:
-			res = {ip : 0} # 0 is encoded as benign
-			evidence_buffer[ip][0] = 0
-			break
-		if evidence_buffer[ip][1] >= MAX_COMPUTE_NODE_EVIDENCE_MALICIOUS_THRESHOLD:
-			res = {ip : 1} # 1 is encoded as malicious
-			evidence_buffer[ip][1] = 0
-			break
+		if prediction == 0:
+			print(f'[! Inference notice {dt_string} !] {mac} has been benign.')
+		else:
+			print(f'[! Inference notice {dt_string} !] {mac} has been detected to have malicious activity.')	
 
 		ip_idx += 1
-	
-	map_end = time.time()
-	print(f"Map time: {map_end - map_start}")
-	print()
-
-	print(f'[*THREAD STATE*] DF: {len(dataframe)} buffer state: {evidence_buffer}')
-	# Flush the buffer to reduce memory usage
-	if len(evidence_buffer) >= MAX_COMPUTE_NODE_ENTRIES:
-		evidence_buffer = {}
-
-	return res
 
 
-# Asynchronous thread to send the work asynchronously to workers
-def serve_workers():
 
-	global shutdown_flag
 
-	# Send dataframe to available nodes.
-	while not shutdown_flag:
-		df = QUEUE.get()
-		if df is None:
-			continue
-
-		res = run_inference_no_batch(df)
-		RES_BUFFER.put(res)
-		
 
 # Asynchronous thread to obtain results from worker nodes
-def obtain_results():
+def obtain_results(dataframe):
 
-	global evidence_buffer
-	global shutdown_flag
-	
-	while not shutdown_flag:
-		
-		res = RES_BUFFER.get()
 
-		if res is None:
-			continue
-
-		 # we get back 0 - if nodes are not ready to give any inference
-		 # we get back {mac : benign/malicious} if enough evidence has been collected 
-		if res == 0:
-			print(f'[*] Buffer state: {len(evidence_buffer)} collections: {evidence_buffer}')
-			continue
-		else:
-			mac = list(res)[0]
-			pred = res[mac]
-
-			if mac not in evidence_buffer:
-				evidence_buffer[mac] = {0: 0, 1: 0}
-
-				evidence_buffer[mac][pred] += 1
-
-				if evidence_buffer[mac][0] >= MAX_MASTER_NODE_EVIDENCE_BENIGN_THRESHOLD:
-					print(f'[! Inference notice !] {mac} has been benign.')
-					evidence_buffer[mac][0] = 0
-
-				if evidence_buffer[mac][1] >= MAX_MASTER_NODE_EVIDENCE_MALICIOUS_THRESHOLD:
-					print(f'[! Inference notice !] {mac} has been detected to have malicious activity.')
-					evidence_buffer[mac][1] = 0
-
-				if len(evidence_buffer) >= MAX_MASTER_NODE_ENTRIES:
-					evidence_buffer = {}
-	
+	run_inference_no_batch(dataframe)
 
 
 def create_data_frame_entry_from_flow(flow):
-	# Create dataframe entry with fields respective to model only.
-	# old * 0.001
-	bytes_sec = flow.bidirectional_bytes / ((flow.bidirectional_duration_ms + 1) / 1000) 
-	packets_sec = flow.bidirectional_packets / ((flow.bidirectional_duration_ms + 1) / 1000)
-	fwd_packets_sec = flow.src2dst_packets / ((flow.src2dst_duration_ms + 1) / 1000)  
-	bwd_packets_sec = flow.dst2src_packets / ((flow.dst2src_duration_ms + 1) / 1000)  
-	fwd_iat_total = flow.src2dst_max_piat_ms # total time between two packets in forward direction
-	bwd_iat_total = flow.dst2src_max_piat_ms # total time between two packets in the backward direction
-	avg_packet_size = flow.bidirectional_bytes / flow.bidirectional_packets
-	packet_length_variance = flow.bidirectional_stddev_ps ** 2
-	
-	return [flow.src_mac, flow.dst_port, flow.bidirectional_duration_ms, flow.src2dst_packets, flow.dst2src_packets, flow.src2dst_bytes, flow.dst2src_bytes, flow.src2dst_max_ps, flow.src2dst_min_ps, flow.src2dst_mean_ps, flow.src2dst_stddev_ps, flow.dst2src_max_ps, flow.dst2src_min_ps, flow.dst2src_mean_ps, flow.dst2src_stddev_ps, bytes_sec, packets_sec, flow.bidirectional_mean_piat_ms, flow.bidirectional_max_piat_ms, flow.bidirectional_min_piat_ms, fwd_iat_total, flow.src2dst_mean_piat_ms, flow.src2dst_stddev_piat_ms, flow.src2dst_max_piat_ms, flow.src2dst_min_piat_ms, bwd_iat_total, flow.dst2src_mean_piat_ms, flow.dst2src_stddev_piat_ms, flow.dst2src_max_piat_ms, flow.dst2src_min_piat_ms, fwd_packets_sec, bwd_packets_sec, flow.bidirectional_min_ps, flow.bidirectional_max_ps, flow.bidirectional_mean_ps, flow.bidirectional_stddev_ps, packet_length_variance, flow.bidirectional_rst_packets, avg_packet_size]
+		# Create dataframe entry with fields respective to model only.
+		# old * 0.001
+		bytes_sec = flow.bidirectional_bytes / ((flow.bidirectional_duration_ms + 1) / 1000) 
+		packets_sec = flow.bidirectional_packets / ((flow.bidirectional_duration_ms + 1) / 1000)
+		fwd_packets_sec = flow.src2dst_packets / ((flow.src2dst_duration_ms + 1) / 1000)  
+		bwd_packets_sec = flow.dst2src_packets / ((flow.dst2src_duration_ms + 1) / 1000)  
+		fwd_iat_total = flow.src2dst_max_piat_ms # total time between two packets in forward direction
+		bwd_iat_total = flow.dst2src_max_piat_ms # total time between two packets in the backward direction
+		avg_packet_size = flow.bidirectional_bytes / flow.bidirectional_packets
+		packet_length_variance = flow.bidirectional_stddev_ps ** 2
+		
+		return [flow.src_mac, flow.dst_port, flow.bidirectional_duration_ms, flow.src2dst_packets, flow.dst2src_packets, flow.src2dst_bytes, flow.dst2src_bytes, flow.src2dst_max_ps, flow.src2dst_min_ps, flow.src2dst_mean_ps, flow.src2dst_stddev_ps, flow.dst2src_max_ps, flow.dst2src_min_ps, flow.dst2src_mean_ps, flow.dst2src_stddev_ps, bytes_sec, packets_sec, flow.bidirectional_mean_piat_ms, flow.bidirectional_max_piat_ms, flow.bidirectional_min_piat_ms, fwd_iat_total, flow.src2dst_mean_piat_ms, flow.src2dst_stddev_piat_ms, flow.src2dst_max_piat_ms, flow.src2dst_min_piat_ms, bwd_iat_total, flow.dst2src_mean_piat_ms, flow.dst2src_stddev_piat_ms, flow.dst2src_max_piat_ms, flow.dst2src_min_piat_ms, fwd_packets_sec, bwd_packets_sec, flow.bidirectional_min_ps, flow.bidirectional_max_ps, flow.bidirectional_mean_ps, flow.bidirectional_stddev_ps, packet_length_variance, flow.bidirectional_rst_packets, avg_packet_size]
+
 
 
 # Capture traffic into a flow and send as work to the worker nodes.
@@ -318,20 +237,20 @@ def capture_stream():
 	tmp_file = tempfile.NamedTemporaryFile(mode='wb')
 	tmp_file_name = tmp_file.name
 
+
+	dataframe = pd.DataFrame()
 	while not shutdown_flag:
 
-		#dataframe = pd.DataFrame(columns=column_names)
-
 		capture_start = time.time()
-		#capture = sniff(count=MAX_PACKET_SNIFF, iface=LISTEN_INTERFACE)
+		capture = sniff(count=MAX_PACKET_SNIFF, iface=LISTEN_INTERFACE)
 
 		# Temporary sniffing workaround for VM environment:
-		os.system(f"sshpass -p \"{pfsense_pass}\" ssh root@{pfsense_wan_ip} \"tcpdump -i {lan_nic} -c {MAX_PACKET_SNIFF} -w - \'not (src {ssh_client_ip} and port {ssh_client_port}) and not (src {pfsense_lan_ip} and dst {ssh_client_ip} and port 22)\'\" 2>/dev/null > {tmp_file_name}")
+		# os.system(f"sshpass -p \"{pfsense_pass}\" ssh root@{pfsense_wan_ip} \"tcpdump -i {lan_nic} -c {MAX_PACKET_SNIFF} -w - \'not (src {ssh_client_ip} and port {ssh_client_port}) and not (src {pfsense_lan_ip} and dst {ssh_client_ip} and port 22)\'\" 2>/dev/null > {tmp_file_name}")
 
 		capture_end = time.time()
 
 		write_start = time.time()
-		#wrpcap(tmp_file_name, capture)
+		wrpcap(tmp_file_name, capture)
 		write_end = time.time()
 
 		
@@ -345,30 +264,18 @@ def capture_stream():
 		
 		mapped = map(create_data_frame_entry_from_flow, iter(streamer))
 
-		dataframe = pd.DataFrame(mapped)
+		df = pd.DataFrame(mapped)
 		flow_end = time.time()
 
+		dataframe = pd.concat([dataframe,df], ignore_index=True)
 
-		print(f"Time to capture: {capture_end - capture_start}; Serving dataframe of size: {len(dataframe)}; Time to create flow table: {flow_end - flow_start}")
-		#print(f'Flow table memory size: {size_converter(dataframe.__sizeof__())}')
-		#print(f'Flow table sample size: {len(dataframe)}')
+		#print(f"Time to create flow table: {flow_end - flow_start}")
 
-		
-		QUEUE.put(dataframe)
+		obtain_results(dataframe)
 
+		if len(dataframe) >= 135:
+			dataframe = pd.DataFrame()
 
-def get_process_metrics():
-
-	global shutdown_flag
-
-	process = psutil.Process(os.getpid())
-
-	while not shutdown_flag:
-
-		used_mem = process.memory_full_info().uss
-		size = size_converter(used_mem)
-
-		print(f"Memory used: ~{size:.02f}", end='\r')
 
 
 
@@ -386,7 +293,6 @@ def size_converter(sz):
 	used = str(size) + " " + power_labels[n]+'B'
 
 	return used
-
 
 
 def handler(signum, frame):
@@ -409,13 +315,5 @@ if __name__ == "__main__":
 	signal.signal(signal.SIGTERM, handler)
 
 
-	capture_thread = threading.Thread(target=capture_stream, args=())
-	#metrics_thread = threading.Thread(target=get_process_metrics, args=())
-	serve_thread = threading.Thread(target=serve_workers, args=())
-	results = threading.Thread(target=obtain_results, args=())
+	capture_stream()
 				
-	capture_thread.start()
-	#metrics_thread.start()
-	serve_thread.start()
-	results.start()
-
