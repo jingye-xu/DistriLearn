@@ -21,7 +21,6 @@ import scapy.config
 import dask
 
 
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -50,9 +49,12 @@ Q_MAX_SIZE = 200_000
 OBJ_MAX_SIZE = 10_000
 
 MODEL_TYPE = 0 # 0 for scikit, 1 for pytorch - should be enum instead but python isn't clean like that
-SCIKIT_MODEL_PATH = "./ModelPack/clean_17_models/SVM/lin_svm_2017.pkl"
-SCALER_PATH = "./ModelPack/clean_17_models/SVM/scaler_lin_svm_17.pkl"
-PYTORCH_MODEL_PATH = "./ModelPack/clean_17_models/NN/simple_nn_17.pth"
+
+PATH_PREF = "./ModelPack/clean_17_models/K neighbors"
+
+SCIKIT_MODEL_PATH = f"{PATH_PREF}/kn_2017.pkl"
+SCALER_PATH = f"{PATH_PREF}/scaler_kn_17.pkl"
+PYTORCH_MODEL_PATH = f"{PATH_PREF}/simple_nn_1718.pth"
 
 
 QUEUE = queue.Queue(maxsize=Q_MAX_SIZE)
@@ -125,7 +127,8 @@ class ScikitModelDriver(ModelDriver):
 
 		def get_instance(self):         
 				if self.model is None:
-						self.load_model()
+					self.load_model()
+				return self.model
 
 		def load_model(self):
 				sci_model = joblib.load(self.model_path)
@@ -146,7 +149,8 @@ class PyTorchModelDriver(ModelDriver):
 
 		def get_instance(self):
 				if self.model == None:
-						self.load_model()
+					self.load_model()
+				return self.model
 
 		def load_model(self):
 				model = self.net
@@ -172,12 +176,12 @@ else:
 
 
 MAX_COMPUTE_NODE_ENTRIES = 50
-MAX_COMPUTE_NODE_EVIDENCE_MALICIOUS_THRESHOLD = 35
-MAX_COMPUTE_NODE_EVIDENCE_BENIGN_THRESHOLD = 20
+MAX_COMPUTE_NODE_EVIDENCE_MALICIOUS_THRESHOLD = 10
+MAX_COMPUTE_NODE_EVIDENCE_BENIGN_THRESHOLD = 26
 
 MAX_MASTER_NODE_ENTRIES = 50
-MAX_MASTER_NODE_EVIDENCE_MALICIOUS_THRESHOLD = 8
-MAX_MASTER_NODE_EVIDENCE_BENIGN_THRESHOLD = 18
+MAX_MASTER_NODE_EVIDENCE_MALICIOUS_THRESHOLD = 2
+MAX_MASTER_NODE_EVIDENCE_BENIGN_THRESHOLD = 20
 
 evidence_buffer = {}
 entry = 0
@@ -188,12 +192,8 @@ exit = 0
 def run_inference_no_batch(dataframe):
 
 		global evidence_buffer
-		global entry
-		global exit
 
-		entry = time.time()
-		print(f"Reentry time: {entry - exit}")
-
+	
 	   
 		if dataframe is None or len(dataframe) == 0:
 			return 0
@@ -214,7 +214,6 @@ def run_inference_no_batch(dataframe):
 
 		print(f"Time to inference on client: {pred_end - pred_start}")
 
-
 		map_start = time.time()
 		# One-to-one mapping from dataframe to array rows
 		res = 0
@@ -234,7 +233,10 @@ def run_inference_no_batch(dataframe):
 						break
 				if evidence_buffer[ip][1] >= MAX_COMPUTE_NODE_EVIDENCE_MALICIOUS_THRESHOLD:
 						res = {ip : (1, evidence_buffer[ip][1])} # 1 is encoded as malicious
-						evidence_buffer[ip][1] //= evidence_buffer[ip][1]
+						if evidence_buffer[ip][1] != 0:
+							evidence_buffer[ip][1] //= evidence_buffer[ip][1]
+						if evidence_buffer[ip][0] != 0:
+							evidence_buffer[ip][0] //= evidence_buffer[ip][0]
 						break
 
 				ip_idx += 1
@@ -247,7 +249,6 @@ def run_inference_no_batch(dataframe):
 		# Flush the buffer to reduce memory usage
 		if len(evidence_buffer) >= MAX_COMPUTE_NODE_ENTRIES:
 				evidence_buffer = {}
-		exit = time.time()
 
 		return res
 
@@ -273,6 +274,7 @@ def serve_workers():
 # Asynchronous thread to obtain results from worker nodes
 def obtain_results():
 
+		from datetime import datetime
 		global evidence_buffer
 		global shutdown_flag
 		
@@ -286,6 +288,8 @@ def obtain_results():
 			if dask_future.status == 'pending':
 				OBJ_REF_QUEUE.put(dask_future)
 				continue
+
+			dt_string = datetime.now()
 
 			res = dask_future.result()
 			del dask_future
@@ -305,11 +309,11 @@ def obtain_results():
 				evidence_buffer[mac][pred] += pred_num
 
 				if evidence_buffer[mac][0] >= MAX_MASTER_NODE_EVIDENCE_BENIGN_THRESHOLD:
-					print(f'[! Inference notice !] {mac} has been benign.')
+					print(f'[! Inference notice {dt_string} !] {mac} has been benign.')
 					evidence_buffer[mac][0] = 0
 
 				if evidence_buffer[mac][1] >= MAX_MASTER_NODE_EVIDENCE_MALICIOUS_THRESHOLD:
-					print(f'[! Inference notice !] {mac} has been detected to have malicious activity.')
+					print(f'[! Inference notice {dt_string} !] {mac} has been detected to have malicious activity.')
 					evidence_buffer[mac][1] = 0
 
 				if len(evidence_buffer) >= MAX_MASTER_NODE_ENTRIES:
@@ -356,7 +360,7 @@ def capture_stream():
 				#dataframe = pd.DataFrame(columns=column_names)
 
 				capture_start = time.time()
-				#capture = sniff(iface=LISTEN_INTERFACE, count=MAX_PACKET_SNIFF, timeout=0.9) 
+				#capture = sniff(iface=LISTEN_INTERFACE, count=MAX_PACKET_SNIFF) 
 
 				# Temporary sniffing workaround for VM environment:
 				os.system(f"sshpass -p \"{pfsense_pass}\" ssh root@{pfsense_wan_ip} \"tcpdump -i {lan_nic} -c {MAX_PACKET_SNIFF} -w - \'not (src {ssh_client_ip} and port {ssh_client_port}) and not (src {pfsense_lan_ip} and dst {ssh_client_ip} and port 22)\'\" 2>/dev/null > {tmp_file_name}")
@@ -381,11 +385,19 @@ def capture_stream():
 
 				df = pd.DataFrame(mapped)
 				dataframe = pd.concat([dataframe,df], ignore_index=True)
+				dataframe.dropna(how='all', inplace=True) 
 
-				splits = np.array_split(dataframe, 25)
-				for split in splits:
+				if len(dataframe) >= 30:
+					for start in range(0, len(dataframe), 30):
+						subdf = dataframe[start:start+30]
+						subdf.reset_index(drop=True, inplace=True)
+						QUEUE.put(subdf)
+						dataframe = df
+				else:
 					QUEUE.put(dataframe)
-				dataframe = df
+
+				if len(dataframe) >= 105:
+					dataframe = df
 				
 				flow_end = time.time()
 
