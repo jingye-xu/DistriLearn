@@ -50,10 +50,10 @@ OBJ_MAX_SIZE = 10_000
 
 MODEL_TYPE = 0 # 0 for scikit, 1 for pytorch - should be enum instead but python isn't clean like that
 
-PATH_PREF = "./ModelPack/clean_17_models/K neighbors"
+PATH_PREF = "./ModelPack/17_18_models/SVM"
 
-SCIKIT_MODEL_PATH = f"{PATH_PREF}/kn_2017.pkl"
-SCALER_PATH = f"{PATH_PREF}/scaler_kn_17.pkl"
+SCIKIT_MODEL_PATH = f"{PATH_PREF}/lin_svm_17_18.pkl"
+SCALER_PATH = f"{PATH_PREF}/scaler_lin_svm_17_18.pkl"
 PYTORCH_MODEL_PATH = f"{PATH_PREF}/simple_nn_1718.pth"
 
 
@@ -313,7 +313,7 @@ def obtain_results():
 					evidence_buffer[mac][0] = 0
 
 				if evidence_buffer[mac][1] >= MAX_MASTER_NODE_EVIDENCE_MALICIOUS_THRESHOLD:
-					print(f'[! Inference notice {dt_string} !] {mac} has been detected to have malicious activity.')
+					print(f'[! Inference notice {dt_string} !] {mac} has had suspicious activity.')
 					evidence_buffer[mac][1] = 0
 
 				if len(evidence_buffer) >= MAX_MASTER_NODE_ENTRIES:
