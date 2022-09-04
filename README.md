@@ -36,5 +36,30 @@ PYTORCH_MODEL_PATH = f"{PATH_PREF}/simple_nn_1718.pth"
 
 NOTE: The directory of the models, or wherever the models are, should be in the same directory as the server_dist script.
 
-# TODO: Add known issues
 
+# Cluster Instructions
+
+Dask enables plug-and-play functionality. Each of the nodes in the cluster must have the following packages installed:
+```
+numpy 
+pytorch
+pandas
+sklearn
+dask
+joblib
+scapy
+nfstream
+```
+To launch the cluster, you must use the following command on the coordinating machine:
+```
+dask-scheduler
+```
+
+For each process or additional compute node, use the following command:
+```
+dask-worker tcp://<scheduler-ip>:<scheduler-port>
+```
+
+Finally, to launch the IDS launch the server_dist.py script on the coordinating machine (i.e., the scheduler).
+
+TODO: Add known issues
