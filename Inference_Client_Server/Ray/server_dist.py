@@ -50,10 +50,10 @@ OBJ_MAX_SIZE = 10_000
 
 MODEL_TYPE = 0 # 0 for scikit, 1 for pytorch - should be enum instead but python isn't clean like that
 
-PATH_PREF = "./ModelPack/17_18_models/SVM"
+PATH_PREF = "./ModelPack/17_18_models/NN"
 
-SCIKIT_MODEL_PATH = f"{PATH_PREF}/lin_svm_17_18.pkl"
-SCALER_PATH = f"{PATH_PREF}/scaler_lin_svm_17_18.pkl"
+SCIKIT_MODEL_PATH = f"{PATH_PREF}/scaler_nn_1718.pkl"
+SCALER_PATH = f"{PATH_PREF}/scaler_nn_1718.pkl"
 PYTORCH_MODEL_PATH = f"{PATH_PREF}/simple_nn_1718.pth"
 
 
@@ -203,7 +203,7 @@ def run_inference_no_batch(dataframe):
 		model_driver.get_instance()
 		instance_end = time.time()
 		
-		# print(f"Time to obtain model object: {instance_end - instance_start}")
+		print(f"Time to obtain model object: {instance_end - instance_start}")
 
 		# Before predicting on the dataframe, we only pass in the dataframe WITHOUT the source mac (first column).
 		# Because to all the models, that is the expected input dimension.
@@ -242,10 +242,10 @@ def run_inference_no_batch(dataframe):
 				ip_idx += 1
 		
 		map_end = time.time()
-		# print(f"Map time: {map_end - map_start}")
+		print(f"Map time: {map_end - map_start}\n")
 		# print()
 
-		print(f'DF: {len(dataframe)} buffer state: {evidence_buffer}')
+		#print(f'DF: {len(dataframe)} buffer state: {evidence_buffer}')
 		# Flush the buffer to reduce memory usage
 		if len(evidence_buffer) >= MAX_COMPUTE_NODE_ENTRIES:
 				evidence_buffer = {}
@@ -300,8 +300,8 @@ def obtain_results():
 				continue
 			else:
 				mac = list(res)[0]
-				pred = res[mac][0]
-				pred_num = res[mac][1]
+				pred = res[mac][0] # Use the mac to extract the tuple prediction (benign or malicious)
+				pred_num = res[mac][1] # Use the mac to extract the tuple number
 
 				if mac not in evidence_buffer:
 					evidence_buffer[mac] = {0: 0, 1: 0}
@@ -360,16 +360,16 @@ def capture_stream():
 				#dataframe = pd.DataFrame(columns=column_names)
 
 				capture_start = time.time()
-				#capture = sniff(iface=LISTEN_INTERFACE, count=MAX_PACKET_SNIFF) 
+				capture = sniff(iface=LISTEN_INTERFACE, count=MAX_PACKET_SNIFF) 
 
 				# Temporary sniffing workaround for VM environment:
-				os.system(f"sshpass -p \"{pfsense_pass}\" ssh root@{pfsense_wan_ip} \"tcpdump -i {lan_nic} -c {MAX_PACKET_SNIFF} -w - \'not (src {ssh_client_ip} and port {ssh_client_port}) and not (src {pfsense_lan_ip} and dst {ssh_client_ip} and port 22)\'\" 2>/dev/null > {tmp_file_name}")
+				#os.system(f"sshpass -p \"{pfsense_pass}\" ssh root@{pfsense_wan_ip} \"tcpdump -i {lan_nic} -c {MAX_PACKET_SNIFF} -w - \'not (src {ssh_client_ip} and port {ssh_client_port}) and not (src {pfsense_lan_ip} and dst {ssh_client_ip} and port 22)\'\" 2>/dev/null > {tmp_file_name}")
 				#os.system(f"tcpdump -i {LISTEN_INTERFACE} -c {MAX_PACKET_SNIFF} -w - --immediate-mode 2>/dev/null > {tmp_file_name}")
 
 				capture_end = time.time()
 
 				write_start = time.time()
-				#wrpcap(tmp_file_name, capture)
+				wrpcap(tmp_file_name, capture)
 				write_end = time.time()
 
 				
