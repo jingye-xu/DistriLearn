@@ -3,5 +3,9 @@ This repository is used to store scripts, tutorial, data, and any information ab
 ![Topo](Network.svg)
 
 
-#TODO: Add known issues
-#TODO: Add models pack somehow.
+# Models
+
+All models used in this project are located in the ModelPack subdirectory. K-Neighbors is not included in this repo since they are all so large. 
+
+# TODO: Add known issues
+
