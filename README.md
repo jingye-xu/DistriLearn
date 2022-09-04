@@ -7,5 +7,34 @@ This repository is used to store scripts, tutorial, data, and any information ab
 
 All models used in this project are located in the ModelPack subdirectory. K-Neighbors is not included in this repo since they are all so large. 
 
+Each model is organized based off of the dataset used to train it. 
+ * CIC-IDS-2017: /ModelPack/clean_17_models/
+ * CSE-CIC-IDS 2018: /ModelPack/clean_18_models/
+ * 2018 + 2017: /ModelPack/17_18_models/
+
+Each model is saved as a pickle (except NN which is saved as a \*.pth). Furthermore, we include the scaler used for each model when loaded on deployment, prefixed by the name "scaler", also saved as a pickle file. 
+
+To load these models into the cluster, the following variables should be changed in server_dist.py:
+
+```python
+MODEL_TYPE = 0 
+
+PATH_PREF = "./ModelPack/17_18_models/NN"
+
+SCIKIT_MODEL_PATH = f"{PATH_PREF}/kn_17_18.pkl"
+SCALER_PATH = f"{PATH_PREF}/scaler_nn_1718.pkl"
+PYTORCH_MODEL_PATH = f"{PATH_PREF}/simple_nn_1718.pth"
+
+```
+
+* MODEL_TYPE is 0 for Sklearn models, and 1 for PyTorch models, based on the strategy pattern to load them.
+* PATH_REF is the model prefix path as shown in the example.
+* SCIKIT_MODEL_PATH is the suffix of the path for the model as shown in the example.
+* SCALER_PATH is the suffix scaler name for the model as shown in the example.
+* PYTORCH_MODEL_PATH is the same as SCIKIT_MODEL_PATH, except for PyTorch.
+
+
+NOTE: The directory of the models, or wherever the models are, should be in the same directory as the server_dist script.
+
 # TODO: Add known issues
 
