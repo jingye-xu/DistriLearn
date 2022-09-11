@@ -63,3 +63,7 @@ dask-worker tcp://<scheduler-ip>:<scheduler-port>
 Finally, to launch the IDS launch the server_dist.py script on the coordinating machine (i.e., the scheduler).
 
 TODO: Add known issues
+
+# DISCLAIMER
+
+This work and the accompanying NIDS is a proof-of-concept for research purposes only, and should be treated as such. 
