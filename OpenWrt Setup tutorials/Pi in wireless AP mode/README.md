@@ -25,7 +25,7 @@ Path: `Network-Wireless`
 
 Overview:  
 ![wireless_overview](wireless_overview.png)  
-Please note that you may need to enable the wireless network first.  
+Please note that you may need to enable the wireless network first.  * If something goes wrong on the first try, you may have to enable it first.
 
 Basic configuration:  
 ![wireless_conf1](wireless_conf1.png)  
