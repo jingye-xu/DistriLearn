@@ -22,6 +22,7 @@ We choose to implement method #1.
 * Since we can essentially run Debian alongside our OpenWRT system, this means we can easily install almost everything we need, whereas OpenWRT by itself is very limited.
 
 
+For the following instructions, always keep in mind that <mountpoint> is the mount path to which your debian root is located.
 
 <b> Steps for method 1 </b>
 - Flash an OpenWRT-ext4 image to an SD card and increase the root partition size in GParted. (This may vary depending on what you deploy on)
@@ -37,6 +38,10 @@ We choose to implement method #1.
     - The ext4 mount point should be where in /mnt/ your ext4 partition has been mounted.
     - Debian has many mirrors, I choose this one.
     - **If the base system installs correctly, you should see “base system installed correctly”**
+- execute the following:
+    - `mount -t proc /proc <mountpoint>/proc/`
+    - `mount -t sysfs /sys <mountpoint>/sys/`
+    - `mount -o bind /dev <mountpoint>/dev/`
 - execute `chroot <mountpoint> /bin/bash`
     - In my case, I created `/mnt/debroot` as my mount point so I did: `chroot /mnt/debroot /bin/bash`
 - Set a password for the root system - as default I will use openwrt<br>
