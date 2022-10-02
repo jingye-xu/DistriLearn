@@ -1,5 +1,0 @@
-#!/bin/bash
-
-name=$1
-delete_line=`grep -nw "${name}" rulename-id-table | cut -f1 -d:`
-sed -ie '${delete_line} d' rulename-id-table
