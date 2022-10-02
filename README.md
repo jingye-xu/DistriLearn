@@ -46,4 +46,8 @@ For the following instructions, always keep in mind that `<mountpoint>` is the m
     - In my case, I created `/mnt/debroot` as my mount point so I did: `chroot /mnt/debroot /bin/bash`
 - Set a password for the root system - as default I will use openwrt<br>
 
+<b> fstab configurations </b>
+
+- If you do not have fstab configurations for your desired mounts, you will have to remount these systems every time you reboot the device (note, however, you do NOT need to rerun debootstrap; the USB should still constain the Debian filesystem)
+
 TODO: More instructions coming soon for automatic mounting and chrooting
