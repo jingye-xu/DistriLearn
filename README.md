@@ -22,6 +22,8 @@ We choose to implement method #1.
 * Since we can essentially run Debian alongside our OpenWRT system, this means we can easily install almost everything we need, whereas OpenWRT by itself is very limited.
 
 
+
+<b> Steps for method 1 </b>
 - Flash an OpenWRT-ext4 image to an SD card and increase the root partition size in GParted. (This may vary depending on what you deploy on)
 - Load the router and configure it by following the GitHub instructions for access points on the main branch. I disable IPv6 and update opkg packages.
 - Take the USB drive you want to use and use either fdisk or GParted to partition it into: ext4 and swap partitions (alternatively you can do this in the SD itself if you’re inclined).
