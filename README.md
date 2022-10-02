@@ -22,7 +22,7 @@ We choose to implement method #1.
 * Since we can essentially run Debian alongside our OpenWRT system, this means we can easily install almost everything we need, whereas OpenWRT by itself is very limited.
 
 
-For the following instructions, always keep in mind that <mountpoint> is the mount path to which your debian root is located.
+For the following instructions, always keep in mind that `<mountpoint>` is the mount path to which your debian root is located.
 
 <b> Steps for method 1 </b>
 - Flash an OpenWRT-ext4 image to an SD card and increase the root partition size in GParted. (This may vary depending on what you deploy on)
