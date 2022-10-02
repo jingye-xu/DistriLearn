@@ -38,6 +38,7 @@ We choose to implement method #1.
     - Debian has many mirrors, I choose this one.
     - **If the base system installs correctly, you should see “base system installed correctly”**
 - execute `chroot <mountpoint> /bin/bash`
-    - In my case, I created /mnt/debroot as my mount point so I did: `chroot /mnt/debroot /bin/bash`
-- Set a password for the root system - as default I will use openwrt
+    - In my case, I created `/mnt/debroot` as my mount point so I did: `chroot /mnt/debroot /bin/bash`
+- Set a password for the root system - as default I will use openwrt<br>
+
 TODO: More instructions coming soon for automatic mounting and chrooting
