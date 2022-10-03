@@ -19,14 +19,10 @@ import time
 import joblib
 import scapy.config
 
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torchvision.transforms as transforms
-
-from read_local_var import var_read_json
-
 
 import pandas as pd
 import numpy as np
@@ -34,7 +30,6 @@ import numpy as np
 import psutil
 
 from nfstream import NFPlugin, NFStreamer
-from dask.distributed import Client, Queue
 from scapy.all import *
 
 conf.bufsize = 65536
@@ -47,7 +42,7 @@ shutdown_flag = False
 Q_MAX_SIZE = 200_000
 OBJ_MAX_SIZE = 10_000
 
-MODEL_TYPE = 1 # 0 for scikit, 1 for pytorch - should be enum instead but python isn't clean like that
+MODEL_TYPE = 0 # 0 for scikit, 1 for pytorch - should be enum instead but python isn't clean like that
 
 PATH_PREF = "./ModelPack/17_18_models/NN"
 
@@ -318,18 +313,14 @@ def create_data_frame_entry_from_flow(flow):
 
 
 # Capture traffic into a flow and send as work to the worker nodes.
-def capture_stream():
-
+def capture_stream(listen_interface):
 
 		print('[*] Beginning stream capture.')
 
-		#TODO LATER: Change to external output default interface
 		column_names = ['Source Mac', 'Destination Port', 'Flow Duration', 'Total Fwd Packets', 'Total Backward Packets', 'Total Length of Fwd Packets', 'Total Length of Bwd Packets', 'Fwd Packet Length Max', 'Fwd Packet Length Min', 'Fwd Packet Length Mean', 'Fwd Packet Length Std', 'Bwd Packet Length Max', 'Bwd Packet Length Min', 'Bwd Packet Length Mean', 'Bwd Packet Length Std', 'Flow Bytes/s', 'Flow Packets/s', 'Flow IAT Mean', 'Flow IAT Max', 'Flow IAT Min', 'Fwd IAT Total', 'Fwd IAT Mean', 'Fwd IAT Std', 'Fwd IAT Max', 'Fwd IAT Min', 'Bwd IAT Total', 'Bwd IAT Mean', 'Bwd IAT Std', 'Bwd IAT Max', 'Bwd IAT Min', 'Fwd Packets/s', 'Bwd Packets/s', 'Min Packet Length', 'Max Packet Length', 'Packet Length Mean', 'Packet Length Std', 'Packet Length Variance', 'RST Flag Count', 'Average Packet Size']      
 
-		LISTEN_INTERFACE = "en0"
 		flow_limit = 20
 		MAX_PACKET_SNIFF = 90
-
 
 		tmp_file = tempfile.NamedTemporaryFile(mode='wb')
 		tmp_file_name = tmp_file.name
@@ -341,7 +332,7 @@ def capture_stream():
 				#dataframe = pd.DataFrame(columns=column_names)
 
 				capture_start = time.time()
-				capture = sniff(iface=LISTEN_INTERFACE, count=MAX_PACKET_SNIFF) 
+				capture = sniff(iface=listen_interface, count=MAX_PACKET_SNIFF) 
 
 				# Temporary sniffing workaround for VM environment:
 				#os.system(f"sshpass -p \"{pfsense_pass}\" ssh root@{pfsense_wan_ip} \"tcpdump -i {lan_nic} -c {MAX_PACKET_SNIFF} -w - \'not (src {ssh_client_ip} and port {ssh_client_port}) and not (src {pfsense_lan_ip} and dst {ssh_client_ip} and port 22)\'\" 2>/dev/null > {tmp_file_name}")
@@ -436,24 +427,53 @@ def handler(signum, frame):
 		process = os.getpid()
 		os.system(f"kill -9 {process}")
 
+
+def make_pretty_interfaces():
+	interfaces = psutil.net_if_addrs()
+	interface_dict_list = len(interfaces)
+	interface_selector = {i + 1 : j for i, j in zip(range(interface_dict_list), interfaces.keys())} 
+
+	message = []
+	for key in interface_selector:
+		message.append(f"{key}.) {interface_selector[key]}")
+
+	return interface_selector, "\n".join(message)
+
 if __name__ == "__main__":
+
+
+		arg_length = len(sys.argv)
+
+		if arg_length != 2:
+			print('Missing argument for interface.')
+			print('Usage: ./ap_unified_ids <interface_name>')
+			sys.exit(0)
+
+		interface_selector, int_choice_msg = make_pretty_interfaces()
+
+		interface = sys.argv[1]
+
+		print(f'Checking interface: {interface}...')
+
+		if interface not in psutil.net_if_addrs():
+
+			user_selection = 1_000_000
+
+			while user_selection not in interface_selector:
+				print(f'Interface not available. Select one of the ones below:')
+				print(int_choice_msg)
+				print(f'\nMake your selection: ', end='')
+				user_selection = int(input())
+
+			interface = interface_selector[user_selection]
+			print(f'Interface set to {interface}')
+
+		sys.exit(0)
 
 		signal.signal(signal.SIGINT, handler)
 		signal.signal(signal.SIGTERM, handler)
 
-
-		capture_thread = threading.Thread(target=capture_stream, args=())
-		#metrics_thread = threading.Thread(target=get_process_metrics, args=())
-		serve_thread = threading.Thread(target=serve_workers, args=())
-		results = threading.Thread(target=obtain_results, args=())
-								
+		capture_thread = threading.Thread(target=capture_stream, args=(interface))
 		capture_thread.start()
-		#metrics_thread.start()
-		serve_thread.start()
-		results.start()
-
-
-		capture_thread.join()
-		#metrics_thread.start()
-		serve_thread.join()
-		results.join()
+								
+		
