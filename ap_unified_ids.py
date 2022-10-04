@@ -31,6 +31,8 @@ import psutil
 
 from nfstream import NFPlugin, NFStreamer
 from scapy.all import *
+#from socket import socket, AF_INET, SOCK_DIAGRAM, SOL_SOCKET, SO_BROADCAST, gethostbyname, gethostname
+import socket
 
 conf.bufsize = 65536
 conf.ipv6_enabed = False
@@ -44,16 +46,18 @@ OBJ_MAX_SIZE = 10_000
 
 MODEL_TYPE = 0 # 0 for scikit, 1 for pytorch - should be enum instead but python isn't clean like that
 
-PATH_PREF = "./ModelPack/17_18_models/NN"
+PATH_PREF = "./ModelPack/17_18_models/K neighbors"
 
 SCIKIT_MODEL_PATH = f"{PATH_PREF}/kn_17_18.pkl"
-SCALER_PATH = f"{PATH_PREF}/scaler_nn_1718.pkl"
+SCALER_PATH = f"{PATH_PREF}/scaler_kn_17_18.pkl"
 PYTORCH_MODEL_PATH = f"{PATH_PREF}/simple_nn_1718.pth"
 
 
-QUEUE = queue.Queue(maxsize=Q_MAX_SIZE)
-OBJ_REF_QUEUE = queue.Queue(maxsize=OBJ_MAX_SIZE)
+FLOW_QUEUE = queue.Queue(maxsize=Q_MAX_SIZE)
+RESULT_QUEUE = queue.Queue(maxsize=Q_MAX_SIZE)
+MASTER_QUEUE = queue.Queue(maxsize=Q_MAX_SIZE)
 
+COLLABORATIVE_MODE = 0 # 0 for local inference modes, 1 for global inference modes
 
 NUM_INPUT = 38
 batch_size = 1
@@ -160,20 +164,14 @@ MAX_MASTER_NODE_EVIDENCE_MALICIOUS_THRESHOLD = 2
 MAX_MASTER_NODE_EVIDENCE_BENIGN_THRESHOLD = 20
 
 evidence_buffer = {}
-entry = 0
-exit = 0
 
-
-# Remote function for compute cluster
+# Inference function for node
 def run_inference_no_batch(dataframe):
 
 		global evidence_buffer
 
-	
-	   
 		if dataframe is None or len(dataframe) == 0:
 			return 0
-
 
 		instance_start = time.time()
 		model_driver.get_instance()
@@ -226,7 +224,8 @@ def run_inference_no_batch(dataframe):
 		if len(evidence_buffer) >= MAX_COMPUTE_NODE_ENTRIES:
 				evidence_buffer = {}
 
-		return res
+		RESULT_QUEUE.put(res)
+		# return res
 
 
 # Asynchronous thread to send the work asynchronously to workers
@@ -237,13 +236,12 @@ def serve_workers():
 		# Send dataframe to available nodes.
 		while not shutdown_flag:
 
-			df = QUEUE.get()
+			df = FLOW_QUEUE.get()
 
 			if df is None:
 				continue
 
-			dask_future = client.submit(run_inference_no_batch, df, pure=False)
-			OBJ_REF_QUEUE.put(dask_future)
+			run_inference_no_batch(df)
 
 
 
@@ -256,28 +254,23 @@ def obtain_results():
 		
 		while not shutdown_flag:
 
-			dask_future = OBJ_REF_QUEUE.get()
+			print('Obtaining results')
 
-			if dask_future is None:
-				continue
+			result = RESULT_QUEUE.get()
 
-			if dask_future.status == 'pending':
-				OBJ_REF_QUEUE.put(dask_future)
+			if result is None:
 				continue
 
 			dt_string = datetime.now()
-
-			res = dask_future.result()
-			del dask_future
 			
 			 # we get back 0 - if nodes are not ready to give any inference
 			 # we get back {mac : benign/malicious} if enough evidence has been collected 
-			if res == 0:
+			if result == 0:
 				continue
 			else:
-				mac = list(res)[0]
-				pred = res[mac][0] # Use the mac to extract the tuple prediction (benign or malicious)
-				pred_num = res[mac][1] # Use the mac to extract the tuple number
+				mac = list(result)[0]
+				pred = result[mac][0] # Use the mac to extract the tuple prediction (benign or malicious)
+				pred_num = result[mac][1] # Use the mac to extract the tuple number
 
 				if mac not in evidence_buffer:
 					evidence_buffer[mac] = {0: 0, 1: 0}
@@ -343,7 +336,6 @@ def capture_stream(listen_interface):
 				write_start = time.time()
 				wrpcap(tmp_file_name, capture)
 				write_end = time.time()
-
 				
 				#print(f'Time to capture {MAX_PACKET_SNIFF} packets: {capture_end - capture_start:.02f}')
 				#print(f'Time to write to pcap: {write_end - write_start:.02f}')
@@ -363,10 +355,10 @@ def capture_stream(listen_interface):
 					for start in range(0, len(dataframe), 30):
 						subdf = dataframe[start:start+30]
 						subdf.reset_index(drop=True, inplace=True)
-						QUEUE.put(subdf)
+						FLOW_QUEUE.put(subdf)
 						dataframe = df
 				else:
-					QUEUE.put(dataframe)
+					FLOW_QUEUE.put(dataframe)
 
 				if len(dataframe) >= 105:
 					dataframe = df
@@ -378,7 +370,17 @@ def capture_stream(listen_interface):
 				#print(f'Flow table memory size: {size_converter(dataframe.__sizeof__())}')
 				#print(f'Flow table sample size: {len(dataframe)}')
 
-				
+
+# Interval specified number of seconds to wait between broadcasts.
+def broadcast_service(interval=2):
+	
+	BROADCAST_PORT = 65_529
+	BROADCAST_MAGIC = 'n1d5mlm4gk'
+
+	print('[*] Beginning broadcast service...')
+
+	while True:
+		time.sleep(interval)
 
 
 
@@ -462,18 +464,27 @@ if __name__ == "__main__":
 			while user_selection not in interface_selector:
 				print(f'Interface not available. Select one of the ones below:')
 				print(int_choice_msg)
-				print(f'\nMake your selection: ', end='')
+				print(f'\nSelect an interface: ', end='')
 				user_selection = int(input())
 
 			interface = interface_selector[user_selection]
-			print(f'Interface set to {interface}')
+		print(f'Interface set to {interface}')
 
-		sys.exit(0)
 
 		signal.signal(signal.SIGINT, handler)
 		signal.signal(signal.SIGTERM, handler)
 
-		capture_thread = threading.Thread(target=capture_stream, args=(interface))
+		capture_thread = threading.Thread(target=capture_stream, args=(interface,))
 		capture_thread.start()
+
+		serve_thread = threading.Thread(target=serve_workers, args=())
+		serve_thread.start()
+
+		obtain_results()
+
+		capture_thread.join()
+		serve_thread.join()
+
+
 								
 		
