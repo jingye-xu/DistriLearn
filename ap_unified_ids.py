@@ -36,7 +36,7 @@ import socket
 
 conf.bufsize = 65536
 conf.ipv6_enabed = False
-conf.promisc = True
+#conf.promisc = True
 conf.recv_poll_rate = 0.02
 
 shutdown_flag = False
@@ -251,10 +251,11 @@ def obtain_results():
 		from datetime import datetime
 		global evidence_buffer
 		global shutdown_flag
+
+		print('[*] Starting results service...')
 		
 		while not shutdown_flag:
 
-			print('Obtaining results')
 
 			result = RESULT_QUEUE.get()
 
@@ -324,17 +325,17 @@ def capture_stream(listen_interface):
 
 				#dataframe = pd.DataFrame(columns=column_names)
 
-				capture_start = time.time()
-				#capture = sniff(iface=listen_interface, count=MAX_PACKET_SNIFF) 
+				#capture_start = time.time()
+				capture = sniff(iface=listen_interface, count=MAX_PACKET_SNIFF) 
 
 				# Temporary sniffing workaround for VM environment:
 				#os.system(f"sshpass -p \"{pfsense_pass}\" ssh root@{pfsense_wan_ip} \"tcpdump -i {lan_nic} -c {MAX_PACKET_SNIFF} -w - \'not (src {ssh_client_ip} and port {ssh_client_port}) and not (src {pfsense_lan_ip} and dst {ssh_client_ip} and port 22)\'\" 2>/dev/null > {tmp_file_name}")
-				os.system(f"tcpdump -i {listen_interface} -c {MAX_PACKET_SNIFF} -w - --immediate-mode 2>/dev/null > {tmp_file_name}")
+				#os.system(f"tcpdump -i {listen_interface} -c {MAX_PACKET_SNIFF} -w - 2>/dev/null > {tmp_file_name}")
 
-				capture_end = time.time()
+				#capture_end = time.time()
 
 				# write_start = time.time()
-				# wrpcap(tmp_file_name, capture)
+				wrpcap(tmp_file_name, capture)
 				# write_end = time.time()
 				
 				#print(f'Time to capture {MAX_PACKET_SNIFF} packets: {capture_end - capture_start:.02f}')
@@ -480,10 +481,12 @@ if __name__ == "__main__":
 		serve_thread = threading.Thread(target=serve_workers, args=())
 		serve_thread.start()
 
-		obtain_results()
+		resul_thread = threading.Thread(target=obtain_results, args=())
+		resul_thread.start()
 
 		capture_thread.join()
 		serve_thread.join()
+		resul_thread.join()
 
 
 								
