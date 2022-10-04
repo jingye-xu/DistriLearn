@@ -325,17 +325,17 @@ def capture_stream(listen_interface):
 				#dataframe = pd.DataFrame(columns=column_names)
 
 				capture_start = time.time()
-				capture = sniff(iface=listen_interface, count=MAX_PACKET_SNIFF) 
+				#capture = sniff(iface=listen_interface, count=MAX_PACKET_SNIFF) 
 
 				# Temporary sniffing workaround for VM environment:
 				#os.system(f"sshpass -p \"{pfsense_pass}\" ssh root@{pfsense_wan_ip} \"tcpdump -i {lan_nic} -c {MAX_PACKET_SNIFF} -w - \'not (src {ssh_client_ip} and port {ssh_client_port}) and not (src {pfsense_lan_ip} and dst {ssh_client_ip} and port 22)\'\" 2>/dev/null > {tmp_file_name}")
-				#os.system(f"tcpdump -i {LISTEN_INTERFACE} -c {MAX_PACKET_SNIFF} -w - --immediate-mode 2>/dev/null > {tmp_file_name}")
+				os.system(f"tcpdump -i {listen_interface} -c {MAX_PACKET_SNIFF} -w - --immediate-mode 2>/dev/null > {tmp_file_name}")
 
 				capture_end = time.time()
 
-				write_start = time.time()
-				wrpcap(tmp_file_name, capture)
-				write_end = time.time()
+				# write_start = time.time()
+				# wrpcap(tmp_file_name, capture)
+				# write_end = time.time()
 				
 				#print(f'Time to capture {MAX_PACKET_SNIFF} packets: {capture_end - capture_start:.02f}')
 				#print(f'Time to write to pcap: {write_end - write_start:.02f}')
