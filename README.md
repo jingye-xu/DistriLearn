@@ -42,9 +42,13 @@ For the following instructions, always keep in mind that `<mountpoint>` is the m
     - `mount -t proc /proc <mountpoint>/proc/`
     - `mount -t sysfs /sys <mountpoint>/sys/`
     - `mount -o bind /dev <mountpoint>/dev/`
+    - `mount -o bind /dev/shm/ /mnt/debroot/dev/shm`
+    - `mount -o bind /dev/pts/ /mnt/debroot/dev/pts`
+    
 - execute `chroot <mountpoint> /bin/bash`
     - In my case, I created `/mnt/debroot` as my mount point so I did: `chroot /mnt/debroot /bin/bash`
 - Set a password for the root system - as default I will use openwrt<br>
+- NOTE: Pandas has an issue here stating ‘/dev/shm/’ does not exist. If this happens and you cannot figure out how to fix it, then rm it in the debian filesystem and just mkdir. 
 
 <b> fstab configurations </b>
 
