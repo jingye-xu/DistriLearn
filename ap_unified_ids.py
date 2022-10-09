@@ -371,28 +371,29 @@ def capture_stream(listen_interface):
 
 
 # Interval specified number of seconds to wait between broadcasts.
-def broadcast_service(interval=2):
+def broadcast_service(interval=0.5):
 	
-	BROADCAST_PORT = 65_529 # something not likely used by other things on the system
-	BROADCAST_GROUP = '224.1.1.1' # multicasting subnet 
+	BROADCAST_PORT = 5882 # something not likely used by other things on the system
+	BROADCAST_GROUP = '224.0.1.119' # multicasting subnet 
 	BROADCAST_MAGIC = 'n1d5mlm4gk' # service magic
-	MULTICAST_TTL = 2
+	MULTICAST_TTL = 50
 
 	print('[*] Beginning broadcast thread...')
 
 	# open socket
 
-	with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as udp_socket:
+	with socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP) as udp_socket:
 
 		udp_socket.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, MULTICAST_TTL)
+		udp_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
-		data = f'{BROADCAST_MAGIC}:{socket.gethostbyname(socket.gethostname())}'.encode('UTF-8')
+		data = f'{BROADCAST_MAGIC}:ids_service'.encode('UTF-8') #:{socket.gethostbyname(socket.gethostname())}'.encode('UTF-8')
 		data = bytes(data)
 
 		while True:
 
 			# multicast
-			udp_socket.sendto(data, (BROADCAST_GROUP, BROADCAST_PORT))
+			bytes_sent = udp_socket.sendto(data, (BROADCAST_GROUP, BROADCAST_PORT))
 
 			# listen for responses
 			# If a response is recieved
@@ -466,7 +467,7 @@ if __name__ == "__main__":
 
 		arg_length = len(sys.argv)
 
-		if arg_length != 3:
+		if arg_length != 2:
 			print('Missing argument for interface.')
 			print('Usage: ./ap_unified_ids <interface_name>')
 			sys.exit(0)
