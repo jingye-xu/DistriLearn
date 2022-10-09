@@ -15,13 +15,13 @@ def discover_services():
 
 	print('[*] Setting up service scan...')
 	with socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP) as receiver:
+
+		service_addresses = dict()
 		
-		interface_ip = socket.gethostbyname(socket.gethostname())
 		receiver.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
 		receiver.bind((BROADCAST_GROUP, BROADCAST_PORT))
 
-		
 		#mreq = struct.pack('4sl' if interface_ip is None else '4s4s', socket.inet_aton(BROADCAST_GROUP), socket.INADDR_ANY if interface_ip is None else socket.inet_aton(interface_ip))
 		mreq = struct.pack("4sl", socket.inet_aton(BROADCAST_GROUP), socket.INADDR_ANY)
 
@@ -39,8 +39,15 @@ def discover_services():
 			extra_info = data_split[1]
 
 			if (proposed_magic == SERVICE_MAGIC) and (extra_info == "ids_service"):
-				print(f'[!] Received datagram from: {addr}')
+
+				if addr not in service_addresses:
+					service_addresses[addr] = 1
+					print(f'[!] Detected IDS service from: {addr}')
 		
+
+
+
+
 
 if __name__ == "__main__":
 	
