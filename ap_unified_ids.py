@@ -31,8 +31,8 @@ import psutil
 
 from nfstream import NFPlugin, NFStreamer
 from scapy.all import *
-#from socket import socket, AF_INET, SOCK_DIAGRAM, SOL_SOCKET, SO_BROADCAST, gethostbyname, gethostname
 import socket
+
 
 conf.bufsize = 65536
 conf.ipv6_enabed = False
@@ -244,7 +244,6 @@ def serve_workers():
 			run_inference_no_batch(df)
 
 
-
 # Asynchronous thread to obtain results from worker nodes
 def obtain_results():
 
@@ -252,10 +251,9 @@ def obtain_results():
 		global evidence_buffer
 		global shutdown_flag
 
-		print('[*] Starting results service...')
+		print('[*] Starting results thread...')
 		
 		while not shutdown_flag:
-
 
 			result = RESULT_QUEUE.get()
 
@@ -375,13 +373,34 @@ def capture_stream(listen_interface):
 # Interval specified number of seconds to wait between broadcasts.
 def broadcast_service(interval=2):
 	
-	BROADCAST_PORT = 65_529
-	BROADCAST_MAGIC = 'n1d5mlm4gk'
+	BROADCAST_PORT = 65_529 # something not likely used by other things on the system
+	BROADCAST_GROUP = '224.1.1.1' # multicasting subnet 
+	BROADCAST_MAGIC = 'n1d5mlm4gk' # service magic
+	MULTICAST_TTL = 2
 
-	print('[*] Beginning broadcast service...')
+	print('[*] Beginning broadcast thread...')
 
-	while True:
-		time.sleep(interval)
+	# open socket
+
+	with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as udp_socket:
+
+		udp_socket.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, MULTICAST_TTL)
+
+		data = f'{BROADCAST_MAGIC}:{socket.gethostbyname(socket.gethostname())}'.encode('UTF-8')
+		data = bytes(data)
+
+		while True:
+
+			# multicast
+			udp_socket.sendto(data, (BROADCAST_GROUP, BROADCAST_PORT))
+
+			# listen for responses
+			# If a response is recieved
+				# add master IP/PORT to queue 
+				# switch to global inference mode 
+
+			time.sleep(interval)
+
 
 
 
@@ -447,7 +466,7 @@ if __name__ == "__main__":
 
 		arg_length = len(sys.argv)
 
-		if arg_length != 2:
+		if arg_length != 3:
 			print('Missing argument for interface.')
 			print('Usage: ./ap_unified_ids <interface_name>')
 			sys.exit(0)
@@ -471,22 +490,25 @@ if __name__ == "__main__":
 			interface = interface_selector[user_selection]
 		print(f'Interface set to {interface}')
 
-
 		signal.signal(signal.SIGINT, handler)
 		signal.signal(signal.SIGTERM, handler)
 
-		capture_thread = threading.Thread(target=capture_stream, args=(interface,))
-		capture_thread.start()
+		broadcast_thread = threading.Thread(target=broadcast_service, args=())
+		broadcast_thread.start()
 
-		serve_thread = threading.Thread(target=serve_workers, args=())
-		serve_thread.start()
+		# capture_thread = threading.Thread(target=capture_stream, args=(interface,))
+		# capture_thread.start()
 
-		resul_thread = threading.Thread(target=obtain_results, args=())
-		resul_thread.start()
+		# serve_thread = threading.Thread(target=serve_workers, args=())
+		# serve_thread.start()
 
-		capture_thread.join()
-		serve_thread.join()
-		resul_thread.join()
+		# resul_thread = threading.Thread(target=obtain_results, args=())
+		# resul_thread.start()
+
+		# capture_thread.join()
+		# serve_thread.join()
+		# resul_thread.join()
+		broadcast_thread.join()
 
 
 								
