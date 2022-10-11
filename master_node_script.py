@@ -11,7 +11,7 @@ Q_MAX_SIZE = 200_000
 
 SERVER_QUEUE = queue.Queue(maxsize=Q_MAX_SIZE)
 
-
+# Master acts as client 
 def client_thread():
 
 	servers_connected_to = dict()
