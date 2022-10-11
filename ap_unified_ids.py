@@ -423,6 +423,8 @@ def ap_server():
 	server_socket.listen(1)
 	connection_object, addr = server_socket.accept()
 
+	print(f'[+] Accepted connection from {addr}')
+
 	lock.acquire()
 	COLLABORATIVE_MODE = 1
 	lock.release()
