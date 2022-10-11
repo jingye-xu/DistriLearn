@@ -27,6 +27,7 @@ def client_thread():
 					print(f'[*] Attempting connection to {server}')
 					client.connect(server)
 					servers_connected_to[server] = 1
+					print(f'[+] Connected to {server}')
 				except ConnectionRefusedError:
 					print(f'[!] Connection to {server} failed.')
 

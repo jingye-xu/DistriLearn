@@ -57,6 +57,9 @@ FLOW_QUEUE = queue.Queue(maxsize=Q_MAX_SIZE)
 RESULT_QUEUE = queue.Queue(maxsize=Q_MAX_SIZE)
 MASTER_QUEUE = queue.Queue(maxsize=Q_MAX_SIZE)
 
+lock = threading.Semaphore()
+
+
 COLLABORATIVE_MODE = 0 # 0 for local inference modes, 1 for global inference modes
 
 NUM_INPUT = 38
@@ -163,12 +166,21 @@ MAX_MASTER_NODE_ENTRIES = 50
 MAX_MASTER_NODE_EVIDENCE_MALICIOUS_THRESHOLD = 2
 MAX_MASTER_NODE_EVIDENCE_BENIGN_THRESHOLD = 20
 
+
+AP_INFERENCE_SERVER_PORT = 56_231
+BACKUP_MASTERS = queue.Queue(maxsize=Q_MAX_SIZE)
+
+server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+server_socket.bind(('', AP_INFERENCE_SERVER_PORT))
+
 evidence_buffer = {}
+
 
 # Inference function for node
 def run_inference_no_batch(dataframe):
 
 		global evidence_buffer
+		global COLLABORATIVE_MODE
 
 		if dataframe is None or len(dataframe) == 0:
 			return 0
@@ -176,7 +188,7 @@ def run_inference_no_batch(dataframe):
 		instance_start = time.time()
 		model_driver.get_instance()
 		instance_end = time.time()
-		
+			
 		print(f"Time to obtain model object: {instance_end - instance_start}")
 
 		# Before predicting on the dataframe, we only pass in the dataframe WITHOUT the source mac (first column).
@@ -214,7 +226,7 @@ def run_inference_no_batch(dataframe):
 						break
 
 				ip_idx += 1
-		
+			
 		map_end = time.time()
 		print(f"Map time: {map_end - map_start}\n")
 		# print()
@@ -371,8 +383,10 @@ def capture_stream(listen_interface):
 
 
 # Interval specified number of seconds to wait between broadcasts.
-def broadcast_service(interval=0.5):
+def broadcast_service(interval=0.8):
 	
+	global COLLABORATIVE_MODE
+
 	BROADCAST_PORT = 5882 # something not likely used by other things on the system
 	BROADCAST_GROUP = '224.0.1.119' # multicasting subnet 
 	BROADCAST_MAGIC = 'n1d5mlm4gk' # service magic
@@ -387,22 +401,26 @@ def broadcast_service(interval=0.5):
 		udp_socket.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, MULTICAST_TTL)
 		udp_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
-		data = f'{BROADCAST_MAGIC}:ids_service'.encode('UTF-8') #:{socket.gethostbyname(socket.gethostname())}'.encode('UTF-8')
+		data = f'{BROADCAST_MAGIC}:ids_service:{AP_INFERENCE_SERVER_PORT}'.encode('UTF-8')
 		data = bytes(data)
 
 		while True:
 
 			# multicast
 			bytes_sent = udp_socket.sendto(data, (BROADCAST_GROUP, BROADCAST_PORT))
+			lock.acquire()
+			print(f'Collab mode: {COLLABORATIVE_MODE}')
+			lock.release()
 
-			# listen for responses
-			# If a response is recieved
-				# add master IP/PORT to queue 
-				# switch to global inference mode 
 
 			time.sleep(interval)
 
 
+def ap_server():
+
+	server_socket.listen(1)
+	info, addr = server_socket.accept()
+	print(addr)
 
 
 def get_process_metrics():
@@ -497,19 +515,23 @@ if __name__ == "__main__":
 		broadcast_thread = threading.Thread(target=broadcast_service, args=())
 		broadcast_thread.start()
 
-		# capture_thread = threading.Thread(target=capture_stream, args=(interface,))
-		# capture_thread.start()
+		capture_thread = threading.Thread(target=capture_stream, args=(interface,))
+		capture_thread.start()
 
-		# serve_thread = threading.Thread(target=serve_workers, args=())
-		# serve_thread.start()
+		serve_thread = threading.Thread(target=serve_workers, args=())
+		serve_thread.start()
+
+		ap_server_thread = threading.Thread(target=ap_server, args=())
+		ap_server_thread.start()
 
 		# resul_thread = threading.Thread(target=obtain_results, args=())
 		# resul_thread.start()
 
-		# capture_thread.join()
-		# serve_thread.join()
+		capture_thread.join()
+		serve_thread.join()
 		# resul_thread.join()
 		broadcast_thread.join()
+		ap_server_thread.join()
 
 
 								
