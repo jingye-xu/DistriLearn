@@ -418,9 +418,16 @@ def broadcast_service(interval=0.8):
 
 def ap_server():
 
+	global COLLABORATIVE_MODE
+	
 	server_socket.listen(1)
-	info, addr = server_socket.accept()
-	print(addr)
+	connection_object, addr = server_socket.accept()
+
+	lock.acquire()
+	COLLABORATIVE_MODE = 1
+	lock.release()
+
+	BACKUP_MASTERS.put(connection_object)
 
 
 def get_process_metrics():
