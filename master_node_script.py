@@ -3,6 +3,34 @@
 import socket
 import threading
 import struct
+import queue 
+import time
+
+
+Q_MAX_SIZE = 200_000
+
+SERVER_QUEUE = queue.Queue(maxsize=Q_MAX_SIZE)
+
+
+def client_thread():
+
+	servers_connected_to = dict()
+
+	with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client:
+		while True:
+			for server in SERVER_QUEUE.queue:
+
+				if server in servers_connected_to:
+					continue
+
+				try:
+					print(f'[*] Attempting connection to {server}')
+					client.connect(server)
+					servers_connected_to[server] = 1
+				except ConnectionRefusedError:
+					print(f'[!] Connection to {server} failed.')
+
+			time.sleep(0.5)
 
 
 def discover_services():
@@ -37,14 +65,14 @@ def discover_services():
 
 			proposed_magic = data_split[0]
 			extra_info = data_split[1]
+			server_port = data_split[2]
 
 			if (proposed_magic == SERVICE_MAGIC) and (extra_info == "ids_service"):
 
 				if addr not in service_addresses:
 					service_addresses[addr] = 1
-					print(f'[!] Detected IDS service from: {addr}')
-		
-
+					print(f'[!] Detected IDS service from: {addr} Advertised Target TCP Port: {server_port}')
+					SERVER_QUEUE.put((addr[0], int(server_port)))
 
 
 
@@ -54,5 +82,9 @@ if __name__ == "__main__":
 	discovery_thread = threading.Thread(target=discover_services, args=())
 	discovery_thread.start()
 
+	client_thread = threading.Thread(target=client_thread, args=())
+	client_thread.start()
 
 	discovery_thread.join()
+	client_thread.join()
+
