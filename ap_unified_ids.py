@@ -436,10 +436,11 @@ def ap_server():
 	lock.release()
 
 	lock.acquire()
-	if CURRENT_MASTER is None:
+	if CURRENT_MASTER is None and NUMBER_CLIENTS == 0:
 		CURRENT_MASTER = connection_object
+	elif CURRENT_MASTER is None and NUMBER_CLIENTS > 0:
+		CURRENT_MASTER = BACKUP_MASTERS.get()
 	lock.release()
-
 
 	BACKUP_MASTERS.put(connection_object)
 
