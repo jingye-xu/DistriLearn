@@ -412,7 +412,8 @@ def broadcast_service(interval=0.8):
 			# multicast
 			bytes_sent = udp_socket.sendto(data, (BROADCAST_GROUP, BROADCAST_PORT))
 			lock.acquire()
-			print(f'Collab mode: {COLLABORATIVE_MODE} Clients connected: {NUMBER_CLIENTS} Current Master: {CURRENT_MASTER}')
+			print(f'Infos: {dir(CURRENT_MASTER)}')
+			#print(f'Collab mode: {COLLABORATIVE_MODE} Clients connected: {NUMBER_CLIENTS} Current Master: ({CURRENT_MASTER}, {CURRENT_MASTER})')
 			lock.release()
 
 
