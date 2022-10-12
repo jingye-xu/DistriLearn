@@ -60,8 +60,6 @@ MASTER_QUEUE = queue.Queue(maxsize=Q_MAX_SIZE)
 lock = threading.Semaphore()
 
 
-COLLABORATIVE_MODE = 0 # 0 for local inference modes, 1 for global inference modes
-
 NUM_INPUT = 38
 batch_size = 1
 
@@ -168,6 +166,11 @@ MAX_MASTER_NODE_EVIDENCE_BENIGN_THRESHOLD = 20
 
 
 AP_INFERENCE_SERVER_PORT = 56_231
+
+COLLABORATIVE_MODE = 0 # 0 for local inference modes, 1 for global inference modes
+NUMBER_CLIENTS = 0
+CURRENT_MASTER = None
+
 BACKUP_MASTERS = queue.Queue(maxsize=Q_MAX_SIZE)
 
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -409,7 +412,7 @@ def broadcast_service(interval=0.8):
 			# multicast
 			bytes_sent = udp_socket.sendto(data, (BROADCAST_GROUP, BROADCAST_PORT))
 			lock.acquire()
-			print(f'Collab mode: {COLLABORATIVE_MODE}')
+			print(f'Collab mode: {COLLABORATIVE_MODE} Clients connected: {NUMBER_CLIENTS} Current Master: {CURRENT_MASTER}')
 			lock.release()
 
 
@@ -419,15 +422,24 @@ def broadcast_service(interval=0.8):
 def ap_server():
 
 	global COLLABORATIVE_MODE
+	global NUMBER_CLIENTS
+	global CURRENT_MASTER
 	
-	server_socket.listen(1)
+	server_socket.listen(10)
 	connection_object, addr = server_socket.accept()
 
 	print(f'[+] Accepted connection from {addr}')
 
 	lock.acquire()
 	COLLABORATIVE_MODE = 1
+	NUMBER_CLIENTS += 1
 	lock.release()
+
+	lock.acquire()
+	if CURRENT_MASTER is None:
+		CURRENT_MASTER = connection_object
+	lock.release()
+
 
 	BACKUP_MASTERS.put(connection_object)
 
