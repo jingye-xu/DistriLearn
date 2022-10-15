@@ -389,6 +389,7 @@ def capture_stream(listen_interface):
 def broadcast_service(interval=0.8):
 	
 	global COLLABORATIVE_MODE
+	global NUMBER_CLIENTS
 
 	BROADCAST_PORT = 5882 # something not likely used by other things on the system
 	BROADCAST_GROUP = '224.0.1.119' # multicasting subnet 
@@ -407,12 +408,15 @@ def broadcast_service(interval=0.8):
 		data = f'{BROADCAST_MAGIC}:ids_service:{AP_INFERENCE_SERVER_PORT}'.encode('UTF-8')
 		data = bytes(data)
 
+		PREV_CLIENTS = NUMBER_CLIENTS
 		while True:
 
 			# multicast
 			bytes_sent = udp_socket.sendto(data, (BROADCAST_GROUP, BROADCAST_PORT))
 			lock.acquire()
-			print(f'Collab mode: {COLLABORATIVE_MODE} Clients connected: {NUMBER_CLIENTS} Current Master: {CURRENT_MASTER[1] if CURRENT_MASTER is not None else None}')
+			if PREV_CLIENTS != NUMBER_CLIENTS:
+				PREV_CLIENTS = NUMBER_CLIENTS
+				print(f'Collab mode: {COLLABORATIVE_MODE} Clients connected: {NUMBER_CLIENTS} Current Master: {CURRENT_MASTER[1] if CURRENT_MASTER is not None else None}')
 			lock.release()
 
 
@@ -446,6 +450,7 @@ def ap_server():
 			CURRENT_MASTER = BACKUP_MASTERS.get()
 		lock.release()
 
+		print(f'[+] Queueing {addr}')
 		BACKUP_MASTERS.put((connection_object,addr))
 
 
