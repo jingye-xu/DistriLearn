@@ -28,6 +28,9 @@ def client_thread():
 					client.connect(server)
 					servers_connected_to[server] = 1
 					print(f'[+] Connected to {server}')
+					init_message = client.recv(1024)
+					init_msg_decoded = init_message.decode('UTF-8')
+					print('[*] Elected Master' if init_msg_decoded == 'master' else '[*] Queued as Backup Master')
 				except Exception:
 					print(f'[!] Connection to {server} failed.')
 

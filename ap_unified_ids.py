@@ -444,15 +444,17 @@ def ap_server():
 		
 		if CURRENT_MASTER is None and NUMBER_CLIENTS == 1:
 			CURRENT_MASTER = (connection_object, addr)
+			connection_object.sendall(b'master')
 			lock.release()
 			continue
 		elif CURRENT_MASTER is None and NUMBER_CLIENTS > 1 and BACKUP_MASTERS.qsize() > 0:
 			CURRENT_MASTER = BACKUP_MASTERS.get()
+			connection_object.sendall(b'master')
 		lock.release()
 
 		print(f'[+] Queueing {addr}')
 		BACKUP_MASTERS.put((connection_object,addr))
-
+		connection_object.sendall(b'queue')
 
 
 
