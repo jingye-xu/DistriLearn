@@ -412,7 +412,7 @@ def broadcast_service(interval=0.8):
 			# multicast
 			bytes_sent = udp_socket.sendto(data, (BROADCAST_GROUP, BROADCAST_PORT))
 			lock.acquire()
-			print(f'Collab mode: {COLLABORATIVE_MODE} Clients connected: {NUMBER_CLIENTS} Current Master: {CURRENT_MASTER}')
+			print(f'Collab mode: {COLLABORATIVE_MODE} Clients connected: {NUMBER_CLIENTS} Current Master: {CURRENT_MASTER[1] if CURRENT_MASTER is not None else None}')
 			lock.release()
 
 
@@ -426,23 +426,28 @@ def ap_server():
 	global CURRENT_MASTER
 	
 	server_socket.listen(10)
-	connection_object, addr = server_socket.accept()
 
-	print(f'[+] Accepted connection from {addr}')
 
-	lock.acquire()
-	COLLABORATIVE_MODE = 1
-	NUMBER_CLIENTS += 1
-	lock.release()
+	while True:
 
-	lock.acquire()
-	if CURRENT_MASTER is None and NUMBER_CLIENTS == 0:
-		CURRENT_MASTER = connection_object
-	elif CURRENT_MASTER is None and NUMBER_CLIENTS > 0 and BACKUP_MASTERS.qsize() > 0:
-		CURRENT_MASTER = BACKUP_MASTERS.get()
-	lock.release()
+		connection_object, addr = server_socket.accept()
 
-	BACKUP_MASTERS.put(connection_object)
+		print(f'[+] Accepted connection from {addr}')
+
+		lock.acquire()
+		COLLABORATIVE_MODE = 1
+		NUMBER_CLIENTS += 1
+		
+		if CURRENT_MASTER is None and NUMBER_CLIENTS == 1:
+			CURRENT_MASTER = (connection_object, addr)
+			lock.release()
+			continue
+		elif CURRENT_MASTER is None and NUMBER_CLIENTS > 1 and BACKUP_MASTERS.qsize() > 0:
+			CURRENT_MASTER = BACKUP_MASTERS.get()
+		lock.release()
+
+		BACKUP_MASTERS.put((connection_object,addr))
+
 
 
 
