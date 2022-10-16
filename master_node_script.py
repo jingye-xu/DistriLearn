@@ -15,26 +15,42 @@ SERVER_QUEUE = queue.Queue(maxsize=Q_MAX_SIZE)
 def client_thread():
 
 	servers_connected_to = dict()
+	open_sockets = []
 
-	with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client:
-		while True:
-			for server in SERVER_QUEUE.queue:
 
-				if server in servers_connected_to:
-					continue
+	is_master = False
 
-				try:
-					print(f'[*] Attempting connection to {server}')
-					client.connect(server)
-					servers_connected_to[server] = 1
-					print(f'[+] Connected to {server}')
-					init_message = client.recv(1024)
-					init_msg_decoded = init_message.decode('UTF-8')
-					print('[*] Elected Master' if init_msg_decoded == 'master' else '[*] Queued as Backup Master')
-				except Exception:
-					print(f'[!] Connection to {server} failed.')
+	while True:
 
-			time.sleep(0.5)
+		for server in SERVER_QUEUE.queue:
+
+			if server in servers_connected_to:
+				continue
+
+			client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+			try:
+
+				print(f'[*] Attempting connection to {server}')
+				client.connect(server)
+				servers_connected_to[server] = 1
+				open_sockets = client
+				print(f'[+] Connected to {server}')
+				init_message = client.recv(1024)
+				init_msg_decoded = init_message.decode('UTF-8')
+
+				if init_msg_decoded == 'master':
+					print('[*] Elected Master')
+					is_master = True
+				else:
+					print('[*] Queued as Backup Master')
+					is_master = False
+
+			except Exception as e:
+				print(f'[!] Connection to {server} failed: {e}')
+				client.close()
+
+		time.sleep(0.5)
 
 
 def discover_services():
