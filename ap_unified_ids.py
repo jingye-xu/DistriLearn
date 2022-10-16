@@ -32,6 +32,7 @@ import psutil
 from nfstream import NFPlugin, NFStreamer
 from scapy.all import *
 import socket
+from datetime import datetime
 
 
 conf.bufsize = 65536
@@ -176,6 +177,8 @@ BACKUP_MASTERS = queue.Queue(maxsize=Q_MAX_SIZE)
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server_socket.bind(('', AP_INFERENCE_SERVER_PORT))
 
+PRIVATE_MASTER_TIME = ''
+
 evidence_buffer = {}
 
 
@@ -192,7 +195,7 @@ def run_inference_no_batch(dataframe):
 		model_driver.get_instance()
 		instance_end = time.time()
 			
-		print(f"Time to obtain model object: {instance_end - instance_start}")
+		#print(f"Time to obtain model object: {instance_end - instance_start}")
 
 		# Before predicting on the dataframe, we only pass in the dataframe WITHOUT the source mac (first column).
 		# Because to all the models, that is the expected input dimension.
@@ -201,7 +204,7 @@ def run_inference_no_batch(dataframe):
 		predictions = model_driver.predict(dataframe.iloc[:,1:])
 		pred_end = time.time()
 
-		print(f"Time to inference on client: {pred_end - pred_start}")
+		#print(f"Time to inference on client: {pred_end - pred_start}")
 
 		map_start = time.time()
 		# One-to-one mapping from dataframe to array rows
@@ -231,7 +234,7 @@ def run_inference_no_batch(dataframe):
 				ip_idx += 1
 			
 		map_end = time.time()
-		print(f"Map time: {map_end - map_start}\n")
+		#print(f"Map time: {map_end - map_start}\n")
 		# print()
 
 		#print(f'DF: {len(dataframe)} buffer state: {evidence_buffer}')
@@ -262,7 +265,7 @@ def serve_workers():
 # Asynchronous thread to obtain results from worker nodes
 def obtain_results():
 
-		from datetime import datetime
+		
 		global evidence_buffer
 		global shutdown_flag
 
@@ -390,15 +393,19 @@ def broadcast_service(interval=0.8):
 	
 	global COLLABORATIVE_MODE
 	global NUMBER_CLIENTS
+	global PRIVATE_MASTER_TIME
 
 	BROADCAST_PORT = 5882 # something not likely used by other things on the system
 	BROADCAST_GROUP = '224.0.1.119' # multicasting subnet 
 	BROADCAST_MAGIC = 'n1d5mlm4gk' # service magic
 	MULTICAST_TTL = 50
 
+	PRIVATE_AP_MULTICAST = '224.0.1.120'
+	PRIVATE_AP_MAGIC = 'n1ds4PM4g1k'
+	PRIVATE_PORT = 5882 
+
 	print('[*] Beginning broadcast thread...')
 
-	# open socket
 
 	with socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP) as udp_socket:
 
@@ -417,8 +424,17 @@ def broadcast_service(interval=0.8):
 			if PREV_CLIENTS != NUMBER_CLIENTS:
 				PREV_CLIENTS = NUMBER_CLIENTS
 				print(f'Collab mode: {COLLABORATIVE_MODE} Clients connected: {NUMBER_CLIENTS} Current Master: {CURRENT_MASTER[1] if CURRENT_MASTER is not None else None}')
-			lock.release()
+			
+			# Multicast private AP to make them aware of each other
+			if CURRENT_MASTER is not None:
+				data_ap_private = f'{PRIVATE_AP_MAGIC}$private_ap${CURRENT_MASTER[1]}${PRIVATE_MASTER_TIME}'.encode('UTF-8')
+			else:
+				data_ap_private = f'{PRIVATE_AP_MAGIC}$private_ap$no_master$no_time'.encode('UTF-8')
+			
 
+			data_ap_private = bytes(data_ap_private)
+			bytes_sent = udp_socket.sendto(data_ap_private, (PRIVATE_AP_MULTICAST, PRIVATE_PORT))
+			lock.release()
 
 			time.sleep(interval)
 
@@ -428,7 +444,7 @@ def ap_server():
 	global COLLABORATIVE_MODE
 	global NUMBER_CLIENTS
 	global CURRENT_MASTER
-	
+
 	server_socket.listen(10)
 
 
@@ -445,17 +461,52 @@ def ap_server():
 		if CURRENT_MASTER is None and NUMBER_CLIENTS == 1:
 			CURRENT_MASTER = (connection_object, addr)
 			connection_object.sendall(b'master')
-			lock.release()
-			continue
+			PRIVATE_MASTER_TIME = datetime.now()
 		elif CURRENT_MASTER is None and NUMBER_CLIENTS > 1 and BACKUP_MASTERS.qsize() > 0:
 			CURRENT_MASTER = BACKUP_MASTERS.get()
 			connection_object.sendall(b'master')
+			PRIVATE_MASTER_TIME = datetime.now()
+		
+		if addr != CURRENT_MASTER[1]:
+			print(f'[+] Queueing {addr}')
+			BACKUP_MASTERS.put((connection_object,addr))
+			connection_object.sendall(b'queue')
+
 		lock.release()
 
-		print(f'[+] Queueing {addr}')
-		BACKUP_MASTERS.put((connection_object,addr))
-		connection_object.sendall(b'queue')
+		
+		
+def private_ap_thread():
 
+
+	PRIVATE_AP_MULTICAST = '224.0.1.120'
+	PRIVATE_AP_MAGIC = 'n1ds4PM4g1k'
+	PRIVATE_PORT = 5882
+	
+
+	private_receiver = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+	private_receiver.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+	private_receiver.bind((PRIVATE_AP_MULTICAST, PRIVATE_PORT))
+	mreq = struct.pack("4sl", socket.inet_aton(PRIVATE_AP_MULTICAST), socket.INADDR_ANY)
+	private_receiver.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)	
+
+
+	while True:
+		try:
+			private_receipt, _ = private_receiver.recvfrom(2048)
+			private_receipt = private_receipt.decode('UTF-8')
+			private_receipt_tokens = private_receipt.split('$')
+			if private_receipt_tokens[0] == PRIVATE_AP_MAGIC and private_receipt_tokens[1] == 'private_ap':
+				
+				master_result = private_receipt_tokens[2]
+				master_time = private_receipt_tokens[3]
+				
+				if master_result != 'no_master':
+					print(f'GOT: {master_result}')
+
+
+		except Exception as e:
+			print(e)
 
 
 def get_process_metrics():
@@ -559,6 +610,9 @@ if __name__ == "__main__":
 		ap_server_thread = threading.Thread(target=ap_server, args=())
 		ap_server_thread.start()
 
+		private_ap_mc = threading.Thread(target=private_ap_thread, args=())
+		private_ap_mc.start()
+
 		# resul_thread = threading.Thread(target=obtain_results, args=())
 		# resul_thread.start()
 
@@ -567,6 +621,7 @@ if __name__ == "__main__":
 		# resul_thread.join()
 		broadcast_thread.join()
 		ap_server_thread.join()
+		private_ap_mc.join()
 
 
 								
