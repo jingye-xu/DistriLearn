@@ -398,7 +398,7 @@ def broadcast_service(interval=0.8):
 	BROADCAST_PORT = 5882 # something not likely used by other things on the system
 	BROADCAST_GROUP = '224.0.1.119' # multicasting subnet 
 	BROADCAST_MAGIC = 'n1d5mlm4gk' # service magic
-	MULTICAST_TTL = 50
+	MULTICAST_TTL = 100
 
 	PRIVATE_AP_MULTICAST = '224.0.1.120'
 	PRIVATE_AP_MAGIC = 'n1ds4PM4g1k'
@@ -506,13 +506,14 @@ def private_ap_thread():
 
 			private_receipt = private_receipt.decode('UTF-8')
 			private_receipt_tokens = private_receipt.split('$')
+
 			if private_receipt_tokens[0] == PRIVATE_AP_MAGIC and private_receipt_tokens[1] == 'private_ap':
 
 				master_ip = private_receipt_tokens[2]
 				master_port = int(private_receipt_tokens[3]) if private_receipt_tokens[3] != 'no_master_port' else 0
 				master_time = private_receipt_tokens[4]
 				master_result = (master_ip, master_port)
-
+				
 				if master_result[0] != 'no_master':
 					# compare our master and timestamp versus what we received
 					lock.acquire()
@@ -523,21 +524,19 @@ def private_ap_thread():
 						if received_time < PRIVATE_MASTER_TIME:
 
 							PRIVATE_MASTER_TIME = received_time
-
+							# Probably change this to a hashmap instead for speed.
 							for master in BACKUP_MASTERS.queue:
 								if master[1][0] == master_result[0]:
 									CURRENT_MASTER = (master[0], master[1])
-									master[1][0] = 'X'
-									master[1][1] = 'X'
+									master[0] = 'X'
+									master[1] = 'X'
 									print(f'[*] Synchronized master to: {CURRENT_MASTER[1][0]}')
 									break
 
 					lock.release()
-					
-
-
 		except Exception as e:
 			print(e)
+			lock.release()
 
 
 def get_process_metrics():
