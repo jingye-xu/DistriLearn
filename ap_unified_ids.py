@@ -427,9 +427,9 @@ def broadcast_service(interval=0.8):
 			
 			# Multicast private AP to make them aware of each other
 			if CURRENT_MASTER is not None:
-				data_ap_private = f'{PRIVATE_AP_MAGIC}$private_ap${CURRENT_MASTER[1]}${PRIVATE_MASTER_TIME}'.encode('UTF-8')
+				data_ap_private = f'{PRIVATE_AP_MAGIC}$private_ap${CURRENT_MASTER[1][0]}${CURRENT_MASTER[1][1]}${PRIVATE_MASTER_TIME}'.encode('UTF-8')
 			else:
-				data_ap_private = f'{PRIVATE_AP_MAGIC}$private_ap$no_master$no_time'.encode('UTF-8')
+				data_ap_private = f'{PRIVATE_AP_MAGIC}$private_ap$no_master$no_master_port$no_time'.encode('UTF-8')
 			
 
 			data_ap_private = bytes(data_ap_private)
@@ -444,6 +444,7 @@ def ap_server():
 	global COLLABORATIVE_MODE
 	global NUMBER_CLIENTS
 	global CURRENT_MASTER
+	global PRIVATE_MASTER_TIME
 
 	server_socket.listen(10)
 
@@ -469,7 +470,7 @@ def ap_server():
 		
 		if addr != CURRENT_MASTER[1]:
 			print(f'[+] Queueing {addr}')
-			BACKUP_MASTERS.put((connection_object,addr))
+			BACKUP_MASTERS.put([connection_object,addr])
 			connection_object.sendall(b'queue')
 
 		lock.release()
@@ -478,6 +479,8 @@ def ap_server():
 		
 def private_ap_thread():
 
+	global CURRENT_MASTER
+	global PRIVATE_MASTER_TIME
 
 	PRIVATE_AP_MULTICAST = '224.0.1.120'
 	PRIVATE_AP_MAGIC = 'n1ds4PM4g1k'
@@ -490,19 +493,47 @@ def private_ap_thread():
 	mreq = struct.pack("4sl", socket.inet_aton(PRIVATE_AP_MULTICAST), socket.INADDR_ANY)
 	private_receiver.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)	
 
+	# TODO: Make this better instead of trying to get the hostname infinitely
+	IP_address = '10.10.0.252'
+
 
 	while True:
 		try:
-			private_receipt, _ = private_receiver.recvfrom(2048)
+			private_receipt, addr = private_receiver.recvfrom(2048)
+
+			if addr[0] == IP_address:
+				continue
+
 			private_receipt = private_receipt.decode('UTF-8')
 			private_receipt_tokens = private_receipt.split('$')
 			if private_receipt_tokens[0] == PRIVATE_AP_MAGIC and private_receipt_tokens[1] == 'private_ap':
-				
-				master_result = private_receipt_tokens[2]
-				master_time = private_receipt_tokens[3]
-				
-				if master_result != 'no_master':
-					print(f'GOT: {master_result}')
+
+				master_ip = private_receipt_tokens[2]
+				master_port = int(private_receipt_tokens[3]) if private_receipt_tokens[3] != 'no_master_port' else 0
+				master_time = private_receipt_tokens[4]
+				master_result = (master_ip, master_port)
+
+				if master_result[0] != 'no_master':
+					# compare our master and timestamp versus what we received
+					lock.acquire()
+					# Assume that we will never get duplicate master IPs.
+					if CURRENT_MASTER[1][0] != master_result[0]:
+						# if they are different, take the youngest one and update our info.
+						received_time = datetime.fromisoformat(master_time)
+						if received_time < PRIVATE_MASTER_TIME:
+
+							PRIVATE_MASTER_TIME = received_time
+
+							for master in BACKUP_MASTERS.queue:
+								if master[1][0] == master_result[0]:
+									CURRENT_MASTER = (master[0], master[1])
+									master[1][0] = 'X'
+									master[1][1] = 'X'
+									print(f'[*] Synchronized master to: {CURRENT_MASTER[1][0]}')
+									break
+
+					lock.release()
+					
 
 
 		except Exception as e:
