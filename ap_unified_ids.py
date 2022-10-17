@@ -460,12 +460,10 @@ def ap_server():
 		NUMBER_CLIENTS += 1
 		
 		if CURRENT_MASTER is None and NUMBER_CLIENTS == 1:
-			CURRENT_MASTER = (connection_object, addr)
-			connection_object.sendall(b'master')
+			CURRENT_MASTER = [connection_object, addr]
 			PRIVATE_MASTER_TIME = datetime.now()
 		elif CURRENT_MASTER is None and NUMBER_CLIENTS > 1 and BACKUP_MASTERS.qsize() > 0:
 			CURRENT_MASTER = BACKUP_MASTERS.get()
-			connection_object.sendall(b'master')
 			PRIVATE_MASTER_TIME = datetime.now()
 		
 		if addr != CURRENT_MASTER[1]:
@@ -528,16 +526,19 @@ def private_ap_thread():
 							# Probably change this to a hashmap instead for speed.
 							for master in BACKUP_MASTERS.queue:
 								if master[1][0] == master_result[0]:
-									CURRENT_MASTER = (master[0], master[1])
+									old_master = CURRENT_MASTER
+									CURRENT_MASTER = [master[0], master[1]]
 									master[0] = 'X'
 									master[1] = 'X'
 									print(f'[*] Synchronized master to: {CURRENT_MASTER[1][0]}')
+									BACKUP_MASTERS.put(old_master)
 									break
 
 					lock.release()
 		except Exception as e:
 			print(e)
 			lock.release()
+			pass
 
 
 def get_process_metrics():

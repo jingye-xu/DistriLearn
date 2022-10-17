@@ -5,52 +5,78 @@ import threading
 import struct
 import queue 
 import time
+import copy
 
 
 Q_MAX_SIZE = 200_000
 
 SERVER_QUEUE = queue.Queue(maxsize=Q_MAX_SIZE)
 
+lock = threading.Semaphore(1)
+sq_lock = threading.Semaphore(1)
+
+open_sockets = []
+
 # Master acts as client 
-def client_thread():
+def client_connection_thread():
+
+	global open_sockets
 
 	servers_connected_to = dict()
-	open_sockets = []
-
-
-	is_master = False
 
 	while True:
 
-		for server in SERVER_QUEUE.queue:
+		sq_lock.acquire()
+		server_list = copy.deepcopy(SERVER_QUEUE.queue)
+		sq_lock.release()
+
+		for server in server_list:
 
 			if server in servers_connected_to:
 				continue
 
-			client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
 			try:
+
+				client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 				print(f'[*] Attempting connection to {server}')
 				client.connect(server)
 				servers_connected_to[server] = 1
-				open_sockets = client
+
+				lock.acquire()
+				open_sockets.append(client)
+				lock.release()
+
 				print(f'[+] Connected to {server}')
-				init_message = client.recv(1024)
-				init_msg_decoded = init_message.decode('UTF-8')
-
-				if init_msg_decoded == 'master':
-					print('[*] Elected Master')
-					is_master = True
-				else:
-					print('[*] Queued as Backup Master')
-					is_master = False
-
+				
 			except Exception as e:
 				print(f'[!] Connection to {server} failed: {e}')
+				del servers_connected_to[server]
 				client.close()
+				lock.release()
 
 		time.sleep(0.5)
+
+
+# For receiving inferences of buffers
+
+def client_listener_thread():
+
+	while True:
+
+		lock.acquire()
+		open_socket_len = len(open_sockets)
+		lock.release()
+
+		item = 0
+		while item < open_socket_len:
+
+			socket = open_sockets[item]
+			init_message = socket.recv(1024)
+			init_msg_decoded = init_message.decode('UTF-8')
+
+			item += 1
+			
 
 
 def discover_services():
@@ -97,14 +123,20 @@ def discover_services():
 
 
 
+
+
 if __name__ == "__main__":
 	
 	discovery_thread = threading.Thread(target=discover_services, args=())
 	discovery_thread.start()
 
-	client_thread = threading.Thread(target=client_thread, args=())
+	client_thread = threading.Thread(target=client_connection_thread, args=())
 	client_thread.start()
+
+	# client_listener = threading.Thread(target=client_listener_thread, args=())
+	# client_listener.start()
 
 	discovery_thread.join()
 	client_thread.join()
+	# client_listener.join()
 
