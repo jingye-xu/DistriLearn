@@ -520,8 +520,9 @@ def private_ap_thread():
 					# Assume that we will never get duplicate master IPs.
 					if CURRENT_MASTER[1][0] != master_result[0]:
 						# if they are different, take the youngest one and update our info.
+						# if they are different, but the times are not easy to tell apart, tale the higher IP
 						received_time = datetime.fromisoformat(master_time)
-						if received_time < PRIVATE_MASTER_TIME:
+						if received_time < PRIVATE_MASTER_TIME or (CURRENT_MASTER[1][0] < master_result[0]):
 
 							PRIVATE_MASTER_TIME = received_time
 							# Probably change this to a hashmap instead for speed.
