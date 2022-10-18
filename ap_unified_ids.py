@@ -469,7 +469,6 @@ def ap_server():
 		if addr != CURRENT_MASTER[1]:
 			print(f'[+] Queueing {addr}')
 			BACKUP_MASTERS.put([connection_object,addr])
-			connection_object.sendall(b'queue')
 
 		lock.release()
 

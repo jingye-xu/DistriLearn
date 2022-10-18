@@ -48,11 +48,10 @@ def client_connection_thread():
 				lock.release()
 
 				print(f'[+] Connected to {server}')
-				
+
 			except Exception as e:
 				print(f'[!] Connection to {server} failed: {e}')
 				del servers_connected_to[server]
-				client.close()
 				lock.release()
 
 		time.sleep(0.5)
