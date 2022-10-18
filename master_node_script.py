@@ -6,6 +6,7 @@ import struct
 import queue 
 import time
 import copy
+import pickle
 
 
 Q_MAX_SIZE = 200_000
@@ -61,6 +62,8 @@ def client_connection_thread():
 
 def client_listener_thread():
 
+	evidence_buffer = {}
+
 	while True:
 
 		lock.acquire()
@@ -72,7 +75,32 @@ def client_listener_thread():
 
 			socket = open_sockets[item]
 			init_message = socket.recv(1024)
-			init_msg_decoded = init_message.decode('UTF-8')
+			init_msg_decoded = pickle.loads(init_message) #init_message.decode('UTF-8')
+
+			if result == 0: # where collab mode 1 is connected to cluster
+				continue
+			else:
+				mac = list(result)[0]
+				pred = result[mac][0] # Use the mac to extract the tuple prediction (benign or malicious)
+				pred_num = result[mac][1] # Use the mac to extract the tuple number
+
+				if mac not in evidence_buffer:
+					evidence_buffer[mac] = {0: 0, 1: 0}
+
+				evidence_buffer[mac][pred] += pred_num
+
+				if evidence_buffer[mac][0] >= MAX_MASTER_NODE_EVIDENCE_BENIGN_THRESHOLD:
+					print(f'[! Inference notice {dt_string} !] {mac} has been benign.')
+					evidence_buffer[mac][0] = 0
+
+				if evidence_buffer[mac][1] >= MAX_MASTER_NODE_EVIDENCE_MALICIOUS_THRESHOLD:
+					print(f'[! Inference notice {dt_string} !] {mac} has had suspicious activity.')
+					evidence_buffer[mac][1] = 0
+
+				if len(evidence_buffer) >= MAX_MASTER_NODE_ENTRIES:
+					evidence_buffer = {}
+
+
 
 			item += 1
 			
@@ -132,10 +160,10 @@ if __name__ == "__main__":
 	client_thread = threading.Thread(target=client_connection_thread, args=())
 	client_thread.start()
 
-	# client_listener = threading.Thread(target=client_listener_thread, args=())
-	# client_listener.start()
+	client_listener = threading.Thread(target=client_listener_thread, args=())
+	client_listener.start()
 
 	discovery_thread.join()
 	client_thread.join()
-	# client_listener.join()
+	client_listener.join()
 

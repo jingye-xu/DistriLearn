@@ -18,6 +18,7 @@ import signal
 import time
 import joblib
 import scapy.config
+import pickle
 
 import torch
 import torch.nn as nn
@@ -242,7 +243,14 @@ def run_inference_no_batch(dataframe):
 		if len(evidence_buffer) >= MAX_COMPUTE_NODE_ENTRIES:
 				evidence_buffer = {}
 
-		RESULT_QUEUE.put(res)
+		lock.acquire()
+		if COLLABORATIVE_MODE == 1 and CURRENT_MASTER is not None:
+			#send to server
+			serialiezed_res = pickle.dumps(res)
+			CURRENT_MASTER[0].sendall(serialiezed_res)
+		else:
+			RESULT_QUEUE.put(res)
+		lock.release()
 		# return res
 
 
@@ -282,7 +290,11 @@ def obtain_results():
 			
 			 # we get back 0 - if nodes are not ready to give any inference
 			 # we get back {mac : benign/malicious} if enough evidence has been collected 
-			if result == 0:
+			mode = 0
+			lock.acquire()
+			mode = COLLABORATIVE_MODE
+			lock.release()
+			if result == 0 or mode == 1: # where collab mode 1 is connected to cluster
 				continue
 			else:
 				mac = list(result)[0]
