@@ -50,6 +50,7 @@ def client_connection_thread():
 
 				print(f'[+] Connected to {server}')
 
+
 			except Exception as e:
 				print(f'[!] Connection to {server} failed: {e}')
 				del servers_connected_to[server]
@@ -69,6 +70,11 @@ def client_listener_thread():
 		lock.acquire()
 		open_socket_len = len(open_sockets)
 		lock.release()
+
+		prior_len = open_socket_len
+
+		if prior_len != open_socket_len:
+			print(f'[*] Total Acess Points Connected: {prior_len}')
 
 		item = 0
 		while item < open_socket_len:

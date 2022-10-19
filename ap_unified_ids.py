@@ -435,7 +435,7 @@ def broadcast_service(interval=0.8):
 			lock.acquire()
 			if PREV_CLIENTS != NUMBER_CLIENTS:
 				PREV_CLIENTS = NUMBER_CLIENTS
-				print(f'Collab mode: {COLLABORATIVE_MODE} Clients connected: {NUMBER_CLIENTS} Current Master: {CURRENT_MASTER[1] if CURRENT_MASTER is not None else None}')
+				print(f'Collab mode: {COLLABORATIVE_MODE}; Masters connected: {NUMBER_CLIENTS}; Elected Master: {CURRENT_MASTER[1] if CURRENT_MASTER is not None else None}')
 			
 			# Multicast private AP to make them aware of each other
 			if CURRENT_MASTER is not None:
