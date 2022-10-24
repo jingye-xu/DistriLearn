@@ -48,10 +48,10 @@ OBJ_MAX_SIZE = 10_000
 
 MODEL_TYPE = 0 # 0 for scikit, 1 for pytorch - should be enum instead but python isn't clean like that
 
-PATH_PREF = "./ModelPack/17_18_models/K neighbors"
+PATH_PREF = "./ModelPack/17_18_models/SVM"
 
-SCIKIT_MODEL_PATH = f"{PATH_PREF}/kn_17_18.pkl"
-SCALER_PATH = f"{PATH_PREF}/scaler_kn_17_18.pkl"
+SCIKIT_MODEL_PATH = f"{PATH_PREF}/lin_svm_17_18.pkl"
+SCALER_PATH = f"{PATH_PREF}/scaler_lin_svm_17_18.pkl"
 PYTORCH_MODEL_PATH = f"{PATH_PREF}/simple_nn_1718.pth"
 
 
@@ -188,6 +188,7 @@ def run_inference_no_batch(dataframe):
 
 		global evidence_buffer
 		global COLLABORATIVE_MODE
+		global CURRENT_MASTER
 
 		if dataframe is None or len(dataframe) == 0:
 			return 0
@@ -235,7 +236,7 @@ def run_inference_no_batch(dataframe):
 				ip_idx += 1
 			
 		map_end = time.time()
-		#print(f"Map time: {map_end - map_start}\n")
+		# print(f"Map time: {map_end - map_start}\n")
 		# print()
 
 		#print(f'DF: {len(dataframe)} buffer state: {evidence_buffer}')
@@ -245,9 +246,19 @@ def run_inference_no_batch(dataframe):
 
 		lock.acquire()
 		if COLLABORATIVE_MODE == 1 and CURRENT_MASTER is not None:
-			#send to server
+			#send to client
 			serialiezed_res = pickle.dumps(res)
-			CURRENT_MASTER[0].sendall(serialiezed_res)
+			try:
+				CURRENT_MASTER[0].sendall(serialiezed_res)
+			except Exception as e:
+				print(f'[-] Lost master: {CURRENT_MASTER[1]}')
+				CURRENT_MASTER = BACKUP_MASTERS.get()
+				print(f'[+] Elected from queue: {CURRENT_MASTER[1]}')
+				NUMBER_CLIENTS -= 1
+
+				if NUMBER_CLIENTS == 0:
+					COLLABORATIVE_MODE = 0
+
 		else:
 			RESULT_QUEUE.put(res)
 		lock.release()
@@ -288,8 +299,8 @@ def obtain_results():
 
 			dt_string = datetime.now()
 			
-			 # we get back 0 - if nodes are not ready to give any inference
-			 # we get back {mac : benign/malicious} if enough evidence has been collected 
+			# we get back 0 - if nodes are not ready to give any inference
+			# we get back {mac : benign/malicious} if enough evidence has been collected 
 			mode = 0
 			lock.acquire()
 			mode = COLLABORATIVE_MODE
@@ -656,12 +667,12 @@ if __name__ == "__main__":
 		private_ap_mc = threading.Thread(target=private_ap_thread, args=())
 		private_ap_mc.start()
 
-		# resul_thread = threading.Thread(target=obtain_results, args=())
-		# resul_thread.start()
+		resul_thread = threading.Thread(target=obtain_results, args=())
+		resul_thread.start()
 
 		capture_thread.join()
 		serve_thread.join()
-		# resul_thread.join()
+		resul_thread.join()
 		broadcast_thread.join()
 		ap_server_thread.join()
 		private_ap_mc.join()

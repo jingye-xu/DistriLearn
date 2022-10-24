@@ -7,6 +7,7 @@ import queue
 import time
 import copy
 import pickle
+from datetime import datetime
 
 
 Q_MAX_SIZE = 200_000
@@ -17,6 +18,16 @@ lock = threading.Semaphore(1)
 sq_lock = threading.Semaphore(1)
 
 open_sockets = []
+
+
+MAX_COMPUTE_NODE_ENTRIES = 50
+MAX_COMPUTE_NODE_EVIDENCE_MALICIOUS_THRESHOLD = 10
+MAX_COMPUTE_NODE_EVIDENCE_BENIGN_THRESHOLD = 26
+
+MAX_MASTER_NODE_ENTRIES = 50
+MAX_MASTER_NODE_EVIDENCE_MALICIOUS_THRESHOLD = 2
+MAX_MASTER_NODE_EVIDENCE_BENIGN_THRESHOLD = 20
+
 
 # Master acts as client 
 def client_connection_thread():
@@ -64,14 +75,13 @@ def client_connection_thread():
 def client_listener_thread():
 
 	evidence_buffer = {}
+	prior_len = 0
 
 	while True:
 
 		lock.acquire()
 		open_socket_len = len(open_sockets)
 		lock.release()
-
-		prior_len = open_socket_len
 
 		if prior_len != open_socket_len:
 			print(f'[*] Total Acess Points Connected: {prior_len}')
@@ -81,7 +91,7 @@ def client_listener_thread():
 
 			socket = open_sockets[item]
 			init_message = socket.recv(1024)
-			init_msg_decoded = pickle.loads(init_message) #init_message.decode('UTF-8')
+			result = pickle.loads(init_message) #init_message.decode('UTF-8')
 
 			if result == 0: # where collab mode 1 is connected to cluster
 				continue
@@ -94,6 +104,8 @@ def client_listener_thread():
 					evidence_buffer[mac] = {0: 0, 1: 0}
 
 				evidence_buffer[mac][pred] += pred_num
+
+				dt_string = datetime.now()
 
 				if evidence_buffer[mac][0] >= MAX_MASTER_NODE_EVIDENCE_BENIGN_THRESHOLD:
 					print(f'[! Inference notice {dt_string} !] {mac} has been benign.')
@@ -109,6 +121,7 @@ def client_listener_thread():
 
 
 			item += 1
+		prior_len = open_socket_len
 			
 
 
