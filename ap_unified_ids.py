@@ -189,6 +189,7 @@ def run_inference_no_batch(dataframe):
 		global evidence_buffer
 		global COLLABORATIVE_MODE
 		global CURRENT_MASTER
+		global NUMBER_CLIENTS
 
 		if dataframe is None or len(dataframe) == 0:
 			return 0
@@ -252,9 +253,15 @@ def run_inference_no_batch(dataframe):
 				CURRENT_MASTER[0].sendall(serialiezed_res)
 			except Exception as e:
 				print(f'[-] Lost master: {CURRENT_MASTER[1]}')
-				CURRENT_MASTER = BACKUP_MASTERS.get()
-				print(f'[+] Elected from queue: {CURRENT_MASTER[1]}')
 				NUMBER_CLIENTS -= 1
+
+				if NUMBER_CLIENTS != 0:
+					CURRENT_MASTER = BACKUP_MASTERS.get()
+					print(f'[+] Elected from queue: {CURRENT_MASTER[1]}')
+				else:
+					CURRENT_MASTER = None
+				
+				
 
 				if NUMBER_CLIENTS == 0:
 					COLLABORATIVE_MODE = 0

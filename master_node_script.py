@@ -7,6 +7,10 @@ import queue
 import time
 import copy
 import pickle
+import signal
+import psutil
+import os
+
 from datetime import datetime
 
 
@@ -169,9 +173,26 @@ def discover_services():
 
 
 
+def handler(signum, frame):
+
+		global shutdown_flag
+
+		process = psutil.Process(os.getpid())
+		children = process.children()
+
+		for child in children:
+				child.kill()
+
+		process = os.getpid()
+		os.system(f"kill -9 {process}")
+
+
 
 
 if __name__ == "__main__":
+
+	signal.signal(signal.SIGINT, handler)
+	signal.signal(signal.SIGTERM, handler)
 	
 	discovery_thread = threading.Thread(target=discover_services, args=())
 	discovery_thread.start()
