@@ -9,6 +9,7 @@ import copy
 import pickle
 import signal
 import psutil
+import json
 import os
 
 from datetime import datetime
@@ -88,21 +89,25 @@ def client_listener_thread():
 		lock.release()
 
 		if prior_len != open_socket_len:
-			print(f'[*] Total Acess Points Connected: {prior_len}')
+			print(f'[*] Total Access Points Connected: {open_socket_len}')
 
 		item = 0
 		while item < open_socket_len:
 
 			socket = open_sockets[item]
 			init_message = socket.recv(1024)
-			result = pickle.loads(init_message) #init_message.decode('UTF-8')
+			result = json.loads(init_message) #init_message.decode('UTF-8')
 
-			if result == 0: # where collab mode 1 is connected to cluster
+			if result["mac"] == "0": # where collab mode 1 is connected to cluster
 				continue
 			else:
-				mac = list(result)[0]
-				pred = result[mac][0] # Use the mac to extract the tuple prediction (benign or malicious)
-				pred_num = result[mac][1] # Use the mac to extract the tuple number
+				#mac = list(result)[0]
+				#pred = result[mac][0] # Use the mac to extract the tuple prediction (benign or malicious)
+				#pred_num = result[mac][1] # Use the mac to extract the tuple number
+
+				mac = result["mac"]
+				pred = int(result["encode"])
+				pred_num = int(result["evidence"])
 
 				if mac not in evidence_buffer:
 					evidence_buffer[mac] = {0: 0, 1: 0}

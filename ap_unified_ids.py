@@ -19,6 +19,7 @@ import time
 import joblib
 import scapy.config
 import pickle
+import json
 
 import torch
 import torch.nn as nn
@@ -223,11 +224,13 @@ def run_inference_no_batch(dataframe):
 
 				# Check evidence threshold, whichever surpasses first
 				if evidence_buffer[ip][0] >= MAX_COMPUTE_NODE_EVIDENCE_BENIGN_THRESHOLD:
-						res = {ip : (0, evidence_buffer[ip][0])} # 0 is encoded as benign
+						#res = {ip : (0, evidence_buffer[ip][0])} # 0 is encoded as benign
+						res = {"mac" : f"{ip}", "encode" : f"{0}", "evidence" : f"{evidence_buffer[ip][1]}"}
 						evidence_buffer[ip][0] = 0
 						break
 				if evidence_buffer[ip][1] >= MAX_COMPUTE_NODE_EVIDENCE_MALICIOUS_THRESHOLD:
-						res = {ip : (1, evidence_buffer[ip][1])} # 1 is encoded as malicious
+						#res = {ip : (1, evidence_buffer[ip][1])} # 1 is encoded as malicious
+						res = {"mac" : f"{ip}", "encode" : f"{1}", "evidence" : f"{evidence_buffer[ip][1]}"}
 						if evidence_buffer[ip][1] != 0:
 							evidence_buffer[ip][1] //= evidence_buffer[ip][1]
 						if evidence_buffer[ip][0] != 0:
@@ -248,10 +251,14 @@ def run_inference_no_batch(dataframe):
 		lock.acquire()
 		if COLLABORATIVE_MODE == 1 and CURRENT_MASTER is not None:
 			#send to client
-			serialiezed_res = pickle.dumps(res)
+			if res == 0: 
+				res = {"mac" : "0", "encode" : "0", "evidence": "0"} #{"0":(0,0)}
+			serialiezed_res = bytes(json.dumps(res), encoding='UTF-8')
+
 			try:
 				CURRENT_MASTER[0].sendall(serialiezed_res)
 			except Exception as e:
+				print(e)
 				print(f'[-] Lost master: {CURRENT_MASTER[1]}')
 				NUMBER_CLIENTS -= 1
 
@@ -315,9 +322,13 @@ def obtain_results():
 			if result == 0 or mode == 1: # where collab mode 1 is connected to cluster
 				continue
 			else:
-				mac = list(result)[0]
-				pred = result[mac][0] # Use the mac to extract the tuple prediction (benign or malicious)
-				pred_num = result[mac][1] # Use the mac to extract the tuple number
+				#mac = list(result)[0]
+				#pred = result[mac][0] # Use the mac to extract the tuple prediction (benign or malicious)
+				#pred_num = result[mac][1] # Use the mac to extract the tuple number
+
+				mac = result["mac"]
+				pred = int(result["encode"])
+				pred_num = int(result["evidence"])
 
 				if mac not in evidence_buffer:
 					evidence_buffer[mac] = {0: 0, 1: 0}
