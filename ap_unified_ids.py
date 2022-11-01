@@ -670,8 +670,8 @@ if __name__ == "__main__":
 		signal.signal(signal.SIGINT, handler)
 		signal.signal(signal.SIGTERM, handler)
 
-		# broadcast_thread = threading.Thread(target=broadcast_service, args=())
-		# broadcast_thread.start()
+		broadcast_thread = threading.Thread(target=broadcast_service, args=())
+		broadcast_thread.start()
 
 		capture_thread = threading.Thread(target=capture_stream, args=(interface,))
 		capture_thread.start()
@@ -679,11 +679,11 @@ if __name__ == "__main__":
 		serve_thread = threading.Thread(target=serve_workers, args=())
 		serve_thread.start()
 
-		# ap_server_thread = threading.Thread(target=ap_server, args=())
-		# ap_server_thread.start()
+		ap_server_thread = threading.Thread(target=ap_server, args=())
+		ap_server_thread.start()
 
-		# private_ap_mc = threading.Thread(target=private_ap_thread, args=())
-		# private_ap_mc.start()
+		private_ap_mc = threading.Thread(target=private_ap_thread, args=())
+		private_ap_mc.start()
 
 		resul_thread = threading.Thread(target=obtain_results, args=())
 		resul_thread.start()
@@ -691,9 +691,9 @@ if __name__ == "__main__":
 		capture_thread.join()
 		serve_thread.join()
 		resul_thread.join()
-		#broadcast_thread.join()
-		#ap_server_thread.join()
-		#private_ap_mc.join()
+		broadcast_thread.join()
+		ap_server_thread.join()
+		private_ap_mc.join()
 
 
 								
