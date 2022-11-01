@@ -49,10 +49,10 @@ OBJ_MAX_SIZE = 10_000
 
 MODEL_TYPE = 0 # 0 for scikit, 1 for pytorch - should be enum instead but python isn't clean like that
 
-PATH_PREF = "./ModelPack/17_18_models/SVM"
+PATH_PREF = "./ModelPack/17_18_models/Random Forest"
 
-SCIKIT_MODEL_PATH = f"{PATH_PREF}/lin_svm_17_18.pkl"
-SCALER_PATH = f"{PATH_PREF}/scaler_lin_svm_17_18.pkl"
+SCIKIT_MODEL_PATH = f"{PATH_PREF}/rf_17_18.pkl"
+SCALER_PATH = f"{PATH_PREF}/scaler_rf_17_18.pkl"
 PYTORCH_MODEL_PATH = f"{PATH_PREF}/simple_nn_1718.pth"
 
 
@@ -187,6 +187,7 @@ evidence_buffer = {}
 # Inference function for node
 def run_inference_no_batch(dataframe):
 
+
 		global evidence_buffer
 		global COLLABORATIVE_MODE
 		global CURRENT_MASTER
@@ -212,6 +213,7 @@ def run_inference_no_batch(dataframe):
 
 		map_start = time.time()
 		# One-to-one mapping from dataframe to array rows
+
 		res = 0
 		ip_idx = 0
 		while ip_idx < len(dataframe):
@@ -225,7 +227,7 @@ def run_inference_no_batch(dataframe):
 				# Check evidence threshold, whichever surpasses first
 				if evidence_buffer[ip][0] >= MAX_COMPUTE_NODE_EVIDENCE_BENIGN_THRESHOLD:
 						#res = {ip : (0, evidence_buffer[ip][0])} # 0 is encoded as benign
-						res = {"mac" : f"{ip}", "encode" : f"{0}", "evidence" : f"{evidence_buffer[ip][1]}"}
+						res = {"mac" : f"{ip}", "encode" : f"{0}", "evidence" : f"{evidence_buffer[ip][0]}"}
 						evidence_buffer[ip][0] = 0
 						break
 				if evidence_buffer[ip][1] >= MAX_COMPUTE_NODE_EVIDENCE_MALICIOUS_THRESHOLD:
@@ -243,7 +245,7 @@ def run_inference_no_batch(dataframe):
 		# print(f"Map time: {map_end - map_start}\n")
 		# print()
 
-		#print(f'DF: {len(dataframe)} buffer state: {evidence_buffer}')
+		# print(f'DF: {len(dataframe)} buffer state: {evidence_buffer}')
 		# Flush the buffer to reduce memory usage
 		if len(evidence_buffer) >= MAX_COMPUTE_NODE_ENTRIES:
 				evidence_buffer = {}
@@ -267,8 +269,6 @@ def run_inference_no_batch(dataframe):
 					print(f'[+] Elected from queue: {CURRENT_MASTER[1]}')
 				else:
 					CURRENT_MASTER = None
-				
-				
 
 				if NUMBER_CLIENTS == 0:
 					COLLABORATIVE_MODE = 0
@@ -325,7 +325,7 @@ def obtain_results():
 				#mac = list(result)[0]
 				#pred = result[mac][0] # Use the mac to extract the tuple prediction (benign or malicious)
 				#pred_num = result[mac][1] # Use the mac to extract the tuple number
-
+				#{'mac': '84:a0:6e:c7:6d:62', 'encode': '0', 'evidence': '0'}
 				mac = result["mac"]
 				pred = int(result["encode"])
 				pred_num = int(result["evidence"])
@@ -380,53 +380,53 @@ def capture_stream(listen_interface):
 
 		while not shutdown_flag:
 
-				#dataframe = pd.DataFrame(columns=column_names)
+			#dataframe = pd.DataFrame(columns=column_names)
 
-				#capture_start = time.time()
-				capture = sniff(iface=listen_interface, count=MAX_PACKET_SNIFF) 
+			#capture_start = time.time()
+			capture = sniff(iface=listen_interface, count=MAX_PACKET_SNIFF) 
 
-				# Temporary sniffing workaround for VM environment:
-				#os.system(f"sshpass -p \"{pfsense_pass}\" ssh root@{pfsense_wan_ip} \"tcpdump -i {lan_nic} -c {MAX_PACKET_SNIFF} -w - \'not (src {ssh_client_ip} and port {ssh_client_port}) and not (src {pfsense_lan_ip} and dst {ssh_client_ip} and port 22)\'\" 2>/dev/null > {tmp_file_name}")
-				#os.system(f"tcpdump -i {listen_interface} -c {MAX_PACKET_SNIFF} -w - 2>/dev/null > {tmp_file_name}")
+			# Temporary sniffing workaround for VM environment:
+			#os.system(f"sshpass -p \"{pfsense_pass}\" ssh root@{pfsense_wan_ip} \"tcpdump -i {lan_nic} -c {MAX_PACKET_SNIFF} -w - \'not (src {ssh_client_ip} and port {ssh_client_port}) and not (src {pfsense_lan_ip} and dst {ssh_client_ip} and port 22)\'\" 2>/dev/null > {tmp_file_name}")
+			#os.system(f"tcpdump -i {listen_interface} -c {MAX_PACKET_SNIFF} -w - 2>/dev/null > {tmp_file_name}")
 
-				#capture_end = time.time()
+			#capture_end = time.time()
 
-				# write_start = time.time()
-				wrpcap(tmp_file_name, capture)
-				# write_end = time.time()
+			# write_start = time.time()
+			wrpcap(tmp_file_name, capture)
+			# write_end = time.time()
 				
-				#print(f'Time to capture {MAX_PACKET_SNIFF} packets: {capture_end - capture_start:.02f}')
-				#print(f'Time to write to pcap: {write_end - write_start:.02f}')
-				#print(f'Size of pcap: {size_converter(os.stat(tmp_file_name).st_size)}')
+			#print(f'Time to capture {MAX_PACKET_SNIFF} packets: {capture_end - capture_start:.02f}')
+			#print(f'Time to write to pcap: {write_end - write_start:.02f}')
+			#print(f'Size of pcap: {size_converter(os.stat(tmp_file_name).st_size)}')
 				
 
-				flow_start = time.time()
-				streamer = NFStreamer(source=tmp_file_name, statistical_analysis=True, decode_tunnels=False, accounting_mode=3)
+			flow_start = time.time()
+			streamer = NFStreamer(source=tmp_file_name, statistical_analysis=True, decode_tunnels=False, accounting_mode=3)
 				
-				mapped = map(create_data_frame_entry_from_flow, iter(streamer))
+			mapped = map(create_data_frame_entry_from_flow, iter(streamer))
 
-				df = pd.DataFrame(mapped)
-				dataframe = pd.concat([dataframe,df], ignore_index=True)
-				dataframe.dropna(how='all', inplace=True) 
+			df = pd.DataFrame(mapped)
+			dataframe = pd.concat([dataframe,df], ignore_index=True)
+			dataframe.dropna(how='all', inplace=True) 
 
-				if len(dataframe) >= 30:
-					for start in range(0, len(dataframe), 30):
-						subdf = dataframe[start:start+30]
-						subdf.reset_index(drop=True, inplace=True)
-						FLOW_QUEUE.put(subdf)
-						dataframe = df
-				else:
-					FLOW_QUEUE.put(dataframe)
-
-				if len(dataframe) >= 105:
+			if len(dataframe) >= 30:
+				for start in range(0, len(dataframe), 30):
+					subdf = dataframe[start:start+30]
+					subdf.reset_index(drop=True, inplace=True)
+					FLOW_QUEUE.put(subdf)
 					dataframe = df
+			else:
+				FLOW_QUEUE.put(dataframe)
+
+			if len(dataframe) >= 105:
+				dataframe = df
 				
-				flow_end = time.time()
+			flow_end = time.time()
 
 
-				#print(f"Time to capture: {capture_end - capture_start}; Time to create flow table: {flow_end - flow_start}")
-				#print(f'Flow table memory size: {size_converter(dataframe.__sizeof__())}')
-				#print(f'Flow table sample size: {len(dataframe)}')
+			#print(f"Time to capture: {capture_end - capture_start}; Time to create flow table: {flow_end - flow_start}")
+			#print(f'Flow table memory size: {size_converter(dataframe.__sizeof__())}')
+			#print(f'Flow table sample size: {len(dataframe)}')
 
 
 # Interval specified number of seconds to wait between broadcasts.
@@ -670,8 +670,8 @@ if __name__ == "__main__":
 		signal.signal(signal.SIGINT, handler)
 		signal.signal(signal.SIGTERM, handler)
 
-		broadcast_thread = threading.Thread(target=broadcast_service, args=())
-		broadcast_thread.start()
+		# broadcast_thread = threading.Thread(target=broadcast_service, args=())
+		# broadcast_thread.start()
 
 		capture_thread = threading.Thread(target=capture_stream, args=(interface,))
 		capture_thread.start()
@@ -679,11 +679,11 @@ if __name__ == "__main__":
 		serve_thread = threading.Thread(target=serve_workers, args=())
 		serve_thread.start()
 
-		ap_server_thread = threading.Thread(target=ap_server, args=())
-		ap_server_thread.start()
+		# ap_server_thread = threading.Thread(target=ap_server, args=())
+		# ap_server_thread.start()
 
-		private_ap_mc = threading.Thread(target=private_ap_thread, args=())
-		private_ap_mc.start()
+		# private_ap_mc = threading.Thread(target=private_ap_thread, args=())
+		# private_ap_mc.start()
 
 		resul_thread = threading.Thread(target=obtain_results, args=())
 		resul_thread.start()
@@ -691,9 +691,9 @@ if __name__ == "__main__":
 		capture_thread.join()
 		serve_thread.join()
 		resul_thread.join()
-		broadcast_thread.join()
-		ap_server_thread.join()
-		private_ap_mc.join()
+		#broadcast_thread.join()
+		#ap_server_thread.join()
+		#private_ap_mc.join()
 
 
 								
