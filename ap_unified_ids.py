@@ -302,6 +302,9 @@ def obtain_results():
 		global evidence_buffer
 		global shutdown_flag
 
+		MAX_LOCAL_EVIDENCE_BENIGN_THRESHOLD = 2
+		MAX_LOCAL_EVIDENCE_MALICIOUS_THRESHOLD = 1
+
 		print('[*] Starting results thread...')
 		
 		while not shutdown_flag:
@@ -319,7 +322,7 @@ def obtain_results():
 			lock.acquire()
 			mode = COLLABORATIVE_MODE
 			lock.release()
-			if result == 0 or mode == 1: # where collab mode 1 is connected to cluster
+			if result == 0 or mode == 1: # where collab mode: 1, is connected to cluster
 				continue
 			else:
 				#mac = list(result)[0]
@@ -335,11 +338,11 @@ def obtain_results():
 
 				evidence_buffer[mac][pred] += pred_num
 
-				if evidence_buffer[mac][0] >= MAX_MASTER_NODE_EVIDENCE_BENIGN_THRESHOLD:
+				if evidence_buffer[mac][0] >= MAX_LOCAL_EVIDENCE_BENIGN_THRESHOLD:
 					print(f'[! Inference notice {dt_string} !] {mac} has been benign.')
 					evidence_buffer[mac][0] = 0
 
-				if evidence_buffer[mac][1] >= MAX_MASTER_NODE_EVIDENCE_MALICIOUS_THRESHOLD:
+				if evidence_buffer[mac][1] >= MAX_LOCAL_EVIDENCE_MALICIOUS_THRESHOLD:
 					print(f'[! Inference notice {dt_string} !] {mac} has had suspicious activity.')
 					evidence_buffer[mac][1] = 0
 
