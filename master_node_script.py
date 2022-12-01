@@ -2,6 +2,7 @@
 
 import socket
 import threading
+import _thread
 import struct
 import queue 
 import time
@@ -11,16 +12,20 @@ import signal
 import psutil
 import json
 import os
+import select
 
-from datetime import datetime
 
 
 Q_MAX_SIZE = 200_000
 
 SERVER_QUEUE = queue.Queue(maxsize=Q_MAX_SIZE)
+#SERVER_QUEUE = []
 
-lock = threading.Semaphore(1)
-sq_lock = threading.Semaphore(1)
+#lock = threading.Semaphore(1)
+#sq_lock = threading.Semaphore(1)
+
+lock = _thread.allocate_lock()
+sq_lock = _thread.allocate_lock()
 
 open_sockets = []
 
@@ -44,6 +49,7 @@ def client_connection_thread():
 	while True:
 
 		sq_lock.acquire()
+		#server_list = copy.deepcopy(SERVER_QUEUE.queue)
 		server_list = copy.deepcopy(SERVER_QUEUE.queue)
 		sq_lock.release()
 
@@ -56,23 +62,19 @@ def client_connection_thread():
 
 				client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-				print(f'[*] Attempting connection to {server}')
+				print('[*] Attempting connection to %s' % (server,))
 				client.connect(server)
+				print('[+] Connected to %s' % (server,))
 				servers_connected_to[server] = 1
 
 				lock.acquire()
 				open_sockets.append(client)
 				lock.release()
 
-				print(f'[+] Connected to {server}')
-
-
 			except Exception as e:
-				print(f'[!] Connection to {server} failed: {e}')
+				print('[!] Connection to %s failed: %s' % (server, e,))
 				del servers_connected_to[server]
-				lock.release()
 
-		time.sleep(0.5)
 
 
 # For receiving inferences of buffers
@@ -80,7 +82,6 @@ def client_connection_thread():
 def client_listener_thread():
 
 	evidence_buffer = {}
-	prior_len = 0
 
 	while True:
 
@@ -88,51 +89,60 @@ def client_listener_thread():
 		open_socket_len = len(open_sockets)
 		lock.release()
 
-		if prior_len != open_socket_len:
-			print(f'[*] Total Access Points Connected: {open_socket_len}')
-
 		item = 0
 		while item < open_socket_len:
 
-			socket = open_sockets[item]
-			init_message = socket.recv(1024)
-			result = json.loads(init_message) #init_message.decode('UTF-8')
+			try:
 
-			if result["mac"] == "0": # where collab mode 1 is connected to cluster
+				ap_socket = open_sockets[item]
+				ap_socket.setblocking(0)
+				ready = select.select([ap_socket], [], [], 0.25)
+				result = {"mac": "0", "encode": "0", "evidence": "0"}
+				if ready[0]:
+					init_message = ap_socket.recv(1024)
+					init_message = init_message.decode('UTF-8').split('}')[0] + '}'
+					result = json.loads(init_message)
+
+					#print(result)
+					#init_message.decode('UTF-8')
+				
+				#data = [json.loads(line) for line in init_message]
+
+				if result["mac"] == "0": # where collab mode 1 is connected to cluster
+					item += 1
+					continue
+				else:
+					mac = result["mac"]
+					pred = int(result["encode"])
+					pred_num = int(result["evidence"])
+
+					if mac not in evidence_buffer:
+						evidence_buffer[mac] = {0: 0, 1: 0}
+
+					evidence_buffer[mac][pred] += pred_num
+
+					gmtime = time.gmtime()
+					dt_string = "%s:%s:%s" % (gmtime.tm_hour, gmtime.tm_min, gmtime.tm_sec)
+
+					if evidence_buffer[mac][0] >= MAX_MASTER_NODE_EVIDENCE_BENIGN_THRESHOLD:
+						print('\033[32;1m[ %s ]\033[0m %s - \033[32;1mBenign.\033[0m' % (dt_string, mac,))
+						evidence_buffer[mac][0] = 0
+
+					if evidence_buffer[mac][1] >= MAX_MASTER_NODE_EVIDENCE_MALICIOUS_THRESHOLD:
+						print('\033[31;1m[ %s ]\033[0m %s - \033[31;1mSuspicious.\033[0m' % (dt_string, mac,))
+						evidence_buffer[mac][1] = 0
+
+					if len(evidence_buffer) >= MAX_MASTER_NODE_ENTRIES:
+						evidence_buffer = {}
+
+			except Exception as e:
+				print(e)
+				item += 1
 				continue
-			else:
-				#mac = list(result)[0]
-				#pred = result[mac][0] # Use the mac to extract the tuple prediction (benign or malicious)
-				#pred_num = result[mac][1] # Use the mac to extract the tuple number
-
-				mac = result["mac"]
-				pred = int(result["encode"])
-				pred_num = int(result["evidence"])
-
-				if mac not in evidence_buffer:
-					evidence_buffer[mac] = {0: 0, 1: 0}
-
-				evidence_buffer[mac][pred] += pred_num
-
-				dt_string = datetime.now()
-
-				if evidence_buffer[mac][0] >= MAX_MASTER_NODE_EVIDENCE_BENIGN_THRESHOLD:
-					print(f'[! Inference notice {dt_string} !] {mac} has been benign.')
-					evidence_buffer[mac][0] = 0
-
-				if evidence_buffer[mac][1] >= MAX_MASTER_NODE_EVIDENCE_MALICIOUS_THRESHOLD:
-					print(f'[! Inference notice {dt_string} !] {mac} has had suspicious activity.')
-					evidence_buffer[mac][1] = 0
-
-				if len(evidence_buffer) >= MAX_MASTER_NODE_ENTRIES:
-					evidence_buffer = {}
-
-
 
 			item += 1
-		prior_len = open_socket_len
 			
-
+		time.sleep(0.25)
 
 def discover_services():
 
@@ -172,9 +182,11 @@ def discover_services():
 
 				if addr not in service_addresses:
 					service_addresses[addr] = 1
-					print(f'[!] Detected IDS service from: {addr} Advertised Target TCP Port: {server_port}')
-					SERVER_QUEUE.put((addr[0], int(server_port)))
-
+					print('[!] Detected IDS service from: %s Advertised Target TCP Port: %s' % (addr, server_port,))
+					sq_lock.acquire()
+					SERVER_QUEUE.put_nowait((addr[0], int(server_port)))
+					sq_lock.release()
+			time.sleep(0.20)
 
 
 
@@ -189,7 +201,7 @@ def handler(signum, frame):
 				child.kill()
 
 		process = os.getpid()
-		os.system(f"kill -9 {process}")
+		os.system("kill -9 %s" % (process,))
 
 
 
@@ -211,4 +223,5 @@ if __name__ == "__main__":
 	discovery_thread.join()
 	client_thread.join()
 	client_listener.join()
+
 
