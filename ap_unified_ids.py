@@ -20,6 +20,9 @@ import joblib
 import scapy.config
 import pickle
 import json
+import psutil
+import subprocess
+
 
 import torch
 import torch.nn as nn
@@ -29,7 +32,7 @@ import torchvision.transforms as transforms
 import pandas as pd
 import numpy as np
 
-import psutil
+
 
 from nfstream import NFPlugin, NFStreamer
 from scapy.all import *
@@ -47,13 +50,13 @@ shutdown_flag = False
 Q_MAX_SIZE = 200_000
 OBJ_MAX_SIZE = 10_000
 
-MODEL_TYPE = 0 # 0 for scikit, 1 for pytorch - should be enum instead but python isn't clean like that
+MODEL_TYPE = 1 # 0 for scikit, 1 for pytorch - should be enum instead but python isn't clean like that
 
-PATH_PREF = "./ModelPack/17_18_models/Random Forest"
+PATH_PREF = "./ModelPack/clean_17_models/NN"
 
-SCIKIT_MODEL_PATH = f"{PATH_PREF}/rf_17_18.pkl"
-SCALER_PATH = f"{PATH_PREF}/scaler_rf_17_18.pkl"
-PYTORCH_MODEL_PATH = f"{PATH_PREF}/simple_nn_1718.pth"
+SCIKIT_MODEL_PATH = f"{PATH_PREF}/kn_2017.pkl"
+SCALER_PATH = f"{PATH_PREF}/scaler_nn_17.pkl"
+PYTORCH_MODEL_PATH = f"{PATH_PREF}/simple_nn_17.pth"
 
 
 FLOW_QUEUE = queue.Queue(maxsize=Q_MAX_SIZE)
@@ -274,7 +277,7 @@ def run_inference_no_batch(dataframe):
 					COLLABORATIVE_MODE = 0
 
 		else:
-			RESULT_QUEUE.put(res)
+			RESULT_QUEUE.put_nowait(res)
 		lock.release()
 		# return res
 
@@ -339,11 +342,11 @@ def obtain_results():
 				evidence_buffer[mac][pred] += pred_num
 
 				if evidence_buffer[mac][0] >= MAX_LOCAL_EVIDENCE_BENIGN_THRESHOLD:
-					print(f'[! Inference notice {dt_string} !] {mac} has been benign.')
+					print('\033[32;1m[ %s ]\033[0m %s - \033[32;1mNormal.\033[0m' % (dt_string, mac,))
 					evidence_buffer[mac][0] = 0
 
 				if evidence_buffer[mac][1] >= MAX_LOCAL_EVIDENCE_MALICIOUS_THRESHOLD:
-					print(f'[! Inference notice {dt_string} !] {mac} has had suspicious activity.')
+					print('\033[31;1m[ %s ]\033[0m %s - \033[31;1mSuspicious.\033[0m' % (dt_string, mac,))
 					evidence_buffer[mac][1] = 0
 
 				if len(evidence_buffer) >= MAX_MASTER_NODE_ENTRIES:
@@ -374,7 +377,7 @@ def capture_stream(listen_interface):
 		column_names = ['Source Mac', 'Destination Port', 'Flow Duration', 'Total Fwd Packets', 'Total Backward Packets', 'Total Length of Fwd Packets', 'Total Length of Bwd Packets', 'Fwd Packet Length Max', 'Fwd Packet Length Min', 'Fwd Packet Length Mean', 'Fwd Packet Length Std', 'Bwd Packet Length Max', 'Bwd Packet Length Min', 'Bwd Packet Length Mean', 'Bwd Packet Length Std', 'Flow Bytes/s', 'Flow Packets/s', 'Flow IAT Mean', 'Flow IAT Max', 'Flow IAT Min', 'Fwd IAT Total', 'Fwd IAT Mean', 'Fwd IAT Std', 'Fwd IAT Max', 'Fwd IAT Min', 'Bwd IAT Total', 'Bwd IAT Mean', 'Bwd IAT Std', 'Bwd IAT Max', 'Bwd IAT Min', 'Fwd Packets/s', 'Bwd Packets/s', 'Min Packet Length', 'Max Packet Length', 'Packet Length Mean', 'Packet Length Std', 'Packet Length Variance', 'RST Flag Count', 'Average Packet Size']      
 
 		flow_limit = 20
-		MAX_PACKET_SNIFF = 90
+		MAX_PACKET_SNIFF = 75
 
 		tmp_file = tempfile.NamedTemporaryFile(mode='wb')
 		tmp_file_name = tmp_file.name
@@ -386,16 +389,16 @@ def capture_stream(listen_interface):
 			#dataframe = pd.DataFrame(columns=column_names)
 
 			#capture_start = time.time()
-			capture = sniff(iface=listen_interface, count=MAX_PACKET_SNIFF) 
+			#capture = sniff(iface=listen_interface, count=MAX_PACKET_SNIFF) 
 
 			# Temporary sniffing workaround for VM environment:
 			#os.system(f"sshpass -p \"{pfsense_pass}\" ssh root@{pfsense_wan_ip} \"tcpdump -i {lan_nic} -c {MAX_PACKET_SNIFF} -w - \'not (src {ssh_client_ip} and port {ssh_client_port}) and not (src {pfsense_lan_ip} and dst {ssh_client_ip} and port 22)\'\" 2>/dev/null > {tmp_file_name}")
-			#os.system(f"tcpdump -i {listen_interface} -c {MAX_PACKET_SNIFF} -w - 2>/dev/null > {tmp_file_name}")
+			os.system(f"tcpdump --immediate-mode -i {listen_interface} -c {MAX_PACKET_SNIFF} -w - 2>/dev/null > {tmp_file_name}")
 
 			#capture_end = time.time()
 
 			# write_start = time.time()
-			wrpcap(tmp_file_name, capture)
+			#wrpcap(tmp_file_name, capture)
 			# write_end = time.time()
 				
 			#print(f'Time to capture {MAX_PACKET_SNIFF} packets: {capture_end - capture_start:.02f}')
@@ -416,10 +419,10 @@ def capture_stream(listen_interface):
 				for start in range(0, len(dataframe), 30):
 					subdf = dataframe[start:start+30]
 					subdf.reset_index(drop=True, inplace=True)
-					FLOW_QUEUE.put(subdf)
+					FLOW_QUEUE.put_nowait(subdf)
 					dataframe = df
 			else:
-				FLOW_QUEUE.put(dataframe)
+				FLOW_QUEUE.put_nowait(dataframe)
 
 			if len(dataframe) >= 105:
 				dataframe = df
@@ -474,11 +477,11 @@ def broadcast_service(interval=0.8):
 				data_ap_private = f'{PRIVATE_AP_MAGIC}$private_ap${CURRENT_MASTER[1][0]}${CURRENT_MASTER[1][1]}${PRIVATE_MASTER_TIME}'.encode('UTF-8')
 			else:
 				data_ap_private = f'{PRIVATE_AP_MAGIC}$private_ap$no_master$no_master_port$no_time'.encode('UTF-8')
-			
+			lock.release()
 
 			data_ap_private = bytes(data_ap_private)
 			bytes_sent = udp_socket.sendto(data_ap_private, (PRIVATE_AP_MULTICAST, PRIVATE_PORT))
-			lock.release()
+			
 
 			time.sleep(interval)
 
@@ -512,7 +515,7 @@ def ap_server():
 		
 		if addr != CURRENT_MASTER[1]:
 			print(f'[+] Queueing {addr}')
-			BACKUP_MASTERS.put([connection_object,addr])
+			BACKUP_MASTERS.put_nowait([connection_object,addr])
 
 		lock.release()
 
@@ -534,9 +537,25 @@ def private_ap_thread():
 	mreq = struct.pack("4sl", socket.inet_aton(PRIVATE_AP_MULTICAST), socket.INADDR_ANY)
 	private_receiver.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)	
 
-	# TODO: Make this better instead of trying to get the hostname infinitely
-	IP_address = '10.10.0.252'
 
+	macOS_command = 'ifconfig en0 | grep -E \'inet[ ]+\' | awk \'{print $2}\' -'
+	linux_command = 'hostname -I | awk \'{print $1}\''
+	windows_command = 'netsh interface ip show address \"Ethernet\" | findstr \"IP_address\"'
+
+	default_comm = macOS_command
+	if os.sys.platform == 'darwin':
+		default_comm = macOS_command
+	elif os.sys.platform == 'win32':
+		default_comm = windows_command
+	else:
+		default_comm = linux_command
+
+	comm = subprocess.Popen(default_comm, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+	response = comm.stdout.readlines(-1)[0]
+	IP_address  = response.decode('UTF-8').rstrip()
+
+	if os.sys.platform == 'win32':
+		IP_address = IP_address.split(' ')[-1]
 
 	while True:
 		try:
@@ -559,7 +578,7 @@ def private_ap_thread():
 					# compare our master and timestamp versus what we received
 					lock.acquire()
 					# Assume that we will never get duplicate master IPs.
-					if CURRENT_MASTER[1][0] != master_result[0]:
+					if CURRENT_MASTER is not None and CURRENT_MASTER[1][0] != master_result[0]:
 						# if they are different, take the youngest one and update our info.
 						# if they are different, but the times are not easy to tell apart, tale the higher IP
 						received_time = datetime.fromisoformat(master_time)
@@ -574,7 +593,7 @@ def private_ap_thread():
 									master[0] = 'X'
 									master[1] = 'X'
 									print(f'[*] Synchronized master to: {CURRENT_MASTER[1][0]}')
-									BACKUP_MASTERS.put(old_master)
+									BACKUP_MASTERS.put_nowait(old_master)
 									break
 
 					lock.release()

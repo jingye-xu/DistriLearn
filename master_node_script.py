@@ -125,7 +125,7 @@ def client_listener_thread():
 					dt_string = "%s:%s:%s" % (gmtime.tm_hour, gmtime.tm_min, gmtime.tm_sec)
 
 					if evidence_buffer[mac][0] >= MAX_MASTER_NODE_EVIDENCE_BENIGN_THRESHOLD:
-						print('\033[32;1m[ %s ]\033[0m %s - \033[32;1mBenign.\033[0m' % (dt_string, mac,))
+						print('\033[32;1m[ %s ]\033[0m %s - \033[32;1mNormal.\033[0m' % (dt_string, mac,))
 						evidence_buffer[mac][0] = 0
 
 					if evidence_buffer[mac][1] >= MAX_MASTER_NODE_EVIDENCE_MALICIOUS_THRESHOLD:
