@@ -278,7 +278,7 @@ def run_inference_no_batch(dataframe):
 					while CURRENT_MASTER[0] == 'X' != -1:
 						try:
 							CURRENT_MASTER = BACKUP_MASTERS.get_nowait()
-						except:
+						except Exception:
 							CURRENT_MASTER = None
 							break
 
