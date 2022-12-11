@@ -262,13 +262,26 @@ def run_inference_no_batch(dataframe):
 
 			try:
 				CURRENT_MASTER[0].sendall(serialiezed_res)
+				print(f'[*] Sent inference to master: {CURRENT_MASTER[1]}')
 			except Exception as e:
-				print(e)
+				#print(e)
 				print(f'[-] Lost master: {CURRENT_MASTER[1]}')
 				NUMBER_CLIENTS -= 1
 
+				# Master cannot be communicated with so we replace its values to remove from queue
+				CURRENT_MASTER[1] = 'X'
+				CURRENT_MASTER[0] = 'X'
+
 				if NUMBER_CLIENTS != 0:
 					CURRENT_MASTER = BACKUP_MASTERS.get()
+
+					while CURRENT_MASTER[0] == 'X' != -1:
+						try:
+							CURRENT_MASTER = BACKUP_MASTERS.get_nowait()
+						except:
+							CURRENT_MASTER = None
+							break
+
 					print(f'[+] Elected from queue: {CURRENT_MASTER[1]}')
 				else:
 					CURRENT_MASTER = None

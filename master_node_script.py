@@ -93,7 +93,6 @@ def client_listener_thread():
 		while item < open_socket_len:
 
 			try:
-
 				ap_socket = open_sockets[item]
 				ap_socket.setblocking(0)
 				ready = select.select([ap_socket], [], [], 0.25)
@@ -101,6 +100,7 @@ def client_listener_thread():
 				if ready[0]:
 					init_message = ap_socket.recv(1024)
 					init_message = init_message.decode('UTF-8').split('}')[0] + '}'
+
 					result = json.loads(init_message)
 
 					#print(result)
