@@ -1,5 +1,8 @@
 # DistriLearn
 This repository is used to store scripts, tutorial, data, and any information about the distributed learning project.
+
+This project is work for the paper presented at the IEEE UIC 2022 conference: Link coming soon.
+
 ![Topo](Network.svg)
 
 
@@ -62,7 +65,15 @@ dask-worker tcp://<scheduler-ip>:<scheduler-port>
 
 Finally, to launch the IDS launch the server_dist.py script on the coordinating machine (i.e., the scheduler).
 
-TODO: Add known issues
+# Extended Answers to Paper Results 
+
+* <b>Our system beats snort, how is that? </b> Snort is a standard and state-of-the-art NIDS based on rule detection. When deployed, we configured Snort within a virtual machine environment using an internal network and its <it> community ruleset </it>. We mark the failures of Snort with two metrics: a.) Was the attack ever detected within the attacks duration? b.) Is is a delayed response? If the answer to 'a' is  "no" or the answer to 'b' is "yes", we mark it as a failure. 
+
+* <b> Following the above, is our system a replacement to Snort? </b> No. Snort is used as a baseline comparison to see how well the system not only performs in a real-time deployment, but if it is in fact comparable to a well-established system.
+
+* <b> How is the system so fast/responsive </b> The machine learning models allow us to react quickly and respond in real-time traffic environments. The results shown are based on the non-determinism of flow generation. As stated in the paper, the flows vary on how or when they are generated based on incoming traffic; therefore, the response times are measured using the same criteria as for Snort. The difference is that, due to non-determinism, sometimes attacks are not detected within a reasonable time frame if at all. So, to compensate we take the overall or average best results from a series of runs on the system.
+
+* <b> How are the resource utilizations and the system performance charts 'lightweight'?</b> The biggest thing is the plug-and-play and optimized nature of Dask. These results are averaged, but we note in the threats to validity that the utilization is not constant. It may rise due to operating system pressures we do not have direct control over (in fact, if we did, it may impact the performance more). This is improved upon in our extension to this work in the Unified Deployment branch.
 
 # DISCLAIMER
 
