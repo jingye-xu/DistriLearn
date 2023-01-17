@@ -67,7 +67,7 @@ Finally, to launch the IDS launch the server_dist.py script on the coordinating 
 
 # Extended Answers to Paper Results 
 
-* <b>Our system beats snort, how is that? </b> Snort is a standard and state-of-the-art NIDS based on rule detection. When deployed, we configured Snort within a virtual machine environment using an internal network and its <it> community ruleset </it>. We mark the failures of Snort with two metrics: a.) Was the attack ever detected within the attacks duration? b.) Is is a delayed response? If the answer to 'a' is  "no" or the answer to 'b' is "yes", we mark it as a failure. 
+* <b>Our system beats snort, how is that? </b> Snort is a standard and state-of-the-art NIDS based on rule detection. When deployed, we configured Snort within a virtual machine environment using an internal network and its <it> community ruleset </it>. We mark the failures of Snort with two metrics: a.) Was the attack ever detected within the attacks duration? b.) Is is a delayed response? If the answer to 'a' is  "no" or the answer to 'b' is "yes", we mark it as a failure. In addition, if there is a point were we see false negatives (only one case/model in our experiments did this occur), it is also marked as a failed detection.
 
 * <b> Following the above, is our system a replacement to Snort? </b> No. Snort is used as a baseline comparison to see how well the system not only performs in a real-time deployment, but if it is in fact comparable to a well-established system.
 
