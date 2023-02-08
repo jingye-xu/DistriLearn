@@ -225,6 +225,7 @@ def run_inference_no_batch(dataframe):
 				if ip not in evidence_buffer:
 						evidence_buffer[ip] = {0: 0, 1: 0}
 
+				# for the mac, check update 0 (benign) or 1 (malicious) by a single increment.
 				evidence_buffer[ip][prediction] += 1
 
 				# Check evidence threshold, whichever surpasses first
@@ -422,6 +423,8 @@ def capture_stream(listen_interface):
 			flow_start = time.time()
 			streamer = NFStreamer(source=tmp_file_name, statistical_analysis=True, decode_tunnels=False, accounting_mode=3)
 				
+			# map task: in the iterable object, take each item we have 
+			# and execute the function on this item. The result is the altered stream object. 
 			mapped = map(create_data_frame_entry_from_flow, iter(streamer))
 
 			df = pd.DataFrame(mapped)
@@ -596,13 +599,13 @@ def private_ap_thread():
 						# if they are different, but the times are not easy to tell apart, tale the higher IP
 						received_time = datetime.fromisoformat(master_time)
 						if received_time < PRIVATE_MASTER_TIME or (CURRENT_MASTER[1][0] < master_result[0]):
-
+							# The port here is intended only for tie breaking purposes
 							PRIVATE_MASTER_TIME = received_time
 							# Probably change this to a hashmap instead for speed.
 							for master in BACKUP_MASTERS.queue:
 								if master[1][0] == master_result[0]:
 									old_master = CURRENT_MASTER
-									CURRENT_MASTER = [master[0], master[1]]
+									CURRENT_MASTER = [master[0], master[1]] 
 									master[0] = 'X'
 									master[1] = 'X'
 									print(f'[*] Synchronized master to: {CURRENT_MASTER[1][0]}')
@@ -702,8 +705,8 @@ if __name__ == "__main__":
 			interface = interface_selector[user_selection]
 		print(f'Interface set to {interface}')
 
-		signal.signal(signal.SIGINT, handler)
-		signal.signal(signal.SIGTERM, handler)
+		#signal.signal(signal.SIGINT, handler)
+		#signal.signal(signal.SIGTERM, handler)
 
 		broadcast_thread = threading.Thread(target=broadcast_service, args=())
 		broadcast_thread.start()
