@@ -1,5 +1,7 @@
 # DistriLearn: Unified Deployment
 
+<b> iOS Master node code: https://github.com/Gabriel-Morales/iOS_Master_IDS </b>
+
 In this part of the project, we are merging the distributed portion into each individual access point using our proposed deliberation/collaborative algorithm.
 
 In order to do so, we need to run these systems on the devices powered by OpenWRT. There are five methods we can use:
