@@ -1,0 +1,20 @@
+# You can add the universal repository. You just need to make sure you have the
+necessary repositories on your distribution.
+
+sudo apt install software-properties-common
+sudo add-apt-repository universe
+
+sudo apt update && sudo apt install curl -y
+sudo curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg
+
+
+# below is adding the repo for ros for ubuntu. The command just extracts the
+name for the distribution, but you can add a manual one. For instance, you can
+replace $(. /etc/os-release) with bookworm.
+
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | sudo tee /etc/apt/sources.list.d/ros2.list > /dev/null
+
+
+sudo apt update && sudo apt install ros-dev-tools
+sudo apt upgrade
+sudo apt-install ros-<distro>-desktop or ros-<distro>-ros-base
