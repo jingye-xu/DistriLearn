@@ -39,17 +39,7 @@ from datetime import datetime
 from rclpy.node import Node
 
 
-MODEL_TYPE = 1 # 0 for scikit, 1 for pytorch - should be enum instead but python isn't clean like that
-
-PATH_PREF = "./ModelPack/clean_17_models/NN"
-
-SCIKIT_MODEL_PATH = f"{PATH_PREF}/kn_2017.pkl"
-SCALER_PATH = f"{PATH_PREF}/scaler_nn_17.pkl"
-PYTORCH_MODEL_PATH = f"{PATH_PREF}/simple_nn_17.pth"
-
-
 NUM_INPUT = 38
-batch_size = 1
 
 
 class Net(nn.Module):
@@ -135,26 +125,17 @@ class PyTorchModelDriver(ModelDriver):
 				results = [0 if result[0] < 0.6 else 1 for result in results.detach().numpy()]
 				return results
 
-model_driver = None
-
-if MODEL_TYPE == 0:
-		model_driver = ScikitModelDriver(SCIKIT_MODEL_PATH, SCALER_PATH)
-else:
-		model_driver = PyTorchModelDriver(PYTORCH_MODEL_PATH, Net(), SCALER_PATH)
 
 
+class AccessPointNode(Node):
 
-MAX_COMPUTE_NODE_ENTRIES = 50
-MAX_COMPUTE_NODE_EVIDENCE_MALICIOUS_THRESHOLD = 10
-MAX_COMPUTE_NODE_EVIDENCE_BENIGN_THRESHOLD = 26
-
-MAX_MASTER_NODE_ENTRIES = 50
-MAX_MASTER_NODE_EVIDENCE_MALICIOUS_THRESHOLD = 2
-MAX_MASTER_NODE_EVIDENCE_BENIGN_THRESHOLD = 20
+	def __init__(self):
+		super().__init__('access_point_node')
+		# Access points will subscribe to dispatch topic for masters
+		# Access points will publish to a inference IDS service topic
 
 
-
-def create_data_frame_entry_from_flow(flow):
+	def create_data_frame_entry_from_flow(flow):
 		# Create dataframe entry with fields respective to model only.
 		# old * 0.001
 		bytes_sec = flow.bidirectional_bytes / ((flow.bidirectional_duration_ms + 1) / 1000) 
@@ -169,10 +150,23 @@ def create_data_frame_entry_from_flow(flow):
 		return [flow.src_mac, flow.dst_port, flow.bidirectional_duration_ms, flow.src2dst_packets, flow.dst2src_packets, flow.src2dst_bytes, flow.dst2src_bytes, flow.src2dst_max_ps, flow.src2dst_min_ps, flow.src2dst_mean_ps, flow.src2dst_stddev_ps, flow.dst2src_max_ps, flow.dst2src_min_ps, flow.dst2src_mean_ps, flow.dst2src_stddev_ps, bytes_sec, packets_sec, flow.bidirectional_mean_piat_ms, flow.bidirectional_max_piat_ms, flow.bidirectional_min_piat_ms, fwd_iat_total, flow.src2dst_mean_piat_ms, flow.src2dst_stddev_piat_ms, flow.src2dst_max_piat_ms, flow.src2dst_min_piat_ms, bwd_iat_total, flow.dst2src_mean_piat_ms, flow.dst2src_stddev_piat_ms, flow.dst2src_max_piat_ms, flow.dst2src_min_piat_ms, fwd_packets_sec, bwd_packets_sec, flow.bidirectional_min_ps, flow.bidirectional_max_ps, flow.bidirectional_mean_ps, flow.bidirectional_stddev_ps, packet_length_variance, flow.bidirectional_rst_packets, avg_packet_size]
 
 
-def sniff_traffic(tmp_file_name):
-	# Temporary sniffing workaround for VM environment:
-	#os.system(f"sshpass -p \"{pfsense_pass}\" ssh root@{pfsense_wan_ip} \"tcpdump -i {lan_nic} -c {MAX_PACKET_SNIFF} -w - \'not (src {ssh_client_ip} and port {ssh_client_port}) and not (src {pfsense_lan_ip} and dst {ssh_client_ip} and port 22)\'\" 2>/dev/null > {tmp_file_name}")
-	os.system(f"tcpdump --immediate-mode -i {listen_interface} -c {MAX_PACKET_SNIFF} -w - 2>/dev/null > {tmp_file_name}")
+	def sniff_traffic(tmp_file_name):
+		# Temporary sniffing workaround for VM environment:
+		#os.system(f"sshpass -p \"{pfsense_pass}\" ssh root@{pfsense_wan_ip} \"tcpdump -i {lan_nic} -c {MAX_PACKET_SNIFF} -w - \'not (src {ssh_client_ip} and port {ssh_client_port}) and not (src {pfsense_lan_ip} and dst {ssh_client_ip} and port 22)\'\" 2>/dev/null > {tmp_file_name}")
+		os.system(f"tcpdump --immediate-mode -i {listen_interface} -c {MAX_PACKET_SNIFF} -w - 2>/dev/null > {tmp_file_name}")
+
+
+
+
+
+MODEL_TYPE = 1 # 0 for scikit, 1 for pytorch - should be enum instead but python isn't clean like that
+
+PATH_PREF = "./ModelPack/clean_17_models/NN"
+
+SCIKIT_MODEL_PATH = f"{PATH_PREF}/kn_2017.pkl"
+SCALER_PATH = f"{PATH_PREF}/scaler_nn_17.pkl"
+PYTORCH_MODEL_PATH = f"{PATH_PREF}/simple_nn_17.pth"
+
 
 
 def make_pretty_interfaces():
@@ -216,6 +210,17 @@ if __name__ == "__main__":
 
 			interface = interface_selector[user_selection]
 		print(f'Interface set to {interface}')
+
+
+
+	model_driver = None
+
+	if MODEL_TYPE == 0:
+			model_driver = ScikitModelDriver(SCIKIT_MODEL_PATH, SCALER_PATH)
+	else:
+			model_driver = PyTorchModelDriver(PYTORCH_MODEL_PATH, Net(), SCALER_PATH)
+
+
 
 
 
