@@ -173,6 +173,9 @@ class AccessPointNode(Node):
 		else:
 			# publish if master node is available
 
+		if self.dataframe >= 105:
+			self.dataframe = df
+
 		# if no master node, fill buffer here.
 
 		self.inference_topic_publisher.publish(test_message)
