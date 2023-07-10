@@ -158,7 +158,6 @@ class AccessPointNode(Node):
 
 
 
-
 MODEL_TYPE = 1 # 0 for scikit, 1 for pytorch - should be enum instead but python isn't clean like that
 
 PATH_PREF = "./ModelPack/clean_17_models/NN"
@@ -182,34 +181,33 @@ def make_pretty_interfaces():
 
 
 
-if __name__ == "__main__":
+def main(args=None):
 
+	arg_length = len(sys.argv)
 
-		arg_length = len(sys.argv)
+	if arg_length != 2:
+		print('Missing argument for interface.')
+		print('Usage: ros2 run ap_unified_ids <interface_name>')
+		sys.exit(0)
 
-		if arg_length != 2:
-			print('Missing argument for interface.')
-			print('Usage: ros2 run ap_unified_ids <interface_name>')
-			sys.exit(0)
+	interface_selector, int_choice_msg = make_pretty_interfaces()
 
-		interface_selector, int_choice_msg = make_pretty_interfaces()
+	interface = sys.argv[1]
 
-		interface = sys.argv[1]
+	print(f'Checking interface: {interface}...')
 
-		print(f'Checking interface: {interface}...')
+	if interface not in psutil.net_if_addrs():
 
-		if interface not in psutil.net_if_addrs():
+		user_selection = 1_000_000
 
-			user_selection = 1_000_000
+		while user_selection not in interface_selector:
+			print(f'Interface not available. Select one of the ones below:')
+			print(int_choice_msg)
+			print(f'\nSelect an interface: ', end='')
+			user_selection = int(input())
 
-			while user_selection not in interface_selector:
-				print(f'Interface not available. Select one of the ones below:')
-				print(int_choice_msg)
-				print(f'\nSelect an interface: ', end='')
-				user_selection = int(input())
-
-			interface = interface_selector[user_selection]
-		print(f'Interface set to {interface}')
+		interface = interface_selector[user_selection]
+	print(f'Interface set to {interface}')
 
 
 
@@ -221,6 +219,13 @@ if __name__ == "__main__":
 			model_driver = PyTorchModelDriver(PYTORCH_MODEL_PATH, Net(), SCALER_PATH)
 
 
+	rclpy.init(args=args)
+
+	access_point = AccessPointNode()
+
+	rclpy.spin(access_point)
+	access_point.destroy_node()
+	rclpy.shutdown()
 
 
 

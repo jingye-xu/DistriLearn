@@ -13,8 +13,12 @@ class MasterNode(Node):
 		# Master node publishes to master node dispatch topic
 		# Master node subcribes to IDS service topic
 
-if __name__ == "__main__":
 
-	pass
+def main(args=None):
+	rclpy.init(args=args)
 
+	master_node = MasterNode()
 
+	rclpy.spin(master_node)
+	master_node.destroy_node()
+	rclpy.shutdown()
