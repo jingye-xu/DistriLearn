@@ -31,11 +31,12 @@ import torchvision.transforms as transforms
 
 import pandas as pd
 import numpy as np
-
+import rclpy
 
 from nfstream import NFPlugin, NFStreamer
 from scapy.all import *
 from datetime import datetime
+from rclpy.node import Node
 
 
 MODEL_TYPE = 1 # 0 for scikit, 1 for pytorch - should be enum instead but python isn't clean like that
