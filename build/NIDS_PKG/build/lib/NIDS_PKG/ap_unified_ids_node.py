@@ -36,8 +36,9 @@ import rclpy
 from nfstream import NFPlugin, NFStreamer
 from scapy.all import *
 from datetime import datetime
-from rclpy.node import Node
 
+from rclpy.node import Node
+from std_msgs.msg import String
 
 NUM_INPUT = 38
 
@@ -135,7 +136,7 @@ class AccessPointNode(Node):
 		timer_period = 0.5 # seconds
 
 		# Access points will subscribe to dispatch topic for masters
-		self.dispatch_subscriber = self.create_subcription(String, 'master_node_dispatch', 10)
+		self.dispatch_subscriber = self.create_subscription(String, 'master_node_dispatch', self.dispatch_listener, 10)
 
 		# Access points will publish to a inference IDS service topic
 		self.inference_topic_publisher = self.create_publisher(String, 'ids_service', 10)
@@ -145,7 +146,7 @@ class AccessPointNode(Node):
 	def ids_service_callback(self):
 		
 		test_message = String()
-		test_message.data = 'test ids talker'
+		test_message.data = 'Hello from access point!'
 		self.inference_topic_publisher.publish(test_message)
 
 	def dispatch_listener(self, message):

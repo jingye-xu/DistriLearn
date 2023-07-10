@@ -24,12 +24,15 @@ class MasterNode(Node):
 	def master_dispatch_callback(self):
 		
 		test_str = String()
-		test_str.data = 'Testing talking'
+		test_str.data = 'Hello from master node!'
 		self.master_dispatch_publisher.publish(test_str)
+
+
 
 	def ids_service_listener(self, data):
 		print(data)
-
+		# Fill buffer
+		# Report if filled threshold
 
 
 def main(args=None):

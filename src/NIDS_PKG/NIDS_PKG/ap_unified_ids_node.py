@@ -36,8 +36,9 @@ import rclpy
 from nfstream import NFPlugin, NFStreamer
 from scapy.all import *
 from datetime import datetime
-from rclpy.node import Node
 
+from rclpy.node import Node
+from std_msgs.msg import String
 
 NUM_INPUT = 38
 
@@ -134,8 +135,12 @@ class AccessPointNode(Node):
 
 		timer_period = 0.5 # seconds
 
+		self.capture_name = 'tmp_capture'
+		self.dataframe = pd.DataFrame()
+
+
 		# Access points will subscribe to dispatch topic for masters
-		self.dispatch_subscriber = self.create_subcription(String, 'master_node_dispatch', 10)
+		self.dispatch_subscriber = self.create_subscription(String, 'master_node_dispatch', self.master_dispatch_listener, 10)
 
 		# Access points will publish to a inference IDS service topic
 		self.inference_topic_publisher = self.create_publisher(String, 'ids_service', 10)
@@ -145,10 +150,35 @@ class AccessPointNode(Node):
 	def ids_service_callback(self):
 		
 		test_message = String()
-		test_message.data = 'test ids talker'
+		test_message.data = 'Hello from access point!'
+
+
+		# capture data from network
+		self.sniff_traffic(self.capture_name)
+
+		# turn it into flow
+		stream = NFStreamer(self.capture_name, statistical_analysis=True, decode_tunnels=False, accounting_mode=3)
+		mapped = map(create_data_frame_entry_from_flow, iter(stream))
+		df = pd.DataFrame(mapped)
+
+		self.dataframe = pd.concat([self.dataframe, df], ignore_index=True)
+		self.dataframe.dropna(how='all', inplace=True)
+
+		if len(self.dataframe) >= 30:
+			for start in range(0, len(self.dataframe), 30):
+				subdf = self.dataframe[start:start+30]
+				subdf.reset_index(drop=True,inplace=True)
+				# publish if master node is available
+				self.dataframe = df
+		else:
+			# publish if master node is available
+
+		# if no master node, fill buffer here.
+
 		self.inference_topic_publisher.publish(test_message)
 
-	def dispatch_listener(self, message):
+
+	def master_dispatch_listener(self, message):
 		print(message)
 
 
