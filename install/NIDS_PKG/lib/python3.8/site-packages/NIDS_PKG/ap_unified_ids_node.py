@@ -187,16 +187,13 @@ PYTORCH_MODEL_PATH = f"{PATH_PREF}/simple_nn_17.pth"
 
 def main(args=None):
 
-	arg_length = len(args)
-
-	if arg_length != 2:
-		print('Missing argument for interface.')
-		print('Usage: ros2 run ap_unified_ids <interface_name>')
+	if 'INTERFACE_IDS' not in os.environ:
+		print('Missing environment variable for interface. Set it using export.')
 		sys.exit(0)
 
 	interface_selector, int_choice_msg = make_pretty_interfaces()
 
-	interface = sys.argv[1]
+	interface = os.environ['INTERFACE_IDS']
 
 	print(f'Checking interface: {interface}...')
 

@@ -13,4 +13,4 @@ When installing ROS, you may be inclined to use Ubuntu. We can debootstrap Ubunt
 
 
 
-
+NOTE: Run the code from the root DistriLearn workspace!
