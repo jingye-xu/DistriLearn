@@ -1,0 +1,6 @@
+source;share/NIDS_PKG/hook/pythonpath.ps1
+source;share/NIDS_PKG/hook/pythonpath.dsv
+source;share/NIDS_PKG/hook/pythonpath.sh
+source;share/NIDS_PKG/hook/ament_prefix_path.ps1
+source;share/NIDS_PKG/hook/ament_prefix_path.dsv
+source;share/NIDS_PKG/hook/ament_prefix_path.sh

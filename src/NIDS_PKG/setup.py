@@ -21,7 +21,7 @@ setup(
     entry_points={
         'console_scripts': [
             'ap_node = NIDS_PKG.ap_unified_ids_node:main',
-            'master_node = NIDS_PKG.master_node_script_node:main'
+            'master_node = NIDS_PKG.master_node_script_node:main',
         ],
     },
 )
