@@ -136,7 +136,7 @@ class AccessPointNode(Node):
 	def __init__(self, net_interface):
 		super().__init__('access_point_node')
 
-		timer_period = 0.5 # seconds
+		timer_period = 0.2 # seconds
 
 		self.COLLAB_MODE = False # False means local AP operation
 		self.MAX_PACKET_SNIFF = 75
@@ -154,7 +154,7 @@ class AccessPointNode(Node):
 		self.inference_topic_publisher = self.create_publisher(String, 'ids_service', 10)
 		self.timer = self.create_timer(timer_period, self.ids_service_callback)
 
-		self.master_queue = {}
+		self.master_queue = []
 
 
 	def ids_service_callback(self):
@@ -205,8 +205,15 @@ class AccessPointNode(Node):
 
 	def master_dispatch_listener(self, message):
 		
-		print(str(message))
+		master_dat = message.data
+		master_splt = master_dat.split('$')
 
+		master_hash = master_splt[0]
+		master_init_time = master_splt[1]
+
+		if master_hash not in self.master_queue:
+			self.master_queue.append((master_hash, master_init_time, str(datetime.now())))
+		print(master_hash)
 
 	def create_data_frame_entry_from_flow(self, flow):
 		# Create dataframe entry with fields respective to model only.

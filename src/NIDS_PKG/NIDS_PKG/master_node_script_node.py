@@ -8,14 +8,14 @@ import hashlib
 
 from rclpy.node import Node
 from std_msgs.msg import String
-import MasterComm.msg
+
 
 class MasterNode(Node):
 
 	def __init__(self):
 		super().__init__('master_node')
 
-		timer_period = 0.5  # seconds
+		timer_period = 0.2  # seconds
 
 		self.master_hash = self.hash_value('master' + str(datetime.datetime.now()))
 		self.init_time = datetime.datetime.now()
@@ -30,7 +30,7 @@ class MasterNode(Node):
 	def master_dispatch_callback(self):
 		
 		mast_hash = String()
-		mast_hash.data = self.master_hash
+		mast_hash.data = self.master_hash + '$' + str(self.init_time)
 		self.master_dispatch_publisher.publish(mast_hash)
 
 	def ids_service_listener(self, data):
