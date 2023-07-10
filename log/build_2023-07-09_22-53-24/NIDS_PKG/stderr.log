@@ -1,0 +1,10 @@
+  File "/home/gmo/Desktop/ids_workspace/DistriLearn/install/NIDS_PKG/lib/python3.8/site-packages/NIDS_PKG/master_node_script_node.py", line 20
+    self.master_hash = self.hash_value('master' datetime.datetime.now())
+                                                ^
+SyntaxError: invalid syntax
+
+  File "/home/gmo/Desktop/ids_workspace/DistriLearn/install/NIDS_PKG/lib/python3.8/site-packages/NIDS_PKG/ap_unified_ids_node.py", line 147
+    self.ap_hash = self.hash_value('ap' datetime.datetime.now())
+                                        ^
+SyntaxError: invalid syntax
+

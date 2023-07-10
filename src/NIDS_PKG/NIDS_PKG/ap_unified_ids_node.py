@@ -22,6 +22,9 @@ import pickle
 import json
 import psutil
 import subprocess
+import socket
+import datetime
+import hashlib
 
 
 import torch
@@ -35,7 +38,7 @@ import rclpy
 
 from nfstream import NFPlugin, NFStreamer
 from scapy.all import *
-from datetime import datetime
+
 
 from rclpy.node import Node
 from std_msgs.msg import String
@@ -130,35 +133,53 @@ class PyTorchModelDriver(ModelDriver):
 
 class AccessPointNode(Node):
 
-	def __init__(self):
+	def __init__(self, net_interface):
 		super().__init__('access_point_node')
 
 		timer_period = 0.5 # seconds
 
+		self.COLLAB_MODE = False # False means local AP operation
+		self.MAX_PACKET_SNIFF = 75
 		self.capture_name = 'tmp_capture'
+		self.net_interface = net_interface
 		self.dataframe = pd.DataFrame()
 
+		self.ap_hash = self.hash_value('ap' + str(datetime.now()))
 
 		# Access points will subscribe to dispatch topic for masters
 		self.dispatch_subscriber = self.create_subscription(String, 'master_node_dispatch', self.master_dispatch_listener, 10)
+		self.number_masters = 0
 
 		# Access points will publish to a inference IDS service topic
 		self.inference_topic_publisher = self.create_publisher(String, 'ids_service', 10)
 		self.timer = self.create_timer(timer_period, self.ids_service_callback)
 
+		self.master_queue = {}
+
 
 	def ids_service_callback(self):
 		
-		test_message = String()
-		test_message.data = 'Hello from access point!'
+		self.number_masters = self.inference_topic_publisher.get_subscription_count()
 
+		if self.number_masters >= 1:
+			self.COLLAB_MODE = True
+		else:
+			self.COLLAB_MODE = False
 
+		print(f'Collab mode on? {self.COLLAB_MODE}')
+
+		ap_hashm = String()
+		ap_hashm.data = self.ap_hash
+
+		self.inference_topic_publisher.publish(ap_hashm)
+
+		return
 		# capture data from network
-		self.sniff_traffic(self.capture_name)
+		self.sniff_traffic(self.capture_name, self.net_interface)
 
 		# turn it into flow
 		stream = NFStreamer(self.capture_name, statistical_analysis=True, decode_tunnels=False, accounting_mode=3)
-		mapped = map(create_data_frame_entry_from_flow, iter(stream))
+		mapped = map(self.create_data_frame_entry_from_flow, iter(stream))
 		df = pd.DataFrame(mapped)
 
 		self.dataframe = pd.concat([self.dataframe, df], ignore_index=True)
@@ -172,17 +193,19 @@ class AccessPointNode(Node):
 				self.dataframe = df
 		else:
 			# publish if master node is available
+			pass
 
 		if self.dataframe >= 105:
 			self.dataframe = df
 
 		# if no master node, fill buffer here.
 
-		self.inference_topic_publisher.publish(test_message)
+		
 
 
 	def master_dispatch_listener(self, message):
-		print(message)
+		
+		print(str(message))
 
 
 	def create_data_frame_entry_from_flow(self, flow):
@@ -200,11 +223,15 @@ class AccessPointNode(Node):
 		return [flow.src_mac, flow.dst_port, flow.bidirectional_duration_ms, flow.src2dst_packets, flow.dst2src_packets, flow.src2dst_bytes, flow.dst2src_bytes, flow.src2dst_max_ps, flow.src2dst_min_ps, flow.src2dst_mean_ps, flow.src2dst_stddev_ps, flow.dst2src_max_ps, flow.dst2src_min_ps, flow.dst2src_mean_ps, flow.dst2src_stddev_ps, bytes_sec, packets_sec, flow.bidirectional_mean_piat_ms, flow.bidirectional_max_piat_ms, flow.bidirectional_min_piat_ms, fwd_iat_total, flow.src2dst_mean_piat_ms, flow.src2dst_stddev_piat_ms, flow.src2dst_max_piat_ms, flow.src2dst_min_piat_ms, bwd_iat_total, flow.dst2src_mean_piat_ms, flow.dst2src_stddev_piat_ms, flow.dst2src_max_piat_ms, flow.dst2src_min_piat_ms, fwd_packets_sec, bwd_packets_sec, flow.bidirectional_min_ps, flow.bidirectional_max_ps, flow.bidirectional_mean_ps, flow.bidirectional_stddev_ps, packet_length_variance, flow.bidirectional_rst_packets, avg_packet_size]
 
 
-	def sniff_traffic(self, tmp_file_name):
+	def sniff_traffic(self, tmp_file_name, listen_interface):
 		# Temporary sniffing workaround for VM environment:
 		#os.system(f"sshpass -p \"{pfsense_pass}\" ssh root@{pfsense_wan_ip} \"tcpdump -i {lan_nic} -c {MAX_PACKET_SNIFF} -w - \'not (src {ssh_client_ip} and port {ssh_client_port}) and not (src {pfsense_lan_ip} and dst {ssh_client_ip} and port 22)\'\" 2>/dev/null > {tmp_file_name}")
-		os.system(f"tcpdump --immediate-mode -i {listen_interface} -c {MAX_PACKET_SNIFF} -w - 2>/dev/null > {tmp_file_name}")
+		os.system(f"tcpdump --immediate-mode -i {listen_interface} -c {self.MAX_PACKET_SNIFF} -w - 2>/dev/null > {tmp_file_name}")
 
+	def hash_value(self, val):
+		hasher = hashlib.sha256()
+		hasher.update(val.encode('UTF-8'))
+		return hasher.hexdigest()
 
 
 
@@ -221,7 +248,7 @@ PYTORCH_MODEL_PATH = f"{PATH_PREF}/simple_nn_17.pth"
 def main(args=None):
 
 	if 'INTERFACE_IDS' not in os.environ:
-		print('Missing environment variable for interface. Set it using export.')
+		print('Missing environment variable for interface. Set it using export (INTERFACE_IDS).')
 		sys.exit(0)
 
 	interface_selector, int_choice_msg = make_pretty_interfaces()
@@ -255,7 +282,7 @@ def main(args=None):
 
 	rclpy.init(args=args)
 
-	access_point = AccessPointNode()
+	access_point = AccessPointNode(interface)
 
 	rclpy.spin(access_point)
 	access_point.destroy_node()

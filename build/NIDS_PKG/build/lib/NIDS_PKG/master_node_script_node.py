@@ -2,10 +2,13 @@
 
 import os
 import rclpy
+import socket
+import datetime
+import hashlib
 
 from rclpy.node import Node
 from std_msgs.msg import String
-
+import MasterComm.msg
 
 class MasterNode(Node):
 
@@ -13,6 +16,9 @@ class MasterNode(Node):
 		super().__init__('master_node')
 
 		timer_period = 0.5  # seconds
+
+		self.master_hash = self.hash_value('master' + str(datetime.datetime.now()))
+		self.init_time = datetime.datetime.now()
 
 		# Master node publishes to master node dispatch topic
 		self.master_dispatch_publisher = self.create_publisher(String, 'master_node_dispatch', 10)
@@ -23,15 +29,19 @@ class MasterNode(Node):
 
 	def master_dispatch_callback(self):
 		
-		test_str = String()
-		test_str.data = 'Hello from master node!'
-		self.master_dispatch_publisher.publish(test_str)
+		mast_hash = String()
+		mast_hash.data = self.master_hash
+		self.master_dispatch_publisher.publish(mast_hash)
 
 	def ids_service_listener(self, data):
-		
-
 		print(data)
+		# Fill buffer
+		# Report if filled threshold
 
+	def hash_value(self, val):
+		hasher = hashlib.sha256()
+		hasher.update(val.encode('UTF-8'))
+		return hasher.hexdigest()
 
 
 def main(args=None):
