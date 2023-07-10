@@ -38,16 +38,6 @@ from scapy.all import *
 from datetime import datetime
 
 
-conf.bufsize = 65536
-conf.ipv6_enabed = False
-#conf.promisc = True
-conf.recv_poll_rate = 0.02
-
-shutdown_flag = False
-
-Q_MAX_SIZE = 200_000
-OBJ_MAX_SIZE = 10_000
-
 MODEL_TYPE = 1 # 0 for scikit, 1 for pytorch - should be enum instead but python isn't clean like that
 
 PATH_PREF = "./ModelPack/clean_17_models/NN"
@@ -197,7 +187,6 @@ def make_pretty_interfaces():
 
 
 
-
 if __name__ == "__main__":
 
 
@@ -205,7 +194,7 @@ if __name__ == "__main__":
 
 		if arg_length != 2:
 			print('Missing argument for interface.')
-			print('Usage: ./ap_unified_ids <interface_name>')
+			print('Usage: ros2 run ap_unified_ids <interface_name>')
 			sys.exit(0)
 
 		interface_selector, int_choice_msg = make_pretty_interfaces()
