@@ -8,6 +8,7 @@ import hashlib
 
 from rclpy.node import Node
 from std_msgs.msg import String
+from uuid import getnode as get_mac
 
 
 class MasterNode(Node):
@@ -15,9 +16,10 @@ class MasterNode(Node):
 	def __init__(self):
 		super().__init__('master_node')
 
-		timer_period = 0.5  # seconds
+		timer_period = 0.2  # seconds
 
-		self.master_hash = self.hash_value('master' + str(datetime.datetime.now()))
+		self.master_mac = get_mac()
+		self.master_hash = self.hash_value('master' + str(datetime.datetime.now()) + str(self.master_mac))
 		self.init_time = datetime.datetime.now()
 
 		# Master node publishes to master node dispatch topic

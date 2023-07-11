@@ -36,6 +36,7 @@ import pandas as pd
 import numpy as np
 import rclpy
 
+from uuid import getnode as get_mac
 from nfstream import NFPlugin, NFStreamer
 from scapy.all import *
 
@@ -136,25 +137,72 @@ class AccessPointNode(Node):
 	def __init__(self, net_interface):
 		super().__init__('access_point_node')
 
-		timer_period = 0.5 # seconds
+		timer_period = 0.2 # seconds
 
 		self.COLLAB_MODE = False # False means local AP operation
 		self.MAX_PACKET_SNIFF = 75
+
 		self.capture_name = 'tmp_capture'
 		self.net_interface = net_interface
 		self.dataframe = pd.DataFrame()
 
-		self.ap_hash = self.hash_value('ap' + str(datetime.now()))
+		self.ap_mac = get_mac()
+		self.ap_hash = self.hash_value('ap' + str(datetime.now()) + str(self.ap_mac))
 
 		# Access points will subscribe to dispatch topic for masters
 		self.dispatch_subscriber = self.create_subscription(String, 'master_node_dispatch', self.master_dispatch_listener, 10)
 		self.number_masters = 0
+		self.master_poll_cycles = 0
 
 		# Access points will publish to a inference IDS service topic
 		self.inference_topic_publisher = self.create_publisher(String, 'ids_service', 10)
 		self.timer = self.create_timer(timer_period, self.ids_service_callback)
 
-		self.master_queue = []
+
+		# Access points will publish to a private topic to manage elected masters: Publisher will publish current master info
+		self.private_topic_master_manager = self.create_publisher(String, 'master_manager', 10)
+		self.timer = self.create_timer(timer_period, self.master_manager_publish_callback)
+
+		# Access points will subscribe to private topic to manage elected masters: Subscribers will receive all infos from APs and elect master 
+		self.master_manager_subscriber = self.create_subscription(String, 'master_manager', self.master_manager_subscribe_callback, 10)
+
+		self.master_queue = {}
+
+		self.current_master_hash = ''
+		self.curr_elected_master_info = ''
+
+
+	def master_manager_publish_callback(self):
+		
+		elected_master_info = String()
+		elected_master_info.data = self.curr_elected_master_info
+
+		self.private_topic_master_manager.publish(elected_master_info)
+
+
+	def master_manager_subscribe_callback(self, msg):
+
+		print(msg.data)
+		rec_master_inf = msg.data.split('$')
+
+		master_hash = rec_master_inf[0]
+
+		if master_hash not in self.master_queue:
+	
+			master_cycle_cnt = rec_master_inf[1]
+			master_init_time = rec_master_inf[2]
+
+			self.ap_masters[master_hash] = list()
+			self.ap_masters[master_hash].append(master_cycle_cnt)
+			self.ap_masters[master_hash].append(master_init_time)
+
+		'''
+		conflict resolution rules for master election:
+
+			- 
+
+		'''
+
 
 
 	def ids_service_callback(self):
@@ -165,6 +213,10 @@ class AccessPointNode(Node):
 			self.COLLAB_MODE = True
 		else:
 			self.COLLAB_MODE = False
+			self.current_master_hash = ''
+			self.curr_elected_master_info = ''
+
+
 
 		print(f'Collab mode on? {self.COLLAB_MODE}')
 
@@ -200,11 +252,11 @@ class AccessPointNode(Node):
 
 		# if no master node, fill buffer here.
 
-		
-
-
+	
 	def master_dispatch_listener(self, message):
 		
+		self.master_poll_cycles += 1
+
 		master_dat = message.data
 		master_splt = master_dat.split('$')
 
@@ -212,8 +264,26 @@ class AccessPointNode(Node):
 		master_init_time = master_splt[1]
 
 		if master_hash not in self.master_queue:
-			self.master_queue.append((master_hash, master_init_time, str(datetime.now())))
-		print(master_hash)
+			self.master_queue[master_hash] = list()
+			self.master_queue[master_hash].append(0)
+			self.master_queue[master_hash].append(master_init_time)
+		else: 
+			master_cycle_cnt = 0
+			master_info = self.master_queue[master_hash]
+			master_info[master_cycle_cnt] += 1
+
+
+		# Initial master selection to get the resolution scheme going
+
+		if self.number_masters == 1 and self.master_hash == '':
+			self.master_hash = master_hash
+			self.curr_elected_master_info = self.package_master_info(self.master_hash)
+
+
+	def package_master_info(self, mhash):
+
+		return self.master_queue[mhash] + '$' + self.master_queue[mhash][0] + '$' + self.master_queue[mhash][1]
+
 
 	def create_data_frame_entry_from_flow(self, flow):
 		# Create dataframe entry with fields respective to model only.

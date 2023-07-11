@@ -1,0 +1,45 @@
+Traceback (most recent call last):
+  File "/usr/lib/python3/dist-packages/pkg_resources/_vendor/packaging/version.py", line 31, in parse
+    return Version(version)
+  File "/usr/lib/python3/dist-packages/pkg_resources/_vendor/packaging/version.py", line 202, in __init__
+    raise InvalidVersion("Invalid version: '{0}'".format(version))
+pkg_resources.extern.packaging.version.InvalidVersion: Invalid version: '.egg-info'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "setup.py", line 1, in <module>
+    from setuptools import setup
+  File "/usr/lib/python3/dist-packages/setuptools/__init__.py", line 17, in <module>
+    import setuptools.version
+  File "/usr/lib/python3/dist-packages/setuptools/version.py", line 1, in <module>
+    import pkg_resources
+  File "/usr/lib/python3/dist-packages/pkg_resources/__init__.py", line 3254, in <module>
+    def _initialize_master_working_set():
+  File "/usr/lib/python3/dist-packages/pkg_resources/__init__.py", line 3237, in _call_aside
+    f(*args, **kwargs)
+  File "/usr/lib/python3/dist-packages/pkg_resources/__init__.py", line 3266, in _initialize_master_working_set
+    working_set = WorkingSet._build_master()
+  File "/usr/lib/python3/dist-packages/pkg_resources/__init__.py", line 575, in _build_master
+    ws = cls()
+  File "/usr/lib/python3/dist-packages/pkg_resources/__init__.py", line 568, in __init__
+    self.add_entry(entry)
+  File "/usr/lib/python3/dist-packages/pkg_resources/__init__.py", line 624, in add_entry
+    for dist in find_distributions(entry, True):
+  File "/usr/lib/python3/dist-packages/pkg_resources/__init__.py", line 2062, in find_on_path
+    path_item_entries = _by_version_descending(filtered)
+  File "/usr/lib/python3/dist-packages/pkg_resources/__init__.py", line 2035, in _by_version_descending
+    return sorted(names, key=_by_version, reverse=True)
+  File "/usr/lib/python3/dist-packages/pkg_resources/__init__.py", line 2033, in _by_version
+    return [packaging.version.parse(part) for part in parts]
+  File "/usr/lib/python3/dist-packages/pkg_resources/__init__.py", line 2033, in <listcomp>
+    return [packaging.version.parse(part) for part in parts]
+  File "/usr/lib/python3/dist-packages/pkg_resources/_vendor/packaging/version.py", line 33, in parse
+    return LegacyVersion(version)
+  File "/usr/lib/python3/dist-packages/pkg_resources/_vendor/packaging/version.py", line 76, in __init__
+    self._key = _legacy_cmpkey(self._version)
+  File "/usr/lib/python3/dist-packages/pkg_resources/_vendor/packaging/version.py", line 141, in _legacy_cmpkey
+    for part in _parse_version_parts(version.lower()):
+  File "/usr/lib/python3/dist-packages/pkg_resources/_vendor/packaging/version.py", line 116, in _parse_version_parts
+    part = _legacy_version_replacement_map.get(part, part)
+KeyboardInterrupt

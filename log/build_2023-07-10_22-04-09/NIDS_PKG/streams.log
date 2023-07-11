@@ -1,0 +1,47 @@
+[0.562s] Invoking command in '/home/gmo/Desktop/ids_workspace/DistriLearn/src/NIDS_PKG': PYTHONPATH=/home/gmo/Desktop/ids_workspace/DistriLearn/build/NIDS_PKG/prefix_override:/home/gmo/Desktop/ids_workspace/DistriLearn/install/NIDS_PKG/lib/python3.8/site-packages:${PYTHONPATH} /usr/bin/python3 setup.py egg_info --egg-base ../../build/NIDS_PKG build --build-base /home/gmo/Desktop/ids_workspace/DistriLearn/build/NIDS_PKG/build install --record /home/gmo/Desktop/ids_workspace/DistriLearn/build/NIDS_PKG/install.log --install-scripts $base/lib/NIDS_PKG --single-version-externally-managed
+[0.643s] Traceback (most recent call last):
+[0.643s]   File "/usr/lib/python3/dist-packages/pkg_resources/_vendor/packaging/version.py", line 31, in parse
+[0.667s]     return Version(version)
+[0.667s]   File "/usr/lib/python3/dist-packages/pkg_resources/_vendor/packaging/version.py", line 202, in __init__
+[0.667s]     raise InvalidVersion("Invalid version: '{0}'".format(version))
+[0.667s] pkg_resources.extern.packaging.version.InvalidVersion: Invalid version: '.egg-info'
+[0.667s] 
+[0.668s] During handling of the above exception, another exception occurred:
+[0.668s] 
+[0.668s] Traceback (most recent call last):
+[0.668s]   File "setup.py", line 1, in <module>
+[0.668s]     from setuptools import setup
+[0.668s]   File "/usr/lib/python3/dist-packages/setuptools/__init__.py", line 17, in <module>
+[0.681s]     import setuptools.version
+[0.681s]   File "/usr/lib/python3/dist-packages/setuptools/version.py", line 1, in <module>
+[0.688s]     import pkg_resources
+[0.688s]   File "/usr/lib/python3/dist-packages/pkg_resources/__init__.py", line 3254, in <module>
+[0.689s]     def _initialize_master_working_set():
+[0.689s]   File "/usr/lib/python3/dist-packages/pkg_resources/__init__.py", line 3237, in _call_aside
+[0.689s]     f(*args, **kwargs)
+[0.689s]   File "/usr/lib/python3/dist-packages/pkg_resources/__init__.py", line 3266, in _initialize_master_working_set
+[0.690s]     working_set = WorkingSet._build_master()
+[0.690s]   File "/usr/lib/python3/dist-packages/pkg_resources/__init__.py", line 575, in _build_master
+[0.690s]     ws = cls()
+[0.690s]   File "/usr/lib/python3/dist-packages/pkg_resources/__init__.py", line 568, in __init__
+[0.690s]     self.add_entry(entry)
+[0.690s]   File "/usr/lib/python3/dist-packages/pkg_resources/__init__.py", line 624, in add_entry
+[0.691s]     for dist in find_distributions(entry, True):
+[0.691s]   File "/usr/lib/python3/dist-packages/pkg_resources/__init__.py", line 2062, in find_on_path
+[0.691s]     path_item_entries = _by_version_descending(filtered)
+[0.691s]   File "/usr/lib/python3/dist-packages/pkg_resources/__init__.py", line 2035, in _by_version_descending
+[0.691s]     return sorted(names, key=_by_version, reverse=True)
+[0.691s]   File "/usr/lib/python3/dist-packages/pkg_resources/__init__.py", line 2033, in _by_version
+[0.692s]     return [packaging.version.parse(part) for part in parts]
+[0.692s]   File "/usr/lib/python3/dist-packages/pkg_resources/__init__.py", line 2033, in <listcomp>
+[0.692s]     return [packaging.version.parse(part) for part in parts]
+[0.692s]   File "/usr/lib/python3/dist-packages/pkg_resources/_vendor/packaging/version.py", line 33, in parse
+[0.692s]     return LegacyVersion(version)
+[0.692s]   File "/usr/lib/python3/dist-packages/pkg_resources/_vendor/packaging/version.py", line 76, in __init__
+[0.692s]     self._key = _legacy_cmpkey(self._version)
+[0.693s]   File "/usr/lib/python3/dist-packages/pkg_resources/_vendor/packaging/version.py", line 141, in _legacy_cmpkey
+[0.693s]     for part in _parse_version_parts(version.lower()):
+[0.693s]   File "/usr/lib/python3/dist-packages/pkg_resources/_vendor/packaging/version.py", line 116, in _parse_version_parts
+[0.693s]     part = _legacy_version_replacement_map.get(part, part)
+[0.693s] KeyboardInterrupt
+[0.701s] Invoked command in '/home/gmo/Desktop/ids_workspace/DistriLearn/src/NIDS_PKG' returned '-2': PYTHONPATH=/home/gmo/Desktop/ids_workspace/DistriLearn/build/NIDS_PKG/prefix_override:/home/gmo/Desktop/ids_workspace/DistriLearn/install/NIDS_PKG/lib/python3.8/site-packages:${PYTHONPATH} /usr/bin/python3 setup.py egg_info --egg-base ../../build/NIDS_PKG build --build-base /home/gmo/Desktop/ids_workspace/DistriLearn/build/NIDS_PKG/build install --record /home/gmo/Desktop/ids_workspace/DistriLearn/build/NIDS_PKG/install.log --install-scripts $base/lib/NIDS_PKG --single-version-externally-managed
