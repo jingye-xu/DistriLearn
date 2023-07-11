@@ -36,7 +36,13 @@ class MasterNode(Node):
 		self.master_dispatch_publisher.publish(mast_hash)
 
 	def ids_service_listener(self, data):
-		print(data)
+		# Temporary: Only receiving hash.
+
+		if data.data == self.master_hash:
+			print('I am elected!')
+		else:
+			print('Ignoring messages')
+
 		# Fill buffer
 		# Report if filled threshold
 
