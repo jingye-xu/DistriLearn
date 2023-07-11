@@ -168,11 +168,14 @@ class AccessPointNode(Node):
 
 		self.master_queue = {}
 
-		self.current_master_hash = ''
+		self.master_hash = ''
 		self.curr_elected_master_info = ''
 
 
 	def master_manager_publish_callback(self):
+
+		if self.COLLAB_MODE == False or (self.curr_elected_master_info == '' and self.master_hash == ''):
+			return
 		
 		elected_master_info = String()
 		elected_master_info.data = self.curr_elected_master_info
@@ -182,26 +185,59 @@ class AccessPointNode(Node):
 
 	def master_manager_subscribe_callback(self, msg):
 
-		print(msg.data)
+		if self.COLLAB_MODE == False:
+			return
+
 		rec_master_inf = msg.data.split('$')
+		print(rec_master_inf)
 
 		master_hash = rec_master_inf[0]
+
 
 		if master_hash not in self.master_queue:
 	
 			master_cycle_cnt = rec_master_inf[1]
 			master_init_time = rec_master_inf[2]
 
-			self.ap_masters[master_hash] = list()
-			self.ap_masters[master_hash].append(master_cycle_cnt)
-			self.ap_masters[master_hash].append(master_init_time)
+			self.master_queue[master_hash] = list()
+			self.master_queue[master_hash].append(master_cycle_cnt)
+			self.master_queue[master_hash].append(master_init_time)
 
 		'''
 		conflict resolution rules for master election:
 
-			- 
-
+			- If the queue is larger than one, compare AP master with other masters in queue.
+			- If a master within the queue has a smaller timestamp than current, elect this as our master.
+			- If a master within the queue has the same timestamp, select the one with the largest cycle count. 
+			- If any master within the queue has a smaller cycle count (within a threshold) than the current poll count, discard it. 
 		'''
+		discard_node = False
+		discard_hash = ''
+
+		if self.master_hash in self.master_queue and (self.master_poll_cycles - int(self.curr_elected_master_info.split('$')[1])) > 3:
+			discard_node = True
+			discard_hash = self.master_hash
+			self.master_hash = list(self.master_queue.keys())[-1]
+			self.master_info = self.package_master_info(self.master_hash)
+
+		if discard_node == True:
+			del self.master_queue[discard_hash]
+
+		print('hi')
+
+		if self.number_masters >= 1:
+			for master in self.master_queue:
+
+				if master == self.master_hash:
+					continue
+				
+				timestamp = self.master_queue[master][1]
+				cycle_cnt = self.master_queue[master][0]
+
+				if timestamp < self.master_queue[self.master_hash][1] or (timestamp == self.master_queue[self.master_hash][1] and cycle_cnt > self.master_queue[self.master_hash][0]):
+					self.master_hash = master
+					self.master_info = self.package_master_info(master)
+
 
 
 
@@ -211,19 +247,25 @@ class AccessPointNode(Node):
 
 		if self.number_masters >= 1:
 			self.COLLAB_MODE = True
-		else:
+		elif self.number_masters == 0 or (self.master_hash == '' and self.curr_elected_master_info == ''):
 			self.COLLAB_MODE = False
-			self.current_master_hash = ''
+			self.master_hash = ''
 			self.curr_elected_master_info = ''
+			self.master_poll_cycles = 0
+			print('Falling back to local inference state')
 
+		# Temporary
+		if self.COLLAB_MODE == True:
+			print(f'Collab mode on. Elected: {self.master_hash}')
 
+			ap_hashm = String()
+			# Temporary: For testing we will publish the hash of the elected master
 
-		print(f'Collab mode on? {self.COLLAB_MODE}')
+			tmp = String()
+			tmp.data = f'AP: {self.ap_hash};{self.master_hash}'
+			self.inference_topic_publisher.publish(tmp)
 
-		ap_hashm = String()
-		ap_hashm.data = self.ap_hash
-
-		self.inference_topic_publisher.publish(ap_hashm)
+		# Temporary
 
 		return
 		# capture data from network
@@ -263,6 +305,8 @@ class AccessPointNode(Node):
 		master_hash = master_splt[0]
 		master_init_time = master_splt[1]
 
+
+
 		if master_hash not in self.master_queue:
 			self.master_queue[master_hash] = list()
 			self.master_queue[master_hash].append(0)
@@ -272,17 +316,17 @@ class AccessPointNode(Node):
 			master_info = self.master_queue[master_hash]
 			master_info[master_cycle_cnt] += 1
 
-
 		# Initial master selection to get the resolution scheme going
 
-		if self.number_masters == 1 and self.master_hash == '':
+		if self.number_masters >= 1 and self.master_hash == '':
 			self.master_hash = master_hash
 			self.curr_elected_master_info = self.package_master_info(self.master_hash)
 
 
+
 	def package_master_info(self, mhash):
 
-		return self.master_queue[mhash] + '$' + self.master_queue[mhash][0] + '$' + self.master_queue[mhash][1]
+		return mhash + '$' + str(self.master_queue[mhash][0]) + '$' + self.master_queue[mhash][1]
 
 
 	def create_data_frame_entry_from_flow(self, flow):

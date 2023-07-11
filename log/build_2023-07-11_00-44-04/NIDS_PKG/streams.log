@@ -1,0 +1,63 @@
+[0.629s] Traceback (most recent call last):
+  File "/usr/lib/python3/dist-packages/colcon_parallel_executor/executor/parallel.py", line 67, in execute
+    loop.run_until_complete(future)
+  File "/usr/lib/python3.8/asyncio/base_events.py", line 603, in run_until_complete
+    self.run_forever()
+  File "/usr/lib/python3.8/asyncio/base_events.py", line 570, in run_forever
+    self._run_once()
+  File "/usr/lib/python3.8/asyncio/base_events.py", line 1823, in _run_once
+    event_list = self._selector.select(timeout)
+  File "/usr/lib/python3.8/selectors.py", line 468, in select
+    fd_event_list = self._selector.poll(timeout, max_ev)
+KeyboardInterrupt
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/usr/lib/python3/dist-packages/colcon_core/executor/__init__.py", line 91, in __call__
+    rc = await self.task(*args, **kwargs)
+  File "/usr/lib/python3/dist-packages/colcon_core/task/__init__.py", line 93, in __call__
+    return await task_method(*args, **kwargs)
+  File "/usr/lib/python3/dist-packages/colcon_ros/task/ament_python/build.py", line 105, in build
+    return await extension.build(additional_hooks=additional_hooks)
+  File "/usr/lib/python3/dist-packages/colcon_core/task/python/build.py", line 81, in build
+    available_commands = await self._get_available_commands(
+  File "/usr/lib/python3/dist-packages/colcon_core/task/python/build.py", line 171, in _get_available_commands
+    output = await check_output(
+  File "/usr/lib/python3/dist-packages/colcon_core/subprocess.py", line 128, in check_output
+    assert not rc, f'Expected {args} to pass: {stderr_data}'
+AssertionError: Expected ['/usr/bin/python3', 'setup.py', '--help-commands'] to pass: Traceback (most recent call last):
+  File "setup.py", line 5, in <module>
+    setup(
+  File "/usr/lib/python3/dist-packages/setuptools/__init__.py", line 144, in setup
+    return distutils.core.setup(**attrs)
+  File "/usr/lib/python3.8/distutils/core.py", line 134, in setup
+    ok = dist.parse_command_line()
+  File "/usr/lib/python3/dist-packages/setuptools/dist.py", line 707, in parse_command_line
+    result = _Distribution.parse_command_line(self)
+  File "/usr/lib/python3.8/distutils/dist.py", line 480, in parse_command_line
+    if self.handle_display_options(option_order):
+  File "/usr/lib/python3/dist-packages/setuptools/dist.py", line 1092, in handle_display_options
+    return _Distribution.handle_display_options(self, option_order)
+  File "/usr/lib/python3.8/distutils/dist.py", line 683, in handle_display_options
+    self.print_commands()
+  File "/usr/lib/python3/dist-packages/setuptools/dist.py", line 845, in print_commands
+    return _Distribution.print_commands(self)
+  File "/usr/lib/python3.8/distutils/dist.py", line 752, in print_commands
+    self.print_command_list(std_commands,
+  File "/usr/lib/python3.8/distutils/dist.py", line 720, in print_command_list
+    klass = self.get_command_class(cmd)
+  File "/usr/lib/python3/dist-packages/setuptools/dist.py", line 837, in get_command_class
+    return _Distribution.get_command_class(self, command)
+  File "/usr/lib/python3.8/distutils/dist.py", line 828, in get_command_class
+    __import__(module_name)
+  File "/usr/lib/python3.8/distutils/command/check.py", line 10, in <module>
+    from docutils.utils import Reporter
+  File "<frozen importlib._bootstrap>", line 991, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 975, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 671, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 844, in exec_module
+  File "<frozen importlib._bootstrap_external>", line 948, in get_code
+  File "<frozen importlib._bootstrap_external>", line 574, in _classify_pyc
+KeyboardInterrupt
+

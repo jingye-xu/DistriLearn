@@ -168,13 +168,13 @@ class AccessPointNode(Node):
 
 		self.master_queue = {}
 
-		self.current_master_hash = ''
+		self.master_hash = ''
 		self.curr_elected_master_info = ''
 
 
 	def master_manager_publish_callback(self):
 
-		if self.COLLAB_MODE == False:
+		if self.COLLAB_MODE == False or (self.curr_elected_master_info == '' and self.master_hash == ''):
 			return
 		
 		elected_master_info = String()
@@ -189,17 +189,17 @@ class AccessPointNode(Node):
 			return
 
 		rec_master_inf = msg.data.split('$')
-
 		master_hash = rec_master_inf[0]
+
 
 		if master_hash not in self.master_queue:
 	
 			master_cycle_cnt = rec_master_inf[1]
 			master_init_time = rec_master_inf[2]
 
-			self.ap_masters[master_hash] = list()
-			self.ap_masters[master_hash].append(master_cycle_cnt)
-			self.ap_masters[master_hash].append(master_init_time)
+			self.master_queue[master_hash] = list()
+			self.master_queue[master_hash].append(master_cycle_cnt)
+			self.master_queue[master_hash].append(master_init_time)
 
 		'''
 		conflict resolution rules for master election:
@@ -209,18 +209,20 @@ class AccessPointNode(Node):
 			- If a master within the queue has the same timestamp, select the one with the largest cycle count. 
 			- If any master within the queue has a smaller cycle count (within a threshold) than the current poll count, discard it. 
 		'''
-		if self.number_masters > 1 and len(self.master_queue) > 1:
 
+		if self.number_masters >= 1:
 			for master in self.master_queue:
+
 				if master == self.master_hash:
 					continue
 				
-				timestamp = self.master_queue[master][2]
-				cycle_cnt = self.master_queue[master][1]
+				timestamp = self.master_queue[master][1]
+				cycle_cnt = self.master_queue[master][0]
 
-				if timestamp < self.master_queue[self.master_hash][2] or (timestamp == self.master_queue[self.master_hash][1] and cycle_cnt > self.master_queue[self.master_hash][1]):
+				if timestamp < self.master_queue[self.master_hash][1] or (timestamp == self.master_queue[self.master_hash][1] and cycle_cnt > self.master_queue[self.master_hash][0]):
 					self.master_hash = master
 					self.master_info = self.package_master_info(master)
+
 
 
 
@@ -230,10 +232,11 @@ class AccessPointNode(Node):
 
 		if self.number_masters >= 1:
 			self.COLLAB_MODE = True
-		else:
+		elif self.number_masters == 0 or (self.master_hash == '' and self.curr_elected_master_info == ''):
 			self.COLLAB_MODE = False
-			self.current_master_hash = ''
+			self.master_hash = ''
 			self.curr_elected_master_info = ''
+			self.master_poll_cycles = 0
 			print('Falling back to local inference state')
 
 		# Temporary
@@ -244,7 +247,7 @@ class AccessPointNode(Node):
 			# Temporary: For testing we will publish the hash of the elected master
 
 			tmp = String()
-			tmp.data = f'AP: {self.ap_hash}; MS: {self.master_hash}'
+			tmp.data = f'AP: {self.ap_hash};{self.master_hash}'
 			self.inference_topic_publisher.publish(tmp)
 
 		# Temporary
@@ -287,6 +290,8 @@ class AccessPointNode(Node):
 		master_hash = master_splt[0]
 		master_init_time = master_splt[1]
 
+
+
 		if master_hash not in self.master_queue:
 			self.master_queue[master_hash] = list()
 			self.master_queue[master_hash].append(0)
@@ -296,17 +301,17 @@ class AccessPointNode(Node):
 			master_info = self.master_queue[master_hash]
 			master_info[master_cycle_cnt] += 1
 
-
 		# Initial master selection to get the resolution scheme going
 
-		if self.number_masters == 1 and self.master_hash == '':
+		if self.number_masters >= 1 and self.master_hash == '':
 			self.master_hash = master_hash
 			self.curr_elected_master_info = self.package_master_info(self.master_hash)
 
 
+
 	def package_master_info(self, mhash):
 
-		return self.master_queue[mhash] + '$' + self.master_queue[mhash][0] + '$' + self.master_queue[mhash][1]
+		return mhash + '$' + str(self.master_queue[mhash][0]) + '$' + self.master_queue[mhash][1]
 
 
 	def create_data_frame_entry_from_flow(self, flow):

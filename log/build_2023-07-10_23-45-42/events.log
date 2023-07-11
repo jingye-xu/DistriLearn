@@ -1,0 +1,6 @@
+[0.000000] (-) TimerEvent: {}
+[0.000890] (NIDS_PKG) JobQueued: {'identifier': 'NIDS_PKG', 'dependencies': OrderedDict()}
+[0.001034] (NIDS_PKG) JobStarted: {'identifier': 'NIDS_PKG'}
+[0.099338] (-) TimerEvent: {}
+[0.152042] (NIDS_PKG) JobEnded: {'identifier': 'NIDS_PKG', 'rc': 0}
+[0.152985] (-) EventReactorShutdown: {}

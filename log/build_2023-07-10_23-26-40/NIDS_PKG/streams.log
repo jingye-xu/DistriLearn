@@ -1,0 +1,16 @@
+[0.547s] Invoking command in '/home/gmo/Desktop/ids_workspace/DistriLearn/src/NIDS_PKG': PYTHONPATH=/home/gmo/Desktop/ids_workspace/DistriLearn/build/NIDS_PKG/prefix_override:/home/gmo/Desktop/ids_workspace/DistriLearn/install/NIDS_PKG/lib/python3.8/site-packages:${PYTHONPATH} /usr/bin/python3 setup.py egg_info --egg-base ../../build/NIDS_PKG build --build-base /home/gmo/Desktop/ids_workspace/DistriLearn/build/NIDS_PKG/build install --record /home/gmo/Desktop/ids_workspace/DistriLearn/build/NIDS_PKG/install.log --install-scripts $base/lib/NIDS_PKG --single-version-externally-managed
+[0.732s] Traceback (most recent call last):
+[0.733s]   File "setup.py", line 5, in <module>
+[0.733s]     setup(
+[0.733s]   File "/usr/lib/python3/dist-packages/setuptools/__init__.py", line 144, in setup
+[0.733s]     return distutils.core.setup(**attrs)
+[0.733s]   File "/usr/lib/python3.8/distutils/core.py", line 108, in setup
+[0.749s]     _setup_distribution = dist = klass(attrs)
+[0.749s]   File "/usr/lib/python3/dist-packages/setuptools/dist.py", line 445, in __init__
+[0.765s]     for ep in pkg_resources.iter_entry_points('distutils.setup_keywords'):
+[0.765s]   File "/usr/lib/python3/dist-packages/pkg_resources/__init__.py", line 657, in <genexpr>
+[0.765s]     for entry in dist.get_entry_map(group).values()
+[0.765s]   File "/usr/lib/python3/dist-packages/pkg_resources/__init__.py", line 2865, in get_entry_map
+[0.765s]     return ep_map.get(group, {})
+[0.765s] KeyboardInterrupt
+[0.778s] Invoked command in '/home/gmo/Desktop/ids_workspace/DistriLearn/src/NIDS_PKG' returned '-2': PYTHONPATH=/home/gmo/Desktop/ids_workspace/DistriLearn/build/NIDS_PKG/prefix_override:/home/gmo/Desktop/ids_workspace/DistriLearn/install/NIDS_PKG/lib/python3.8/site-packages:${PYTHONPATH} /usr/bin/python3 setup.py egg_info --egg-base ../../build/NIDS_PKG build --build-base /home/gmo/Desktop/ids_workspace/DistriLearn/build/NIDS_PKG/build install --record /home/gmo/Desktop/ids_workspace/DistriLearn/build/NIDS_PKG/install.log --install-scripts $base/lib/NIDS_PKG --single-version-externally-managed

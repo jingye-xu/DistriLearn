@@ -1,0 +1,14 @@
+Traceback (most recent call last):
+  File "setup.py", line 5, in <module>
+    setup(
+  File "/usr/lib/python3/dist-packages/setuptools/__init__.py", line 144, in setup
+    return distutils.core.setup(**attrs)
+  File "/usr/lib/python3.8/distutils/core.py", line 108, in setup
+    _setup_distribution = dist = klass(attrs)
+  File "/usr/lib/python3/dist-packages/setuptools/dist.py", line 445, in __init__
+    for ep in pkg_resources.iter_entry_points('distutils.setup_keywords'):
+  File "/usr/lib/python3/dist-packages/pkg_resources/__init__.py", line 657, in <genexpr>
+    for entry in dist.get_entry_map(group).values()
+  File "/usr/lib/python3/dist-packages/pkg_resources/__init__.py", line 2865, in get_entry_map
+    return ep_map.get(group, {})
+KeyboardInterrupt

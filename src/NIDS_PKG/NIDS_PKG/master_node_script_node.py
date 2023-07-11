@@ -37,8 +37,8 @@ class MasterNode(Node):
 
 	def ids_service_listener(self, data):
 		# Temporary: Only receiving hash.
-
-		if data.data == self.master_hash:
+		print()
+		if data.data.split(';')[-1] == self.master_hash:
 			print('I am elected!')
 		else:
 			print('Ignoring messages')
