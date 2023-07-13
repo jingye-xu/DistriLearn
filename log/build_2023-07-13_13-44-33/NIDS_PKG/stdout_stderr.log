@@ -1,0 +1,23 @@
+running egg_info
+writing ../../build/NIDS_PKG/NIDS_PKG.egg-info/PKG-INFO
+writing dependency_links to ../../build/NIDS_PKG/NIDS_PKG.egg-info/dependency_links.txt
+writing entry points to ../../build/NIDS_PKG/NIDS_PKG.egg-info/entry_points.txt
+writing requirements to ../../build/NIDS_PKG/NIDS_PKG.egg-info/requires.txt
+writing top-level names to ../../build/NIDS_PKG/NIDS_PKG.egg-info/top_level.txt
+reading manifest file '../../build/NIDS_PKG/NIDS_PKG.egg-info/SOURCES.txt'
+writing manifest file '../../build/NIDS_PKG/NIDS_PKG.egg-info/SOURCES.txt'
+running build
+running build_py
+copying NIDS_PKG/master_node_script_node.py -> /home/gmo/Desktop/ids_workspace/DistriLearn/build/NIDS_PKG/build/lib/NIDS_PKG
+running install
+running install_lib
+copying /home/gmo/Desktop/ids_workspace/DistriLearn/build/NIDS_PKG/build/lib/NIDS_PKG/master_node_script_node.py -> /home/gmo/Desktop/ids_workspace/DistriLearn/install/NIDS_PKG/lib/python3.8/site-packages/NIDS_PKG
+byte-compiling /home/gmo/Desktop/ids_workspace/DistriLearn/install/NIDS_PKG/lib/python3.8/site-packages/NIDS_PKG/master_node_script_node.py to master_node_script_node.cpython-38.pyc
+running install_data
+running install_egg_info
+removing '/home/gmo/Desktop/ids_workspace/DistriLearn/install/NIDS_PKG/lib/python3.8/site-packages/NIDS_PKG-0.0.0-py3.8.egg-info' (and everything under it)
+Copying ../../build/NIDS_PKG/NIDS_PKG.egg-info to /home/gmo/Desktop/ids_workspace/DistriLearn/install/NIDS_PKG/lib/python3.8/site-packages/NIDS_PKG-0.0.0-py3.8.egg-info
+running install_scripts
+Installing ap_node script to /home/gmo/Desktop/ids_workspace/DistriLearn/install/NIDS_PKG/lib/NIDS_PKG
+Installing master_node script to /home/gmo/Desktop/ids_workspace/DistriLearn/install/NIDS_PKG/lib/NIDS_PKG
+writing list of installed files to '/home/gmo/Desktop/ids_workspace/DistriLearn/build/NIDS_PKG/install.log'

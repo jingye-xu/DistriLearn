@@ -44,92 +44,104 @@ from scapy.all import *
 from rclpy.node import Node
 from std_msgs.msg import String
 
+import warnings
+warnings.filterwarnings(action='ignore')
+
 NUM_INPUT = 38
 
 
 class Net(nn.Module):
-		def __init__(self) -> None:
-				super(Net, self).__init__()
-				self.fc1 = nn.Linear(in_features=NUM_INPUT, out_features=30)
-				self.fc2 = nn.Linear(in_features=30, out_features=20)
-				self.fc3 = nn.Linear(in_features=20, out_features=1)
+	def __init__(self) -> None:
+		super(Net, self).__init__()
+		self.fc1 = nn.Linear(in_features=NUM_INPUT, out_features=30)
+		self.fc2 = nn.Linear(in_features=30, out_features=20)
+		self.fc3 = nn.Linear(in_features=20, out_features=1)
 
-		def forward(self, x: torch.Tensor) -> torch.Tensor:
-				output = self.fc1(x)
-				output = torch.relu(output)
-				output = self.fc2(output)
-				output = torch.relu(output)
-				output = self.fc3(output)
-				output = torch.sigmoid(output)
+	def forward(self, x: torch.Tensor) -> torch.Tensor:
+		output = self.fc1(x)
+		output = torch.relu(output)
+		output = self.fc2(output)
+		output = torch.relu(output)
+		output = self.fc3(output)
+		output = torch.sigmoid(output)
 
-				return output
+		return output
 
 
 class ModelDriver:
 
-		def __init__(self, path, scaler_path):
-				self.model_path = path
-				print(f'Loaded model: {path}')
-				self.model = None
-				self.scaler = joblib.load(scaler_path)
-				print(f'Loaded scaler: {self.scaler}')
+	def __init__(self, path, scaler_path):
+		self.model_path = path
+		print(f'Loaded model: {path}')
+		self.model = None
+		self.scaler = joblib.load(scaler_path)
+		print(f'Loaded scaler: {self.scaler}')
 
-		def get_instance(self):
-				pass
+	def get_instance(self):
+		pass
 
-		def load_model(self):
-				pass
+	def load_model(self):
+		pass
 
-		def predict(self, dataframe):
-				pass
+	def predict(self, dataframe):
+		pass
 
 
 class ScikitModelDriver(ModelDriver):
 
-		def __init__(self, model_path, scaler_path):
-				super().__init__(model_path, scaler_path)
+	def __init__(self, model_path, scaler_path):
+		super().__init__(model_path, scaler_path)
 
-		def get_instance(self):         
-				if self.model is None:
-					self.load_model()
-				return self.model
+	def get_instance(self):         
+		if self.model is None:
+			self.load_model()
+		return self.model
 
-		def load_model(self):
-				sci_model = joblib.load(self.model_path)
-				self.model = sci_model
+	def load_model(self):
+		sci_model = joblib.load(self.model_path)
+		self.model = sci_model
 
-		def predict(self, dataframe):
-				vals = self.scaler.transform(dataframe.values)
-				predictions = self.model.predict(vals)
-				results = [0 if result < 0.5 else 1 for result in predictions]
-				return results
+	def predict(self, dataframe):
+		vals = self.scaler.transform(dataframe.values)
+		predictions = self.model.predict(vals)
+		results = [0 if result < 0.5 else 1 for result in predictions]
+		return results
 
 
 class PyTorchModelDriver(ModelDriver):
 
-		def __init__(self, model_path, net_class, scaler_path):
-				super().__init__(model_path, scaler_path)
-				self.net = net_class
+	def __init__(self, model_path, net_class, scaler_path):
+		super().__init__(model_path, scaler_path)
+		self.net = net_class
 
-		def get_instance(self):
-				if self.model == None:
-					self.load_model()
-				return self.model
+	def get_instance(self):
+		if self.model == None:
+			self.load_model()
+		return self.model
 
-		def load_model(self):
-				model = self.net
-				model.load_state_dict(torch.load(self.model_path))
-				model.eval()
-				self.model = model
+	def load_model(self):
+		model = self.net
+		model.load_state_dict(torch.load(self.model_path))
+		model.eval()
+		self.model = model
 
-		def predict(self, dataframe):
-				vals = self.scaler.transform(dataframe.values)
-				data_tensor = torch.tensor(vals, dtype=torch.float)
-				data_tensor = torch.FloatTensor(data_tensor)
-				results = self.model(data_tensor)
-				results = [0 if result[0] < 0.6 else 1 for result in results.detach().numpy()]
-				return results
+	def predict(self, dataframe):
+		vals = self.scaler.transform(dataframe.values)
+		data_tensor = torch.tensor(vals, dtype=torch.float)
+		data_tensor = torch.FloatTensor(data_tensor)
+		results = self.model(data_tensor)
+		results = [0 if result[0] < 0.6 else 1 for result in results.detach().numpy()]
+		return results
 
+
+
+MODEL_TYPE = 1 # 0 for scikit, 1 for pytorch - should be enum instead but python isn't clean like that
+
+PATH_PREF = "./ModelPack/clean_17_models/NN"
+
+SCIKIT_MODEL_PATH = f"{PATH_PREF}/kn_2017.pkl"
+SCALER_PATH = f"{PATH_PREF}/scaler_nn_17.pkl"
+PYTORCH_MODEL_PATH = f"{PATH_PREF}/simple_nn_17.pth"
 
 
 class AccessPointNode(Node):
@@ -137,10 +149,23 @@ class AccessPointNode(Node):
 	def __init__(self, net_interface):
 		super().__init__('access_point_node')
 
+		self.model_driver = None
+
+		if MODEL_TYPE == 0:
+			self.model_driver = ScikitModelDriver(SCIKIT_MODEL_PATH, SCALER_PATH)
+		else:
+			self.model_driver = PyTorchModelDriver(PYTORCH_MODEL_PATH, Net(), SCALER_PATH)
+
+		self.model = self.model_driver.get_instance()
+
 		timer_period = 0.2 # seconds
 
 		self.COLLAB_MODE = False # False means local AP operation
-		self.MAX_PACKET_SNIFF = 75
+		self.MAX_PACKET_SNIFF = 25
+
+		self.MALICIOUS_THRESHOLD = 1 # Number of reports for malicious before sending to master or reporting.
+		self.BENIGN_THRESHOLD = 1 # Number of report for bengin before sending to master or reporting. 
+		self.MAX_BUFFER_SIZE = 100 # maximum size for buffer with respect to memory
 
 		self.capture_name = 'tmp_capture'
 		self.net_interface = net_interface
@@ -171,6 +196,9 @@ class AccessPointNode(Node):
 
 		self.master_hash = ''
 		self.curr_elected_master_info = ''
+
+		self.inference_buffer = {}
+
 
 
 	def master_manager_publish_callback(self):
@@ -251,22 +279,21 @@ class AccessPointNode(Node):
 			self.master_hash = ''
 			self.curr_elected_master_info = ''
 			self.master_poll_cycles = 0
-			print('Falling back to local inference state')
+			self.master_queue = {}
 
 		# Temporary
-		if self.COLLAB_MODE == True:
-			print(f'Collab mode on. Elected: {self.master_hash}')
+		# if self.COLLAB_MODE == True:
+		# 	print(f'Collab mode on. Elected: {self.master_hash}')
 
-			ap_hashm = String()
-			# Temporary: For testing we will publish the hash of the elected master
+		# 	ap_hashm = String()
+		# 	# Temporary: For testing we will publish the hash of the elected master
 
-			tmp = String()
-			tmp.data = f'AP: {self.ap_hash};{self.master_hash}'
-			self.inference_topic_publisher.publish(tmp)
+		# 	tmp = String()
+		# 	tmp.data = f'AP: {self.ap_hash};{self.master_hash}'
+		# 	self.inference_topic_publisher.publish(tmp)
 
 		# Temporary
 
-		return
 		# capture data from network
 		self.sniff_traffic(self.capture_name, self.net_interface)
 
@@ -278,20 +305,88 @@ class AccessPointNode(Node):
 		self.dataframe = pd.concat([self.dataframe, df], ignore_index=True)
 		self.dataframe.dropna(how='all', inplace=True)
 
+		inf_report = None
 		if len(self.dataframe) >= 30:
 			for start in range(0, len(self.dataframe), 30):
 				subdf = self.dataframe[start:start+30]
 				subdf.reset_index(drop=True,inplace=True)
+				inf_report = self.make_inference(self.dataframe)
 				# publish if master node is available
+				if self.COLLAB_MODE and inf_report is not None:
+					print(f'Sending report to master: {self.master_hash}')
+					tmp = String()
+					tmp.data = self.build_inf_report(inf_report)
+					self.inference_topic_publisher.publish(tmp)
 				self.dataframe = df
 		else:
+			inf_report = self.make_inference(self.dataframe)
 			# publish if master node is available
-			pass
+			if self.COLLAB_MODE and inf_report is not None:
+				print(f'Sending report to master: {self.master_hash}')
+				tmp = String()
+				tmp.data = self.build_inf_report(inf_report)
+				self.inference_topic_publisher.publish(tmp)
+			
 
-		if self.dataframe >= 105:
+		if len(self.dataframe) >= 105:
 			self.dataframe = df
 
-		# if no master node, fill buffer here.
+		# if no master node, report here.
+		if inf_report is not None and self.COLLAB_MODE == False:
+
+			gmtime = time.gmtime()
+			dt_string = "%s:%s:%s" % (gmtime.tm_hour, gmtime.tm_min, gmtime.tm_sec)
+
+			if inf_report[1] == 0:
+				print(f'\033[32;1m[{dt_string}]\033[0m {inf_report[0]} - \033[32;1mNormal.\033[0m')
+			else:
+				print(f'\033[31;1m[{dt_string}]\033[0m {inf_report[0]} - \033[31;1mSuspicious.\033[0m')
+			
+
+
+	def build_inf_report(self, inf_data):
+		return f'{self.master_hash}${inf_data[0]}${inf_data[1]}${inf_data[2]}'
+
+
+	def make_inference(self, df):
+		inf_res = None
+		# Pass input dataframe to the model, for all rows but only columns 1 through the end. The 0th column are the source mac addresses.
+		predictions = self.model_driver.predict(df.iloc[:,1:])
+		# predictions do not contain mac, so we need to do a parallel iteration for dataframe
+		mac_index = 0
+		while mac_index < len(df):
+			# df[column][row_num]
+			mac_addr = df[0][mac_index]
+			prediction = predictions[mac_index]
+
+			if mac_addr not in self.inference_buffer:
+				self.inference_buffer[mac_addr] = {0:0,1:0}
+			# buffers have an internal dictionary encoding of benign (0) and malicious (1). Thus, if the prediction is 0, we key into that and update the value. Same for malicious.
+			self.inference_buffer[mac_addr][prediction] += 1
+
+			# Check evidence threshold, and flush whichever surpasses first for this mac. If a threshold is surpassed, then we make a report for this MAC. Hence, the break in the stamtent.
+			if self.inference_buffer[mac_addr][0] >= self.BENIGN_THRESHOLD:
+				inf_cnt = self.inference_buffer[mac_addr][0]
+				self.inference_buffer[mac_addr][0] = 0
+				inf_res = (mac_addr,0,inf_cnt)
+				break
+			if self.inference_buffer[mac_addr][1] >= self.MALICIOUS_THRESHOLD:
+				inf_cnt = self.inference_buffer[mac_addr][1]
+				if self.inference_buffer[mac_addr][1] != 0:
+					self.inference_buffer[mac_addr][1] //= self.inference_buffer[mac_addr][1]
+				if self.inference_buffer[mac_addr][0] != 0:
+					self.inference_buffer[mac_addr][0] //= self.inference_buffer[mac_addr][0]
+				inf_res = (mac_addr,1,inf_cnt)
+				break
+
+			mac_index += 1
+
+
+		if len(self.inference_buffer) >= self.MAX_BUFFER_SIZE:
+			self.inference_buffer = {}
+
+		# Inference result format: (mac, encoding [malicious,benign], count)
+		return inf_res
 
 	
 	def master_dispatch_listener(self, message):
@@ -349,7 +444,7 @@ class AccessPointNode(Node):
 	def sniff_traffic(self, tmp_file_name, listen_interface):
 		# Temporary sniffing workaround for VM environment:
 		#os.system(f"sshpass -p \"{pfsense_pass}\" ssh root@{pfsense_wan_ip} \"tcpdump -i {lan_nic} -c {MAX_PACKET_SNIFF} -w - \'not (src {ssh_client_ip} and port {ssh_client_port}) and not (src {pfsense_lan_ip} and dst {ssh_client_ip} and port 22)\'\" 2>/dev/null > {tmp_file_name}")
-		os.system(f"tcpdump --immediate-mode -i {listen_interface} -c {self.MAX_PACKET_SNIFF} -w - 2>/dev/null > {tmp_file_name}")
+		os.system(f"tcpdump --immediate-mode -p -i {listen_interface} -c {self.MAX_PACKET_SNIFF} -w - 2>/dev/null > {tmp_file_name}")
 
 	def hash_value(self, val):
 		hasher = hashlib.sha256()
@@ -358,13 +453,6 @@ class AccessPointNode(Node):
 
 
 
-MODEL_TYPE = 1 # 0 for scikit, 1 for pytorch - should be enum instead but python isn't clean like that
-
-PATH_PREF = "./ModelPack/clean_17_models/NN"
-
-SCIKIT_MODEL_PATH = f"{PATH_PREF}/kn_2017.pkl"
-SCALER_PATH = f"{PATH_PREF}/scaler_nn_17.pkl"
-PYTORCH_MODEL_PATH = f"{PATH_PREF}/simple_nn_17.pth"
 
 
 
@@ -392,15 +480,6 @@ def main(args=None):
 
 		interface = interface_selector[user_selection]
 	print(f'Interface set to {interface}')
-
-
-
-	model_driver = None
-
-	if MODEL_TYPE == 0:
-			model_driver = ScikitModelDriver(SCIKIT_MODEL_PATH, SCALER_PATH)
-	else:
-			model_driver = PyTorchModelDriver(PYTORCH_MODEL_PATH, Net(), SCALER_PATH)
 
 
 	rclpy.init(args=args)
