@@ -1,0 +1,5 @@
+  File "/home/gmo/Desktop/ids_workspace/DistriLearn/install/NIDS_PKG/lib/python3.8/site-packages/NIDS_PKG/master_node_script_node.py", line 42
+    print(f'I am elected! Rec from: {data.data.split(';')[0]}')
+                                                      ^
+SyntaxError: invalid syntax
+

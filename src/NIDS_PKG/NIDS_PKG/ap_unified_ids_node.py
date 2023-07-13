@@ -153,6 +153,7 @@ class AccessPointNode(Node):
 		self.dispatch_subscriber = self.create_subscription(String, 'master_node_dispatch', self.master_dispatch_listener, 10)
 		self.number_masters = 0
 		self.master_poll_cycles = 0
+		self.previous_poll_cycle_cnt = 0
 
 		# Access points will publish to a inference IDS service topic
 		self.inference_topic_publisher = self.create_publisher(String, 'ids_service', 10)
@@ -178,6 +179,7 @@ class AccessPointNode(Node):
 			return
 		
 		elected_master_info = String()
+		# Format of message: master_hash$master_cycle_cnt$master_init_time$master_poll_cycles
 		elected_master_info.data = self.curr_elected_master_info
 
 		self.private_topic_master_manager.publish(elected_master_info)
@@ -190,7 +192,6 @@ class AccessPointNode(Node):
 
 		rec_master_inf = msg.data.split('$')
 		master_hash = rec_master_inf[0]
-
 
 		if master_hash not in self.master_queue:
 	
@@ -211,18 +212,35 @@ class AccessPointNode(Node):
 		'''
 
 		if self.number_masters >= 1:
-			for master in self.master_queue:
 
-				if master == self.master_hash:
+			have_to_delete_master = False
+			del_hash = ''
+
+			for master in self.master_queue:
+				print(f'MasPol: {self.master_poll_cycles}; prevPol: {self.previous_poll_cycle_cnt}')
+				if not have_to_delete_master and (self.master_poll_cycles - self.previous_poll_cycle_cnt) >= 3:
+					print('HIT')
+					have_to_delete_master = True
+					del_hash = self.master_hash
 					continue
-				
+
+
 				timestamp = self.master_queue[master][1]
 				cycle_cnt = self.master_queue[master][0]
 
-				if timestamp < self.master_queue[self.master_hash][1] or (timestamp == self.master_queue[self.master_hash][1] and cycle_cnt > self.master_queue[self.master_hash][0]):
+				if have_to_delete_master or timestamp < self.master_queue[self.master_hash][1] or (timestamp == self.master_queue[self.master_hash][1] and cycle_cnt > self.master_queue[self.master_hash][0]):
 					self.master_hash = master
-					self.master_info = self.package_master_info(master)
+					self.curr_elected_master_info = self.package_master_info(master)
+					self.master_poll_cycles = 0
+					if have_to_delete_master:
+						break
 
+
+
+			if have_to_delete_master:
+				del self.master_queue[del_hash]
+				self.previous_poll_cycle_cnt = 0
+				
 
 
 
@@ -300,6 +318,9 @@ class AccessPointNode(Node):
 			master_cycle_cnt = 0
 			master_info = self.master_queue[master_hash]
 			master_info[master_cycle_cnt] += 1
+		
+		if master_hash == self.master_hash:
+			self.previous_poll_cycle_cnt = self.master_poll_cycles
 
 		# Initial master selection to get the resolution scheme going
 

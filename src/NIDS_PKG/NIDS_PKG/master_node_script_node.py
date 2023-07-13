@@ -39,7 +39,7 @@ class MasterNode(Node):
 		# Temporary: Only receiving hash.
 		print()
 		if data.data.split(';')[-1] == self.master_hash:
-			print('I am elected!')
+			print(f'I am elected! {data.data}')
 		else:
 			print('Ignoring messages')
 
