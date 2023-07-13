@@ -217,9 +217,7 @@ class AccessPointNode(Node):
 			del_hash = ''
 
 			for master in self.master_queue:
-				print(f'MasPol: {self.master_poll_cycles}; prevPol: {self.previous_poll_cycle_cnt}')
 				if not have_to_delete_master and (self.master_poll_cycles - self.previous_poll_cycle_cnt) >= 3:
-					print('HIT')
 					have_to_delete_master = True
 					del_hash = self.master_hash
 					continue
@@ -234,8 +232,6 @@ class AccessPointNode(Node):
 					self.master_poll_cycles = 0
 					if have_to_delete_master:
 						break
-
-
 
 			if have_to_delete_master:
 				del self.master_queue[del_hash]
