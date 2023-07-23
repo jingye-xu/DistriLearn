@@ -35,6 +35,8 @@ import torchvision.transforms as transforms
 import pandas as pd
 import numpy as np
 import rclpy
+import pickle
+import base64
 
 from uuid import getnode as get_mac
 from nfstream import NFPlugin, NFStreamer
@@ -43,7 +45,6 @@ from scapy.all import *
 
 from rclpy.node import Node
 from std_msgs.msg import String
-from rospy.msg import AnyMsg
 
 
 import warnings
@@ -137,9 +138,22 @@ class PyTorchModelDriver(ModelDriver):
 
 
 
+class BlackListComposition:
+
+	def __init__(self, ma, attack_type, model_name, model_type, flow):
+
+		self.mac_address = ''
+		self.attack_type = ''
+		self.model_name = ''
+		self.model_type = ''
+		self.flow = ''
+		self.domain_id = os.environ['DOMAIN_ID']
+
+
 MODEL_TYPE = 1 # 0 for scikit, 1 for pytorch - should be enum instead but python isn't clean like that
 
-PATH_PREF = "./ModelPack/clean_17_models/NN"
+MODEL_NAME = "NN"
+PATH_PREF = f"./ModelPack/clean_17_models/{MODEL_NAME}"
 
 SCIKIT_MODEL_PATH = f"{PATH_PREF}/kn_2017.pkl"
 SCALER_PATH = f"{PATH_PREF}/scaler_nn_17.pkl"
@@ -213,12 +227,43 @@ class AccessPointNode(Node):
 
 		self.inference_buffer = {}
 
+		self.internal_blacklist = {}
 
-	def blacklist_sub_callback(self):
+		self.blacklist_obj =  None
+		self.defaultMsg = String()
+
+	# This subsystem is subscribed to by ALL masters, and ALL access points for preemptive decision making. 
+	def blacklist_sub_callback(self, data):
+
+		topic_encoded_str = data.data
+		topic_decoded_b64_str = base64.decode(topic_encoded_str)
+
+		# On receiving, we use Domain ID to fill internal blacklist. Then, we check agreement (for malicious/non-benign), and if it's
+		# high agreement of malicious, we blacklist it. LATER: Use some metric to perform online learning based on flow info for the 
+		# incoming flow once we decide to blacklist. 
+
+		# Agreement is an INTERNAL DOMAIN PROCESS: Rows - MAC addresses (i.e., subjects); columns - categories (i.e, attack type [1+] or non-malicious [0]); cells - agreements; 
 		pass
+
+
 
 	def blacklist_pub_callback(self):
-		pass
+
+		# If the determination is that a malicious node is found in buffers: Publishing MAC of adversary + Attack Type + Model Type + Flow Info
+		# Meaning if blacklist object is not none, we transmit.
+
+		if self.blacklist_obj is None:
+			return
+		
+		topic_obj = pickle.dumps(self.blacklist_obj)
+		topic_obj_encoded = base64.b64encode(topic_obj)
+		topic_obj_str = base64.encode('UTF-8')
+
+		self.defaultMsg.data = topic_obj_str
+		self.blacklist_publisher.publish(self.defaultMsg)
+
+
+
 
 	def master_manager_publish_callback(self):
 
@@ -351,6 +396,7 @@ class AccessPointNode(Node):
 			self.dataframe = df
 
 		# if no master node, report here.
+		# if making local reports, THEN we can create a blacklist object to send to the topic.
 		if inf_report is not None and self.COLLAB_MODE == False:
 
 			gmtime = time.gmtime()
@@ -358,8 +404,10 @@ class AccessPointNode(Node):
 
 			if inf_report[1] == 0:
 				print(f'\033[32;1m[{dt_string}]\033[0m {inf_report[0]} - \033[32;1mNormal.\033[0m')
+				#self.blacklist_obj = BlackListComposition(ma, attack_type, model_name, model_type, flow)
 			else:
 				print(f'\033[31;1m[{dt_string}]\033[0m {inf_report[0]} - \033[31;1mSuspicious.\033[0m')
+				#self.blacklist_obj = BlackListComposition(ma, attack_type, model_name, model_type, flow)
 			
 
 
