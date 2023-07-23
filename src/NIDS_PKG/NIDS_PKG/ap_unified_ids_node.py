@@ -140,7 +140,7 @@ class PyTorchModelDriver(ModelDriver):
 
 class BlackListComposition:
 
-	def __init__(self, ma, attack_type, model_name, model_type, flow):
+	def __init__(self, ma, attack_type, model_name, model_type, ap_hash, flow):
 
 		self.mac_addr = ma
 		self.mac_id = int(f'{ma[0:2]}{ma[3:5]}{ma[6:8]}{ma[9:11]}{ma[12:14]}{ma[15:17]}',16)
@@ -149,6 +149,7 @@ class BlackListComposition:
 		self.model_type = model_type
 		self.flow = flow
 		self.domain_id = os.environ['DOMAIN_ID']
+		self.ap_hash = None
 
 
 MODEL_TYPE = 1 # 0 for scikit, 1 for pytorch - should be enum instead but python isn't clean like that
@@ -232,6 +233,7 @@ class AccessPointNode(Node):
 
 		self.inference_buffer = {}
 
+		#BL format: macid_integer: (mac_addr, {ap_hash: attack_type, cnt})
 		self.internal_blacklist = {}
 
 		self.blacklist_obj =  None
@@ -255,8 +257,17 @@ class AccessPointNode(Node):
 		print(topic_obj.model_type)
 		print(topic_obj.model_name)
 		print(topic_obj.flow)
+		print(topic_obj.ap_hash)
+		print(topic_obj.domain_id)
 		print("-=-=-=-=-=-=-")
-		mai = f'{ma[0:2]}{ma[3:5]}{ma[6:8]}{ma[9:11]}{ma[12:14]}{ma[15:17]}'
+		
+
+		if self.domain_id == topic_obj.domain_id:
+			# BL format: macid_integer: (mac_addr, {ap_hash: attack_type, cnt})
+			# AP hash will allow us to count votes per access point and not double-, triple-, or n-count
+			pass
+		else:
+			pass
 
 
 
@@ -420,10 +431,10 @@ class AccessPointNode(Node):
 
 			if attack_encoding == 0:
 				print(f'\033[32;1m[{dt_string}]\033[0m {mac_addr} - \033[32;1mNormal.\033[0m')
-				self.blacklist_obj = BlackListComposition(mac_addr, attack_encoding, MODEL_NAME, MODEL_TYPE, None)
+				self.blacklist_obj = BlackListComposition(mac_addr, attack_encoding, MODEL_NAME, MODEL_TYPE, self.ap_hash, None)
 			else:
 				print(f'\033[31;1m[{dt_string}]\033[0m {mac_addr} - \033[31;1mSuspicious.\033[0m')
-				self.blacklist_obj = BlackListComposition(mac_addr, attack_encoding, MODEL_NAME, MODEL_TYPE, None)
+				self.blacklist_obj = BlackListComposition(mac_addr, attack_encoding, MODEL_NAME, MODEL_TYPE, self.ap_hash, None)
 			
 
 
