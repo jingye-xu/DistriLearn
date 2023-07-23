@@ -43,6 +43,8 @@ from scapy.all import *
 
 from rclpy.node import Node
 from std_msgs.msg import String
+from rospy.msg import AnyMsg
+
 
 import warnings
 warnings.filterwarnings(action='ignore')
@@ -158,39 +160,51 @@ class AccessPointNode(Node):
 
 		self.model = self.model_driver.get_instance()
 
-		timer_period = 0.2 # seconds
+		timer_period = 0.2 # seconds for "refresh rate" of publisher callbacks
 
 		self.COLLAB_MODE = False # False means local AP operation
 		self.MAX_PACKET_SNIFF = 25
 
-		self.MALICIOUS_THRESHOLD = 1 # Number of reports for malicious before sending to master or reporting.
-		self.BENIGN_THRESHOLD = 1 # Number of report for bengin before sending to master or reporting. 
+		self.MALICIOUS_THRESHOLD = 150 # Number of reports for malicious before sending to master or reporting.
+		self.BENIGN_THRESHOLD = 150 # Number of report for bengin before sending to master or reporting. 
 		self.MAX_BUFFER_SIZE = 100 # maximum size for buffer with respect to memory
+		self.OUTGOING_MSG_QUEUE_SIZE = 10 # Max queue size for outgoing messages to subsribers
+		self.INCOMING_MSG_QUEUE_SIZE = 10 # Max queue size for incoming messages to subscribers/from publishers
 
 		self.capture_name = 'tmp_capture'
 		self.net_interface = net_interface
+		self.domain_id = os.environ['DOMAIN_ID']
+
 		self.dataframe = pd.DataFrame()
 
 		self.ap_mac = get_mac()
 		self.ap_hash = self.hash_value('ap' + str(datetime.now()) + str(self.ap_mac))
 
 		# Access points will subscribe to dispatch topic for masters
-		self.dispatch_subscriber = self.create_subscription(String, 'master_node_dispatch', self.master_dispatch_listener, 10)
+		self.dispatch_subscriber = self.create_subscription(String, 'master_node_dispatch', self.master_dispatch_listener, self.INCOMING_MSG_QUEUE_SIZE)
 		self.number_masters = 0
 		self.master_poll_cycles = 0
 		self.previous_poll_cycle_cnt = 0
 
 		# Access points will publish to a inference IDS service topic
-		self.inference_topic_publisher = self.create_publisher(String, 'ids_service', 10)
-		self.timer = self.create_timer(timer_period, self.ids_service_callback)
+		self.inference_topic_publisher = self.create_publisher(String, 'ids_service', self.OUTGOING_MSG_QUEUE_SIZE)
+		_ = self.create_timer(timer_period, self.ids_service_callback)
 
 
 		# Access points will publish to a private topic to manage elected masters: Publisher will publish current master info
-		self.private_topic_master_manager = self.create_publisher(String, 'master_manager', 10)
-		self.timer = self.create_timer(timer_period, self.master_manager_publish_callback)
+		self.private_topic_master_manager = self.create_publisher(String, 'master_manager', self.OUTGOING_MSG_QUEUE_SIZE)
+		_ = self.create_timer(timer_period, self.master_manager_publish_callback)
 
 		# Access points will subscribe to private topic to manage elected masters: Subscribers will receive all infos from APs and elect master 
-		self.master_manager_subscriber = self.create_subscription(String, 'master_manager', self.master_manager_subscribe_callback, 10)
+		self.master_manager_subscriber = self.create_subscription(String, 'master_manager', self.master_manager_subscribe_callback, self.INCOMING_MSG_QUEUE_SIZE)
+
+
+		# Blacklist subsystem (TODO: Place in own node) -> everyone in the complex/enterprise will publish and subscribe to it. 
+		self.blacklist_publisher = self.create_publisher(AnyMsg, 'blacklist_subsytem', self.OUTGOING_MSG_QUEUE_SIZE)
+		_ = self.create_timer(timer_period, self.blacklist_pub_callback)
+
+		self.blacklist_subscriber = self.create_subscription(AnyMsg, 'blacklist_subsytem', self.blacklist_sub_callback, self.INCOMING_MSG_QUEUE_SIZE)
+
 
 		self.master_queue = {}
 
@@ -200,6 +214,11 @@ class AccessPointNode(Node):
 		self.inference_buffer = {}
 
 
+	def blacklist_sub_callback(self):
+		pass
+
+	def blacklist_pub_callback(self):
+		pass
 
 	def master_manager_publish_callback(self):
 
@@ -298,7 +317,7 @@ class AccessPointNode(Node):
 		self.sniff_traffic(self.capture_name, self.net_interface)
 
 		# turn it into flow
-		stream = NFStreamer(self.capture_name, statistical_analysis=True, decode_tunnels=False, accounting_mode=3)
+		stream = NFStreamer(self.net_interface, max_nflows=30, statistical_analysis=True, decode_tunnels=False, accounting_mode=3)
 		mapped = map(self.create_data_frame_entry_from_flow, iter(stream))
 		df = pd.DataFrame(mapped)
 
@@ -441,10 +460,13 @@ class AccessPointNode(Node):
 		return [flow.src_mac, flow.dst_port, flow.bidirectional_duration_ms, flow.src2dst_packets, flow.dst2src_packets, flow.src2dst_bytes, flow.dst2src_bytes, flow.src2dst_max_ps, flow.src2dst_min_ps, flow.src2dst_mean_ps, flow.src2dst_stddev_ps, flow.dst2src_max_ps, flow.dst2src_min_ps, flow.dst2src_mean_ps, flow.dst2src_stddev_ps, bytes_sec, packets_sec, flow.bidirectional_mean_piat_ms, flow.bidirectional_max_piat_ms, flow.bidirectional_min_piat_ms, fwd_iat_total, flow.src2dst_mean_piat_ms, flow.src2dst_stddev_piat_ms, flow.src2dst_max_piat_ms, flow.src2dst_min_piat_ms, bwd_iat_total, flow.dst2src_mean_piat_ms, flow.dst2src_stddev_piat_ms, flow.dst2src_max_piat_ms, flow.dst2src_min_piat_ms, fwd_packets_sec, bwd_packets_sec, flow.bidirectional_min_ps, flow.bidirectional_max_ps, flow.bidirectional_mean_ps, flow.bidirectional_stddev_ps, packet_length_variance, flow.bidirectional_rst_packets, avg_packet_size]
 
 
+
 	def sniff_traffic(self, tmp_file_name, listen_interface):
 		# Temporary sniffing workaround for VM environment:
 		#os.system(f"sshpass -p \"{pfsense_pass}\" ssh root@{pfsense_wan_ip} \"tcpdump -i {lan_nic} -c {MAX_PACKET_SNIFF} -w - \'not (src {ssh_client_ip} and port {ssh_client_port}) and not (src {pfsense_lan_ip} and dst {ssh_client_ip} and port 22)\'\" 2>/dev/null > {tmp_file_name}")
 		os.system(f"tcpdump --immediate-mode -p -i {listen_interface} -c {self.MAX_PACKET_SNIFF} -w - 2>/dev/null > {tmp_file_name}")
+
+
 
 	def hash_value(self, val):
 		hasher = hashlib.sha256()
@@ -455,11 +477,14 @@ class AccessPointNode(Node):
 
 
 
-
 def main(args=None):
 
 	if 'INTERFACE_IDS' not in os.environ:
-		print('Missing environment variable for interface. Set it using export (INTERFACE_IDS).')
+		print('Missing environment variable for interface. Set it using \'export INTERFACE_IDS=interface\'.')
+		sys.exit(0)
+
+	if 'DOMAIN_ID' not in os.environ:
+		print('Missing environment variable for domain id. Set it using \'export DOMAIN_ID=domain\' (e.g., power_plant)')
 		sys.exit(0)
 
 	interface_selector, int_choice_msg = make_pretty_interfaces()

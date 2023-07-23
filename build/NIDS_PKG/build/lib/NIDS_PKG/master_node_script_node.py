@@ -30,8 +30,8 @@ class MasterNode(Node):
 		# Master node subcribes to IDS service topic
 		self.ids_service_subscriber = self.create_subscription(String, 'ids_service', self.ids_service_listener, 10)
 
-		self.BENIGN_THRESHOLD = 1
-		self.MALICIOUS_THRESHOLD = 1
+		self.BENIGN_THRESHOLD = 150
+		self.MALICIOUS_THRESHOLD = 150
 		self.MAX_BUFFER_SIZE = 100
 
 		self.evidence_buffer = {}
