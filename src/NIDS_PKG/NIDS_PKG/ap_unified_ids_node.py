@@ -142,22 +142,23 @@ class BlackListComposition:
 
 	def __init__(self, ma, attack_type, model_name, model_type, flow):
 
-		self.mac_address = ''
-		self.attack_type = ''
-		self.model_name = ''
-		self.model_type = ''
-		self.flow = ''
+		self.mac_address = ma
+		self.attack_type = attack_type
+		self.model_name = model_name
+		self.model_type = model_type
+		self.flow = flow
 		self.domain_id = os.environ['DOMAIN_ID']
 
 
 MODEL_TYPE = 1 # 0 for scikit, 1 for pytorch - should be enum instead but python isn't clean like that
 
-MODEL_NAME = "NN"
-PATH_PREF = f"./ModelPack/clean_17_models/{MODEL_NAME}"
+MODEL_TYPE = "NN"
+PATH_PREF = f"./ModelPack/clean_17_models/{MODEL_TYPE}"
 
 SCIKIT_MODEL_PATH = f"{PATH_PREF}/kn_2017.pkl"
 SCALER_PATH = f"{PATH_PREF}/scaler_nn_17.pkl"
 PYTORCH_MODEL_PATH = f"{PATH_PREF}/simple_nn_17.pth"
+MODEL_NAME = ""
 
 
 class AccessPointNode(Node):
@@ -169,8 +170,10 @@ class AccessPointNode(Node):
 
 		if MODEL_TYPE == 0:
 			self.model_driver = ScikitModelDriver(SCIKIT_MODEL_PATH, SCALER_PATH)
+			MODEL_NAME = SCIKIT_MODEL_PATH.split('/')[-1]
 		else:
 			self.model_driver = PyTorchModelDriver(PYTORCH_MODEL_PATH, Net(), SCALER_PATH)
+			MODEL_NAME = PYTORCH_MODEL_PATH.split('/')[-1]
 
 		self.model = self.model_driver.get_instance()
 
@@ -244,7 +247,11 @@ class AccessPointNode(Node):
 		# incoming flow once we decide to blacklist. 
 
 		# Agreement is an INTERNAL DOMAIN PROCESS: Rows - MAC addresses (i.e., subjects); columns - categories (i.e, attack type [1+] or non-malicious [0]); cells - agreements; 
-		
+		print(topic_obj.mac_addr)
+		print(topic_obj.attack_type)
+		print(topic_obj.model_type)
+		print(topic_obj.model_name)
+		print(topic_obj.flow)
 
 
 
@@ -403,12 +410,15 @@ class AccessPointNode(Node):
 			gmtime = time.gmtime()
 			dt_string = "%s:%s:%s" % (gmtime.tm_hour, gmtime.tm_min, gmtime.tm_sec)
 
-			if inf_report[1] == 0:
-				print(f'\033[32;1m[{dt_string}]\033[0m {inf_report[0]} - \033[32;1mNormal.\033[0m')
-				#self.blacklist_obj = BlackListComposition(ma, attack_type, model_name, model_type, flow)
+			mac_addr = inf_report[0]
+			attack_encoding = inf_report[1]
+
+			if attack_encoding == 0:
+				print(f'\033[32;1m[{dt_string}]\033[0m {mac_addr} - \033[32;1mNormal.\033[0m')
+				self.blacklist_obj = BlackListComposition(mac_addr, attack_encoding, MODEL_NAME, MODEL_TYPE, None)
 			else:
-				print(f'\033[31;1m[{dt_string}]\033[0m {inf_report[0]} - \033[31;1mSuspicious.\033[0m')
-				#self.blacklist_obj = BlackListComposition(ma, attack_type, model_name, model_type, flow)
+				print(f'\033[31;1m[{dt_string}]\033[0m {mac_addr} - \033[31;1mSuspicious.\033[0m')
+				self.blacklist_obj = BlackListComposition(mac_addr, attack_encoding, MODEL_NAME, MODEL_TYPE, None)
 			
 
 
