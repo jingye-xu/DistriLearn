@@ -143,7 +143,7 @@ class BlackListComposition:
 	def __init__(self, ma, attack_type, model_name, model_type, ap_hash, flow):
 
 		self.mac_addr = ma
-		self.mac_id = int(f'{ma[0:2]}{ma[3:5]}{ma[6:8]}{ma[9:11]}{ma[12:14]}{ma[15:17]}',16)
+		#self.mac_id = int(f'{ma[0:2]}{ma[3:5]}{ma[6:8]}{ma[9:11]}{ma[12:14]}{ma[15:17]}',16)
 		self.attack_type = attack_type
 		self.model_name = model_name
 		self.model_type = model_type
@@ -263,18 +263,20 @@ class AccessPointNode(Node):
 		
 
 		if self.domain_id == topic_obj.domain_id:
-			# BL format: macid_integer: (mac_addr, {ap_hash: [attack_type_0_cnt, attack_type_1_cnt]})
+			# BL format: {mac_addr : {ap_hash: [attack_type_0_cnt, attack_type_1_cnt]}
 			# AP hash will allow us to count votes per access point and not double-, triple-, or n-count
 			if topic_obj.mac_id not in self.internal_blacklist:
-				self.internal_blacklist[topic_obj.mac_id] = (topic_obj.mac_addr, {topic_obj.attack_type : np.zeros(2)})
+				self.internal_blacklist[topic_obj.mac_addr] = {topic_obj.attack_type : np.zeros(2)}
 
-			ap_hash_dict = self.internal_blacklist[topic_obj.mac_id][1]
+			ap_hash_dict = self.internal_blacklist[topic_obj.mac_addr]
 
 			if topic_obj.attack_type == 0:
 				ap_hash_dict[self.ap_hash][0] += 1
 			else:
 				ap_hash_dict[self.ap_hash][1] += 1 
 
+			# Rule for memory constraint and runtime use: For real-time, we will keep a singular table of 1x2, in which the cells represent benign/mal agreement
+			
 		else:
 			pass
 
