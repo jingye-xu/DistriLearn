@@ -149,7 +149,7 @@ class BlackListComposition:
 		self.model_type = model_type
 		self.flow = flow
 		self.domain_id = os.environ['DOMAIN_ID']
-		self.ap_hash = None
+		self.ap_hash = ap_hash
 
 
 MODEL_TYPE = 1 # 0 for scikit, 1 for pytorch - should be enum instead but python isn't clean like that
