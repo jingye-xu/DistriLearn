@@ -10,6 +10,7 @@ setup.py
 ../../build/NIDS_PKG/NIDS_PKG.egg-info/zip-safe
 NIDS_PKG/__init__.py
 NIDS_PKG/ap_unified_ids_node.py
+NIDS_PKG/kappa_coeff.py
 NIDS_PKG/master_node_script_node.py
 resource/NIDS_PKG
 test/test_copyright.py

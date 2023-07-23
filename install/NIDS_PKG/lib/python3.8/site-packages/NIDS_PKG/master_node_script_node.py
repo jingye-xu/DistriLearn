@@ -45,7 +45,6 @@ class MasterNode(Node):
 
 
 
-
 	def ids_service_listener(self, inf_report):
 
 		inf_tokens = inf_report.data.split('$')

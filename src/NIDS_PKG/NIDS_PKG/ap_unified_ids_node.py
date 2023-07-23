@@ -38,9 +38,11 @@ import rclpy
 import pickle
 import base64
 
+
 from uuid import getnode as get_mac
 from nfstream import NFPlugin, NFStreamer
 from scapy.all import *
+from NIDS_PKG.kappa_coeff import *
 
 
 from rclpy.node import Node
@@ -265,20 +267,20 @@ class AccessPointNode(Node):
 		if self.domain_id == topic_obj.domain_id:
 			# BL format: {mac_addr : {ap_hash: [attack_type_0_cnt, attack_type_1_cnt]}
 			# AP hash will allow us to count votes per access point and not double-, triple-, or n-count
-			if topic_obj.mac_id not in self.internal_blacklist:
-				self.internal_blacklist[topic_obj.mac_addr] = {topic_obj.attack_type : np.zeros(2)}
+			if topic_obj.mac_addr not in self.internal_blacklist:
+				self.internal_blacklist[topic_obj.mac_addr] = np.zeros((1,2))
 
-			ap_hash_dict = self.internal_blacklist[topic_obj.mac_addr]
-
+			table = self.internal_blacklist[topic_obj.mac_addr]
 			if topic_obj.attack_type == 0:
-				ap_hash_dict[self.ap_hash][0] += 1
+				table[0][0] += 1
 			else:
-				ap_hash_dict[self.ap_hash][1] += 1 
+				table[0][1] += 1 
 
 			# Rule for memory constraint and runtime use: For real-time, we will keep a singular table of 1x2, in which the cells represent benign/mal agreement
-			
-		else:
-			pass
+			kap = fleiss_kappa(self.internal_blacklist[topic_obj.mac_addr], method='randolph')
+			print(kap)
+
+		# TODO: Start blacklists here. 
 
 
 
@@ -616,5 +618,4 @@ def make_pretty_interfaces():
 	return interface_selector, "\n".join(message)
 
 
-								
-		
+
