@@ -1,0 +1,351 @@
+[15.531s] DEBUG:colcon:Command line arguments: ['/usr/bin/colcon', 'build']
+[15.532s] DEBUG:colcon:Parsed command line arguments: Namespace(allow_overriding=[], ament_cmake_args=None, base_paths=['.'], build_base='build', catkin_cmake_args=None, catkin_skip_building_tests=False, cmake_args=None, cmake_clean_cache=False, cmake_clean_first=False, cmake_force_configure=False, cmake_target=None, cmake_target_skip_unavailable=False, continue_on_error=False, event_handlers=None, executor='parallel', ignore_user_meta=False, install_base='install', log_base=None, log_level=None, main=<bound method BuildVerb.main of <colcon_core.verb.build.BuildVerb object at 0x7f047571c9a0>>, merge_install=False, metas=['./colcon.meta'], packages_above=None, packages_above_and_dependencies=None, packages_above_depth=None, packages_end=None, packages_ignore=None, packages_ignore_regex=None, packages_select=None, packages_select_build_failed=False, packages_select_by_dep=None, packages_select_regex=None, packages_select_test_failures=False, packages_skip=None, packages_skip_build_finished=False, packages_skip_by_dep=None, packages_skip_regex=None, packages_skip_test_passed=False, packages_skip_up_to=None, packages_start=None, packages_up_to=None, packages_up_to_regex=None, parallel_workers=16, paths=None, symlink_install=False, test_result_base=None, verb_extension=<colcon_core.verb.build.BuildVerb object at 0x7f047571c9a0>, verb_name='build', verb_parser=<colcon_defaults.argument_parser.defaults.DefaultArgumentsDecorator object at 0x7f047571cf10>)
+[15.953s] Level 1:colcon.colcon_core.package_discovery:discover_packages(colcon_meta) check parameters
+[15.953s] Level 1:colcon.colcon_core.package_discovery:discover_packages(recursive) check parameters
+[15.953s] Level 1:colcon.colcon_core.package_discovery:discover_packages(ignore) check parameters
+[15.953s] Level 1:colcon.colcon_core.package_discovery:discover_packages(path) check parameters
+[15.953s] Level 1:colcon.colcon_core.package_discovery:discover_packages(colcon_meta) discover
+[15.953s] Level 1:colcon.colcon_core.package_discovery:discover_packages(recursive) discover
+[15.953s] INFO:colcon.colcon_core.package_discovery:Crawling recursively for packages in '/home/gmo/Desktop/ids_workspace/DistriLearn'
+[15.953s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['ignore', 'ignore_ament_install']
+[15.953s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'ignore'
+[15.953s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'ignore_ament_install'
+[15.953s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['colcon_pkg']
+[15.953s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'colcon_pkg'
+[15.954s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['colcon_meta']
+[15.954s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'colcon_meta'
+[15.954s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['ros']
+[15.954s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'ros'
+[16.042s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['cmake', 'python']
+[16.042s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'cmake'
+[16.042s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'python'
+[16.043s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['python_setup_py']
+[16.043s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'python_setup_py'
+[16.043s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack) by extensions ['ignore', 'ignore_ament_install']
+[16.043s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack) by extension 'ignore'
+[16.043s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack) by extension 'ignore_ament_install'
+[16.043s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack) by extensions ['colcon_pkg']
+[16.043s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack) by extension 'colcon_pkg'
+[16.043s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack) by extensions ['colcon_meta']
+[16.043s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack) by extension 'colcon_meta'
+[16.043s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack) by extensions ['ros']
+[16.043s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack) by extension 'ros'
+[16.044s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack) by extensions ['cmake', 'python']
+[16.044s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack) by extension 'cmake'
+[16.044s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack) by extension 'python'
+[16.044s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack) by extensions ['python_setup_py']
+[16.044s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack) by extension 'python_setup_py'
+[16.044s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/17_18_models) by extensions ['ignore', 'ignore_ament_install']
+[16.044s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/17_18_models) by extension 'ignore'
+[16.044s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/17_18_models) by extension 'ignore_ament_install'
+[16.044s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/17_18_models) by extensions ['colcon_pkg']
+[16.044s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/17_18_models) by extension 'colcon_pkg'
+[16.044s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/17_18_models) by extensions ['colcon_meta']
+[16.044s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/17_18_models) by extension 'colcon_meta'
+[16.044s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/17_18_models) by extensions ['ros']
+[16.044s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/17_18_models) by extension 'ros'
+[16.044s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/17_18_models) by extensions ['cmake', 'python']
+[16.044s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/17_18_models) by extension 'cmake'
+[16.044s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/17_18_models) by extension 'python'
+[16.044s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/17_18_models) by extensions ['python_setup_py']
+[16.044s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/17_18_models) by extension 'python_setup_py'
+[16.044s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/17_18_models/Log regression) by extensions ['ignore', 'ignore_ament_install']
+[16.045s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/17_18_models/Log regression) by extension 'ignore'
+[16.045s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/17_18_models/Log regression) by extension 'ignore_ament_install'
+[16.045s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/17_18_models/Log regression) by extensions ['colcon_pkg']
+[16.045s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/17_18_models/Log regression) by extension 'colcon_pkg'
+[16.045s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/17_18_models/Log regression) by extensions ['colcon_meta']
+[16.045s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/17_18_models/Log regression) by extension 'colcon_meta'
+[16.045s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/17_18_models/Log regression) by extensions ['ros']
+[16.045s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/17_18_models/Log regression) by extension 'ros'
+[16.045s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/17_18_models/Log regression) by extensions ['cmake', 'python']
+[16.045s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/17_18_models/Log regression) by extension 'cmake'
+[16.045s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/17_18_models/Log regression) by extension 'python'
+[16.045s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/17_18_models/Log regression) by extensions ['python_setup_py']
+[16.045s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/17_18_models/Log regression) by extension 'python_setup_py'
+[16.045s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/17_18_models/NN) by extensions ['ignore', 'ignore_ament_install']
+[16.045s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/17_18_models/NN) by extension 'ignore'
+[16.045s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/17_18_models/NN) by extension 'ignore_ament_install'
+[16.045s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/17_18_models/NN) by extensions ['colcon_pkg']
+[16.045s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/17_18_models/NN) by extension 'colcon_pkg'
+[16.045s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/17_18_models/NN) by extensions ['colcon_meta']
+[16.045s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/17_18_models/NN) by extension 'colcon_meta'
+[16.045s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/17_18_models/NN) by extensions ['ros']
+[16.045s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/17_18_models/NN) by extension 'ros'
+[16.045s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/17_18_models/NN) by extensions ['cmake', 'python']
+[16.045s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/17_18_models/NN) by extension 'cmake'
+[16.045s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/17_18_models/NN) by extension 'python'
+[16.045s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/17_18_models/NN) by extensions ['python_setup_py']
+[16.045s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/17_18_models/NN) by extension 'python_setup_py'
+[16.045s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/17_18_models/Random Forest) by extensions ['ignore', 'ignore_ament_install']
+[16.046s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/17_18_models/Random Forest) by extension 'ignore'
+[16.046s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/17_18_models/Random Forest) by extension 'ignore_ament_install'
+[16.046s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/17_18_models/Random Forest) by extensions ['colcon_pkg']
+[16.046s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/17_18_models/Random Forest) by extension 'colcon_pkg'
+[16.046s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/17_18_models/Random Forest) by extensions ['colcon_meta']
+[16.046s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/17_18_models/Random Forest) by extension 'colcon_meta'
+[16.046s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/17_18_models/Random Forest) by extensions ['ros']
+[16.046s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/17_18_models/Random Forest) by extension 'ros'
+[16.046s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/17_18_models/Random Forest) by extensions ['cmake', 'python']
+[16.046s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/17_18_models/Random Forest) by extension 'cmake'
+[16.046s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/17_18_models/Random Forest) by extension 'python'
+[16.046s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/17_18_models/Random Forest) by extensions ['python_setup_py']
+[16.046s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/17_18_models/Random Forest) by extension 'python_setup_py'
+[16.046s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/17_18_models/SVM) by extensions ['ignore', 'ignore_ament_install']
+[16.046s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/17_18_models/SVM) by extension 'ignore'
+[16.046s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/17_18_models/SVM) by extension 'ignore_ament_install'
+[16.046s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/17_18_models/SVM) by extensions ['colcon_pkg']
+[16.046s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/17_18_models/SVM) by extension 'colcon_pkg'
+[16.046s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/17_18_models/SVM) by extensions ['colcon_meta']
+[16.046s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/17_18_models/SVM) by extension 'colcon_meta'
+[16.046s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/17_18_models/SVM) by extensions ['ros']
+[16.046s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/17_18_models/SVM) by extension 'ros'
+[16.046s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/17_18_models/SVM) by extensions ['cmake', 'python']
+[16.046s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/17_18_models/SVM) by extension 'cmake'
+[16.046s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/17_18_models/SVM) by extension 'python'
+[16.046s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/17_18_models/SVM) by extensions ['python_setup_py']
+[16.046s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/17_18_models/SVM) by extension 'python_setup_py'
+[16.046s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_17_models) by extensions ['ignore', 'ignore_ament_install']
+[16.047s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_17_models) by extension 'ignore'
+[16.047s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_17_models) by extension 'ignore_ament_install'
+[16.047s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_17_models) by extensions ['colcon_pkg']
+[16.047s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_17_models) by extension 'colcon_pkg'
+[16.047s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_17_models) by extensions ['colcon_meta']
+[16.047s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_17_models) by extension 'colcon_meta'
+[16.047s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_17_models) by extensions ['ros']
+[16.047s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_17_models) by extension 'ros'
+[16.047s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_17_models) by extensions ['cmake', 'python']
+[16.047s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_17_models) by extension 'cmake'
+[16.047s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_17_models) by extension 'python'
+[16.047s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_17_models) by extensions ['python_setup_py']
+[16.047s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_17_models) by extension 'python_setup_py'
+[16.047s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_17_models/Log regression) by extensions ['ignore', 'ignore_ament_install']
+[16.047s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_17_models/Log regression) by extension 'ignore'
+[16.047s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_17_models/Log regression) by extension 'ignore_ament_install'
+[16.047s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_17_models/Log regression) by extensions ['colcon_pkg']
+[16.047s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_17_models/Log regression) by extension 'colcon_pkg'
+[16.047s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_17_models/Log regression) by extensions ['colcon_meta']
+[16.047s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_17_models/Log regression) by extension 'colcon_meta'
+[16.047s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_17_models/Log regression) by extensions ['ros']
+[16.047s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_17_models/Log regression) by extension 'ros'
+[16.047s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_17_models/Log regression) by extensions ['cmake', 'python']
+[16.047s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_17_models/Log regression) by extension 'cmake'
+[16.047s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_17_models/Log regression) by extension 'python'
+[16.047s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_17_models/Log regression) by extensions ['python_setup_py']
+[16.047s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_17_models/Log regression) by extension 'python_setup_py'
+[16.047s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_17_models/NN) by extensions ['ignore', 'ignore_ament_install']
+[16.047s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_17_models/NN) by extension 'ignore'
+[16.048s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_17_models/NN) by extension 'ignore_ament_install'
+[16.048s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_17_models/NN) by extensions ['colcon_pkg']
+[16.048s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_17_models/NN) by extension 'colcon_pkg'
+[16.048s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_17_models/NN) by extensions ['colcon_meta']
+[16.048s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_17_models/NN) by extension 'colcon_meta'
+[16.048s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_17_models/NN) by extensions ['ros']
+[16.048s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_17_models/NN) by extension 'ros'
+[16.048s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_17_models/NN) by extensions ['cmake', 'python']
+[16.048s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_17_models/NN) by extension 'cmake'
+[16.048s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_17_models/NN) by extension 'python'
+[16.048s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_17_models/NN) by extensions ['python_setup_py']
+[16.048s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_17_models/NN) by extension 'python_setup_py'
+[16.048s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_17_models/Random Forest) by extensions ['ignore', 'ignore_ament_install']
+[16.048s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_17_models/Random Forest) by extension 'ignore'
+[16.048s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_17_models/Random Forest) by extension 'ignore_ament_install'
+[16.048s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_17_models/Random Forest) by extensions ['colcon_pkg']
+[16.048s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_17_models/Random Forest) by extension 'colcon_pkg'
+[16.048s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_17_models/Random Forest) by extensions ['colcon_meta']
+[16.048s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_17_models/Random Forest) by extension 'colcon_meta'
+[16.048s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_17_models/Random Forest) by extensions ['ros']
+[16.048s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_17_models/Random Forest) by extension 'ros'
+[16.048s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_17_models/Random Forest) by extensions ['cmake', 'python']
+[16.048s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_17_models/Random Forest) by extension 'cmake'
+[16.048s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_17_models/Random Forest) by extension 'python'
+[16.048s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_17_models/Random Forest) by extensions ['python_setup_py']
+[16.048s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_17_models/Random Forest) by extension 'python_setup_py'
+[16.048s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_17_models/SVM) by extensions ['ignore', 'ignore_ament_install']
+[16.048s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_17_models/SVM) by extension 'ignore'
+[16.048s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_17_models/SVM) by extension 'ignore_ament_install'
+[16.049s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_17_models/SVM) by extensions ['colcon_pkg']
+[16.049s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_17_models/SVM) by extension 'colcon_pkg'
+[16.049s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_17_models/SVM) by extensions ['colcon_meta']
+[16.049s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_17_models/SVM) by extension 'colcon_meta'
+[16.049s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_17_models/SVM) by extensions ['ros']
+[16.049s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_17_models/SVM) by extension 'ros'
+[16.049s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_17_models/SVM) by extensions ['cmake', 'python']
+[16.049s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_17_models/SVM) by extension 'cmake'
+[16.049s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_17_models/SVM) by extension 'python'
+[16.049s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_17_models/SVM) by extensions ['python_setup_py']
+[16.049s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_17_models/SVM) by extension 'python_setup_py'
+[16.049s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_18_models) by extensions ['ignore', 'ignore_ament_install']
+[16.049s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_18_models) by extension 'ignore'
+[16.049s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_18_models) by extension 'ignore_ament_install'
+[16.049s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_18_models) by extensions ['colcon_pkg']
+[16.049s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_18_models) by extension 'colcon_pkg'
+[16.049s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_18_models) by extensions ['colcon_meta']
+[16.049s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_18_models) by extension 'colcon_meta'
+[16.049s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_18_models) by extensions ['ros']
+[16.049s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_18_models) by extension 'ros'
+[16.049s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_18_models) by extensions ['cmake', 'python']
+[16.049s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_18_models) by extension 'cmake'
+[16.049s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_18_models) by extension 'python'
+[16.049s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_18_models) by extensions ['python_setup_py']
+[16.049s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_18_models) by extension 'python_setup_py'
+[16.049s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_18_models/Log regression) by extensions ['ignore', 'ignore_ament_install']
+[16.049s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_18_models/Log regression) by extension 'ignore'
+[16.049s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_18_models/Log regression) by extension 'ignore_ament_install'
+[16.049s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_18_models/Log regression) by extensions ['colcon_pkg']
+[16.049s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_18_models/Log regression) by extension 'colcon_pkg'
+[16.050s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_18_models/Log regression) by extensions ['colcon_meta']
+[16.050s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_18_models/Log regression) by extension 'colcon_meta'
+[16.050s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_18_models/Log regression) by extensions ['ros']
+[16.050s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_18_models/Log regression) by extension 'ros'
+[16.050s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_18_models/Log regression) by extensions ['cmake', 'python']
+[16.050s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_18_models/Log regression) by extension 'cmake'
+[16.050s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_18_models/Log regression) by extension 'python'
+[16.050s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_18_models/Log regression) by extensions ['python_setup_py']
+[16.050s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_18_models/Log regression) by extension 'python_setup_py'
+[16.050s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_18_models/NN) by extensions ['ignore', 'ignore_ament_install']
+[16.050s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_18_models/NN) by extension 'ignore'
+[16.050s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_18_models/NN) by extension 'ignore_ament_install'
+[16.050s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_18_models/NN) by extensions ['colcon_pkg']
+[16.050s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_18_models/NN) by extension 'colcon_pkg'
+[16.050s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_18_models/NN) by extensions ['colcon_meta']
+[16.050s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_18_models/NN) by extension 'colcon_meta'
+[16.050s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_18_models/NN) by extensions ['ros']
+[16.050s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_18_models/NN) by extension 'ros'
+[16.050s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_18_models/NN) by extensions ['cmake', 'python']
+[16.050s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_18_models/NN) by extension 'cmake'
+[16.050s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_18_models/NN) by extension 'python'
+[16.050s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_18_models/NN) by extensions ['python_setup_py']
+[16.050s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_18_models/NN) by extension 'python_setup_py'
+[16.050s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_18_models/Random Forest) by extensions ['ignore', 'ignore_ament_install']
+[16.050s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_18_models/Random Forest) by extension 'ignore'
+[16.050s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_18_models/Random Forest) by extension 'ignore_ament_install'
+[16.050s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_18_models/Random Forest) by extensions ['colcon_pkg']
+[16.050s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_18_models/Random Forest) by extension 'colcon_pkg'
+[16.050s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_18_models/Random Forest) by extensions ['colcon_meta']
+[16.050s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_18_models/Random Forest) by extension 'colcon_meta'
+[16.051s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_18_models/Random Forest) by extensions ['ros']
+[16.051s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_18_models/Random Forest) by extension 'ros'
+[16.051s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_18_models/Random Forest) by extensions ['cmake', 'python']
+[16.051s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_18_models/Random Forest) by extension 'cmake'
+[16.051s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_18_models/Random Forest) by extension 'python'
+[16.051s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_18_models/Random Forest) by extensions ['python_setup_py']
+[16.051s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_18_models/Random Forest) by extension 'python_setup_py'
+[16.051s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_18_models/SVM) by extensions ['ignore', 'ignore_ament_install']
+[16.051s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_18_models/SVM) by extension 'ignore'
+[16.051s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_18_models/SVM) by extension 'ignore_ament_install'
+[16.051s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_18_models/SVM) by extensions ['colcon_pkg']
+[16.051s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_18_models/SVM) by extension 'colcon_pkg'
+[16.051s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_18_models/SVM) by extensions ['colcon_meta']
+[16.051s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_18_models/SVM) by extension 'colcon_meta'
+[16.051s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_18_models/SVM) by extensions ['ros']
+[16.051s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_18_models/SVM) by extension 'ros'
+[16.051s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_18_models/SVM) by extensions ['cmake', 'python']
+[16.051s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_18_models/SVM) by extension 'cmake'
+[16.051s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_18_models/SVM) by extension 'python'
+[16.051s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_18_models/SVM) by extensions ['python_setup_py']
+[16.051s] Level 1:colcon.colcon_core.package_identification:_identify(ModelPack/clean_18_models/SVM) by extension 'python_setup_py'
+[16.051s] Level 1:colcon.colcon_core.package_identification:_identify(build) by extensions ['ignore', 'ignore_ament_install']
+[16.051s] Level 1:colcon.colcon_core.package_identification:_identify(build) by extension 'ignore'
+[16.051s] Level 1:colcon.colcon_core.package_identification:_identify(build) ignored
+[16.052s] Level 1:colcon.colcon_core.package_identification:_identify(install) by extensions ['ignore', 'ignore_ament_install']
+[16.052s] Level 1:colcon.colcon_core.package_identification:_identify(install) by extension 'ignore'
+[16.052s] Level 1:colcon.colcon_core.package_identification:_identify(install) ignored
+[16.052s] Level 1:colcon.colcon_core.package_identification:_identify(log) by extensions ['ignore', 'ignore_ament_install']
+[16.052s] Level 1:colcon.colcon_core.package_identification:_identify(log) by extension 'ignore'
+[16.052s] Level 1:colcon.colcon_core.package_identification:_identify(log) ignored
+[16.052s] Level 1:colcon.colcon_core.package_identification:_identify(src) by extensions ['ignore', 'ignore_ament_install']
+[16.052s] Level 1:colcon.colcon_core.package_identification:_identify(src) by extension 'ignore'
+[16.052s] Level 1:colcon.colcon_core.package_identification:_identify(src) by extension 'ignore_ament_install'
+[16.052s] Level 1:colcon.colcon_core.package_identification:_identify(src) by extensions ['colcon_pkg']
+[16.052s] Level 1:colcon.colcon_core.package_identification:_identify(src) by extension 'colcon_pkg'
+[16.052s] Level 1:colcon.colcon_core.package_identification:_identify(src) by extensions ['colcon_meta']
+[16.052s] Level 1:colcon.colcon_core.package_identification:_identify(src) by extension 'colcon_meta'
+[16.052s] Level 1:colcon.colcon_core.package_identification:_identify(src) by extensions ['ros']
+[16.052s] Level 1:colcon.colcon_core.package_identification:_identify(src) by extension 'ros'
+[16.052s] Level 1:colcon.colcon_core.package_identification:_identify(src) by extensions ['cmake', 'python']
+[16.052s] Level 1:colcon.colcon_core.package_identification:_identify(src) by extension 'cmake'
+[16.052s] Level 1:colcon.colcon_core.package_identification:_identify(src) by extension 'python'
+[16.052s] Level 1:colcon.colcon_core.package_identification:_identify(src) by extensions ['python_setup_py']
+[16.052s] Level 1:colcon.colcon_core.package_identification:_identify(src) by extension 'python_setup_py'
+[16.052s] Level 1:colcon.colcon_core.package_identification:_identify(src/NIDS_PKG) by extensions ['ignore', 'ignore_ament_install']
+[16.053s] Level 1:colcon.colcon_core.package_identification:_identify(src/NIDS_PKG) by extension 'ignore'
+[16.053s] Level 1:colcon.colcon_core.package_identification:_identify(src/NIDS_PKG) by extension 'ignore_ament_install'
+[16.053s] Level 1:colcon.colcon_core.package_identification:_identify(src/NIDS_PKG) by extensions ['colcon_pkg']
+[16.053s] Level 1:colcon.colcon_core.package_identification:_identify(src/NIDS_PKG) by extension 'colcon_pkg'
+[16.053s] Level 1:colcon.colcon_core.package_identification:_identify(src/NIDS_PKG) by extensions ['colcon_meta']
+[16.053s] Level 1:colcon.colcon_core.package_identification:_identify(src/NIDS_PKG) by extension 'colcon_meta'
+[16.053s] Level 1:colcon.colcon_core.package_identification:_identify(src/NIDS_PKG) by extensions ['ros']
+[16.053s] Level 1:colcon.colcon_core.package_identification:_identify(src/NIDS_PKG) by extension 'ros'
+[16.106s] DEBUG:colcon.colcon_core.package_identification:Package 'src/NIDS_PKG' with type 'ros.ament_python' and name 'NIDS_PKG'
+[16.106s] Level 1:colcon.colcon_core.package_discovery:discover_packages(recursive) using defaults
+[16.107s] Level 1:colcon.colcon_core.package_discovery:discover_packages(ignore) discover
+[16.107s] Level 1:colcon.colcon_core.package_discovery:discover_packages(ignore) using defaults
+[16.107s] Level 1:colcon.colcon_core.package_discovery:discover_packages(path) discover
+[16.107s] Level 1:colcon.colcon_core.package_discovery:discover_packages(path) using defaults
+[16.387s] Level 1:colcon.colcon_core.package_discovery:discover_packages(prefix_path) check parameters
+[16.387s] Level 1:colcon.colcon_core.package_discovery:discover_packages(prefix_path) discover
+[16.390s] DEBUG:colcon.colcon_installed_package_information.package_discovery:Found 1 installed packages in /home/gmo/Desktop/ids_workspace/DistriLearn/install
+[16.392s] DEBUG:colcon.colcon_installed_package_information.package_discovery:Found 266 installed packages in /opt/ros/foxy
+[16.393s] Level 1:colcon.colcon_core.package_discovery:discover_packages(prefix_path) using defaults
+[17.525s] Level 5:colcon.colcon_core.verb:set package 'NIDS_PKG' build argument 'cmake_args' from command line to 'None'
+[17.526s] Level 5:colcon.colcon_core.verb:set package 'NIDS_PKG' build argument 'cmake_target' from command line to 'None'
+[17.526s] Level 5:colcon.colcon_core.verb:set package 'NIDS_PKG' build argument 'cmake_target_skip_unavailable' from command line to 'False'
+[17.526s] Level 5:colcon.colcon_core.verb:set package 'NIDS_PKG' build argument 'cmake_clean_cache' from command line to 'False'
+[17.526s] Level 5:colcon.colcon_core.verb:set package 'NIDS_PKG' build argument 'cmake_clean_first' from command line to 'False'
+[17.526s] Level 5:colcon.colcon_core.verb:set package 'NIDS_PKG' build argument 'cmake_force_configure' from command line to 'False'
+[17.526s] Level 5:colcon.colcon_core.verb:set package 'NIDS_PKG' build argument 'ament_cmake_args' from command line to 'None'
+[17.526s] Level 5:colcon.colcon_core.verb:set package 'NIDS_PKG' build argument 'catkin_cmake_args' from command line to 'None'
+[17.526s] Level 5:colcon.colcon_core.verb:set package 'NIDS_PKG' build argument 'catkin_skip_building_tests' from command line to 'False'
+[17.526s] DEBUG:colcon.colcon_core.verb:Building package 'NIDS_PKG' with the following arguments: {'ament_cmake_args': None, 'build_base': '/home/gmo/Desktop/ids_workspace/DistriLearn/build/NIDS_PKG', 'catkin_cmake_args': None, 'catkin_skip_building_tests': False, 'cmake_args': None, 'cmake_clean_cache': False, 'cmake_clean_first': False, 'cmake_force_configure': False, 'cmake_target': None, 'cmake_target_skip_unavailable': False, 'install_base': '/home/gmo/Desktop/ids_workspace/DistriLearn/install/NIDS_PKG', 'merge_install': False, 'path': '/home/gmo/Desktop/ids_workspace/DistriLearn/src/NIDS_PKG', 'symlink_install': False, 'test_result_base': None}
+[17.528s] INFO:colcon.colcon_core.executor:Executing jobs using 'parallel' executor
+[17.535s] DEBUG:colcon.colcon_parallel_executor.executor.parallel:run_until_complete
+[17.536s] INFO:colcon.colcon_ros.task.ament_python.build:Building ROS package in '/home/gmo/Desktop/ids_workspace/DistriLearn/src/NIDS_PKG' with build type 'ament_python'
+[17.536s] Level 1:colcon.colcon_core.shell:create_environment_hook('NIDS_PKG', 'ament_prefix_path')
+[17.711s] INFO:colcon.colcon_core.plugin_system:Skipping extension 'colcon_core.shell.bat': Not used on non-Windows systems
+[17.712s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/gmo/Desktop/ids_workspace/DistriLearn/install/NIDS_PKG/share/NIDS_PKG/hook/ament_prefix_path.ps1'
+[17.713s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/gmo/Desktop/ids_workspace/DistriLearn/install/NIDS_PKG/share/NIDS_PKG/hook/ament_prefix_path.dsv'
+[17.744s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/gmo/Desktop/ids_workspace/DistriLearn/install/NIDS_PKG/share/NIDS_PKG/hook/ament_prefix_path.sh'
+[17.748s] INFO:colcon.colcon_core.shell:Skip shell extension 'powershell' for command environment: Not usable outside of PowerShell
+[17.748s] DEBUG:colcon.colcon_core.shell:Skip shell extension 'dsv' for command environment
+[18.044s] INFO:colcon.colcon_core.task.python.build:Building Python package in '/home/gmo/Desktop/ids_workspace/DistriLearn/src/NIDS_PKG'
+[18.046s] INFO:colcon.colcon_core.shell:Skip shell extension 'powershell' for command environment: Not usable outside of PowerShell
+[18.047s] DEBUG:colcon.colcon_core.shell:Skip shell extension 'dsv' for command environment
+[19.826s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoking command in '/home/gmo/Desktop/ids_workspace/DistriLearn/src/NIDS_PKG': PYTHONPATH=/home/gmo/Desktop/ids_workspace/DistriLearn/build/NIDS_PKG/prefix_override:/home/gmo/Desktop/ids_workspace/DistriLearn/install/NIDS_PKG/lib/python3.8/site-packages:${PYTHONPATH} /usr/bin/python3 setup.py egg_info --egg-base ../../build/NIDS_PKG build --build-base /home/gmo/Desktop/ids_workspace/DistriLearn/build/NIDS_PKG/build install --record /home/gmo/Desktop/ids_workspace/DistriLearn/build/NIDS_PKG/install.log --install-scripts $base/lib/NIDS_PKG --single-version-externally-managed
+[20.307s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoked command in '/home/gmo/Desktop/ids_workspace/DistriLearn/src/NIDS_PKG' returned '0': PYTHONPATH=/home/gmo/Desktop/ids_workspace/DistriLearn/build/NIDS_PKG/prefix_override:/home/gmo/Desktop/ids_workspace/DistriLearn/install/NIDS_PKG/lib/python3.8/site-packages:${PYTHONPATH} /usr/bin/python3 setup.py egg_info --egg-base ../../build/NIDS_PKG build --build-base /home/gmo/Desktop/ids_workspace/DistriLearn/build/NIDS_PKG/build install --record /home/gmo/Desktop/ids_workspace/DistriLearn/build/NIDS_PKG/install.log --install-scripts $base/lib/NIDS_PKG --single-version-externally-managed
+[20.525s] Level 1:colcon.colcon_core.environment:checking '/home/gmo/Desktop/ids_workspace/DistriLearn/install/NIDS_PKG' for CMake module files
+[20.525s] Level 1:colcon.colcon_core.environment:checking '/home/gmo/Desktop/ids_workspace/DistriLearn/install/NIDS_PKG' for CMake config files
+[20.526s] Level 1:colcon.colcon_core.environment:checking '/home/gmo/Desktop/ids_workspace/DistriLearn/install/NIDS_PKG/lib'
+[20.526s] Level 1:colcon.colcon_core.environment:checking '/home/gmo/Desktop/ids_workspace/DistriLearn/install/NIDS_PKG/bin'
+[20.526s] Level 1:colcon.colcon_core.environment:checking '/home/gmo/Desktop/ids_workspace/DistriLearn/install/NIDS_PKG/lib/pkgconfig/NIDS_PKG.pc'
+[20.527s] Level 1:colcon.colcon_core.environment:checking '/home/gmo/Desktop/ids_workspace/DistriLearn/install/NIDS_PKG/lib/python3.8/site-packages'
+[20.527s] Level 1:colcon.colcon_core.shell:create_environment_hook('NIDS_PKG', 'pythonpath')
+[20.531s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/gmo/Desktop/ids_workspace/DistriLearn/install/NIDS_PKG/share/NIDS_PKG/hook/pythonpath.ps1'
+[20.531s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/gmo/Desktop/ids_workspace/DistriLearn/install/NIDS_PKG/share/NIDS_PKG/hook/pythonpath.dsv'
+[20.532s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/gmo/Desktop/ids_workspace/DistriLearn/install/NIDS_PKG/share/NIDS_PKG/hook/pythonpath.sh'
+[20.532s] Level 1:colcon.colcon_core.environment:checking '/home/gmo/Desktop/ids_workspace/DistriLearn/install/NIDS_PKG/bin'
+[20.532s] Level 1:colcon.colcon_core.environment:create_environment_scripts_only(NIDS_PKG)
+[20.535s] INFO:colcon.colcon_core.shell:Creating package script '/home/gmo/Desktop/ids_workspace/DistriLearn/install/NIDS_PKG/share/NIDS_PKG/package.ps1'
+[20.740s] INFO:colcon.colcon_core.shell:Creating package descriptor '/home/gmo/Desktop/ids_workspace/DistriLearn/install/NIDS_PKG/share/NIDS_PKG/package.dsv'
+[20.802s] INFO:colcon.colcon_core.shell:Creating package script '/home/gmo/Desktop/ids_workspace/DistriLearn/install/NIDS_PKG/share/NIDS_PKG/package.sh'
+[20.804s] INFO:colcon.colcon_core.shell:Creating package script '/home/gmo/Desktop/ids_workspace/DistriLearn/install/NIDS_PKG/share/NIDS_PKG/package.bash'
+[20.805s] INFO:colcon.colcon_core.shell:Creating package script '/home/gmo/Desktop/ids_workspace/DistriLearn/install/NIDS_PKG/share/NIDS_PKG/package.zsh'
+[20.812s] Level 1:colcon.colcon_core.environment:create_file_with_runtime_dependencies(/home/gmo/Desktop/ids_workspace/DistriLearn/install/NIDS_PKG/share/colcon-core/packages/NIDS_PKG)
+[20.812s] DEBUG:colcon.colcon_parallel_executor.executor.parallel:closing loop
+[20.812s] DEBUG:colcon.colcon_parallel_executor.executor.parallel:loop closed
+[20.813s] DEBUG:colcon.colcon_parallel_executor.executor.parallel:run_until_complete finished with '0'
+[20.813s] DEBUG:colcon.colcon_core.event_reactor:joining thread
+[20.857s] INFO:colcon.colcon_core.plugin_system:Skipping extension 'colcon_notification.desktop_notification.terminal_notifier': Not used on non-Darwin systems
+[20.857s] INFO:colcon.colcon_core.plugin_system:Skipping extension 'colcon_notification.desktop_notification.win32': Not used on non-Windows systems
+[20.857s] INFO:colcon.colcon_notification.desktop_notification:Sending desktop notification using 'notify2'
+[20.866s] DEBUG:colcon.colcon_core.event_reactor:joined thread
+[20.870s] INFO:colcon.colcon_core.shell:Creating prefix script '/home/gmo/Desktop/ids_workspace/DistriLearn/install/local_setup.ps1'
+[20.872s] INFO:colcon.colcon_core.shell:Creating prefix util module '/home/gmo/Desktop/ids_workspace/DistriLearn/install/_local_setup_util_ps1.py'
+[20.873s] INFO:colcon.colcon_core.shell:Creating prefix chain script '/home/gmo/Desktop/ids_workspace/DistriLearn/install/setup.ps1'
+[20.875s] INFO:colcon.colcon_core.shell:Creating prefix script '/home/gmo/Desktop/ids_workspace/DistriLearn/install/local_setup.sh'
+[20.876s] INFO:colcon.colcon_core.shell:Creating prefix util module '/home/gmo/Desktop/ids_workspace/DistriLearn/install/_local_setup_util_sh.py'
+[20.876s] INFO:colcon.colcon_core.shell:Creating prefix chain script '/home/gmo/Desktop/ids_workspace/DistriLearn/install/setup.sh'
+[20.877s] INFO:colcon.colcon_core.shell:Creating prefix script '/home/gmo/Desktop/ids_workspace/DistriLearn/install/local_setup.bash'
+[20.877s] INFO:colcon.colcon_core.shell:Creating prefix chain script '/home/gmo/Desktop/ids_workspace/DistriLearn/install/setup.bash'
+[20.879s] INFO:colcon.colcon_core.shell:Creating prefix script '/home/gmo/Desktop/ids_workspace/DistriLearn/install/local_setup.zsh'
+[20.879s] INFO:colcon.colcon_core.shell:Creating prefix chain script '/home/gmo/Desktop/ids_workspace/DistriLearn/install/setup.zsh'

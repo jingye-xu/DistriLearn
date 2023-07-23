@@ -142,7 +142,7 @@ class BlackListComposition:
 
 	def __init__(self, ma, attack_type, model_name, model_type, flow):
 
-		self.mac_address = ma
+		self.mac_addr = ma
 		self.attack_type = attack_type
 		self.model_name = model_name
 		self.model_type = model_type
@@ -152,8 +152,7 @@ class BlackListComposition:
 
 MODEL_TYPE = 1 # 0 for scikit, 1 for pytorch - should be enum instead but python isn't clean like that
 
-MODEL_TYPE = "NN"
-PATH_PREF = f"./ModelPack/clean_17_models/{MODEL_TYPE}"
+PATH_PREF = f"./ModelPack/clean_17_models/NN"
 
 SCIKIT_MODEL_PATH = f"{PATH_PREF}/kn_2017.pkl"
 SCALER_PATH = f"{PATH_PREF}/scaler_nn_17.pkl"
@@ -167,6 +166,8 @@ class AccessPointNode(Node):
 		super().__init__('access_point_node')
 
 		self.model_driver = None
+
+		global MODEL_NAME
 
 		if MODEL_TYPE == 0:
 			self.model_driver = ScikitModelDriver(SCIKIT_MODEL_PATH, SCALER_PATH)
@@ -217,10 +218,10 @@ class AccessPointNode(Node):
 
 
 		# Blacklist subsystem (TODO: Place in own node) -> everyone in the complex/enterprise will publish and subscribe to it. 
-		self.blacklist_publisher = self.create_publisher(AnyMsg, 'blacklist_subsytem', self.OUTGOING_MSG_QUEUE_SIZE)
+		self.blacklist_publisher = self.create_publisher(String, 'blacklist_subsytem', self.OUTGOING_MSG_QUEUE_SIZE)
 		_ = self.create_timer(timer_period, self.blacklist_pub_callback)
 
-		self.blacklist_subscriber = self.create_subscription(AnyMsg, 'blacklist_subsytem', self.blacklist_sub_callback, self.INCOMING_MSG_QUEUE_SIZE)
+		self.blacklist_subscriber = self.create_subscription(String, 'blacklist_subsytem', self.blacklist_sub_callback, self.INCOMING_MSG_QUEUE_SIZE)
 
 
 		self.master_queue = {}
@@ -240,7 +241,8 @@ class AccessPointNode(Node):
 
 		topic_encoded_b64_str = data.data
 		topic_decoded_b64_bytes = bytes(topic_encoded_b64_str, 'UTF-8') 
-		topic_obj = base64.b64decode(topic_decoded_b64_bytes)
+		topic_obj_decoded = base64.b64decode(topic_decoded_b64_bytes)
+		topic_obj = pickle.loads(topic_obj_decoded)
 
 		# On receiving, we use Domain ID to fill internal blacklist. Then, we check agreement (for malicious/non-benign), and if it's
 		# high agreement of malicious, we blacklist it. LATER: Use some metric to perform online learning based on flow info for the 
@@ -252,6 +254,7 @@ class AccessPointNode(Node):
 		print(topic_obj.model_type)
 		print(topic_obj.model_name)
 		print(topic_obj.flow)
+		print("-=-=-=-=-=-=-")
 
 
 
@@ -265,7 +268,7 @@ class AccessPointNode(Node):
 		
 		topic_obj = pickle.dumps(self.blacklist_obj)
 		topic_obj_encoded = base64.b64encode(topic_obj)
-		topic_obj_str = base64.encode('UTF-8')
+		topic_obj_str = topic_obj_encoded.decode('UTF-8')
 
 		self.defaultMsg.data = topic_obj_str
 		self.blacklist_publisher.publish(self.defaultMsg)
@@ -370,7 +373,7 @@ class AccessPointNode(Node):
 		self.sniff_traffic(self.capture_name, self.net_interface)
 
 		# turn it into flow
-		stream = NFStreamer(self.net_interface, max_nflows=30, statistical_analysis=True, decode_tunnels=False, accounting_mode=3)
+		stream = NFStreamer(self.capture_name, statistical_analysis=True, decode_tunnels=False, accounting_mode=3)
 		mapped = map(self.create_data_frame_entry_from_flow, iter(stream))
 		df = pd.DataFrame(mapped)
 

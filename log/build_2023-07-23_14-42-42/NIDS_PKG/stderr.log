@@ -1,0 +1,5 @@
+  File "/home/gmo/Desktop/ids_workspace/DistriLearn/install/NIDS_PKG/lib/python3.8/site-packages/NIDS_PKG/ap_unified_ids_node.py", line 373
+    stream = NFStreamer(self.capture_name statistical_analysis=True, decode_tunnels=False, accounting_mode=3)
+                                          ^
+SyntaxError: invalid syntax
+
