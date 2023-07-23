@@ -143,6 +143,7 @@ class BlackListComposition:
 	def __init__(self, ma, attack_type, model_name, model_type, flow):
 
 		self.mac_addr = ma
+		self.mac_id = int(f'{ma[0:2]}{ma[3:5]}{ma[6:8]}{ma[9:11]}{ma[12:14]}{ma[15:17]}',16)
 		self.attack_type = attack_type
 		self.model_name = model_name
 		self.model_type = model_type
@@ -255,6 +256,7 @@ class AccessPointNode(Node):
 		print(topic_obj.model_name)
 		print(topic_obj.flow)
 		print("-=-=-=-=-=-=-")
+		mai = f'{ma[0:2]}{ma[3:5]}{ma[6:8]}{ma[9:11]}{ma[12:14]}{ma[15:17]}'
 
 
 
