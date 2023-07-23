@@ -235,15 +235,16 @@ class AccessPointNode(Node):
 	# This subsystem is subscribed to by ALL masters, and ALL access points for preemptive decision making. 
 	def blacklist_sub_callback(self, data):
 
-		topic_encoded_str = data.data
-		topic_decoded_b64_str = base64.decode(topic_encoded_str)
+		topic_encoded_b64_str = data.data
+		topic_decoded_b64_bytes = bytes(topic_encoded_b64_str, 'UTF-8') 
+		topic_obj = base64.b64decode(topic_decoded_b64_bytes)
 
 		# On receiving, we use Domain ID to fill internal blacklist. Then, we check agreement (for malicious/non-benign), and if it's
 		# high agreement of malicious, we blacklist it. LATER: Use some metric to perform online learning based on flow info for the 
 		# incoming flow once we decide to blacklist. 
 
 		# Agreement is an INTERNAL DOMAIN PROCESS: Rows - MAC addresses (i.e., subjects); columns - categories (i.e, attack type [1+] or non-malicious [0]); cells - agreements; 
-		pass
+		
 
 
 
