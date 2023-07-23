@@ -36,6 +36,12 @@ class MasterNode(Node):
 
 		self.evidence_buffer = {}
 
+		# BL format: macid_integer: (mac_addr, {ap_hash: [attack_type_0_cnt, attack_type_1_cnt]})
+		self.internal_blacklist = {}
+
+		self.blacklist_obj =  None
+		self.defaultMsg = String()
+
 
 	def master_dispatch_callback(self):
 		
@@ -82,6 +88,72 @@ class MasterNode(Node):
 		hasher = hashlib.sha256()
 		hasher.update(val.encode('UTF-8'))
 		return hasher.hexdigest()
+
+
+	# This subsystem is subscribed to by ALL masters, and ALL access points for preemptive decision making. 
+	def blacklist_sub_callback(self, data):
+
+		topic_encoded_b64_str = data.data
+		topic_decoded_b64_bytes = bytes(topic_encoded_b64_str, 'UTF-8') 
+		topic_obj_decoded = base64.b64decode(topic_decoded_b64_bytes)
+		topic_obj = pickle.loads(topic_obj_decoded)
+
+		# On receiving, we use Domain ID to fill internal blacklist. Then, we check agreement (for malicious/non-benign), and if it's
+		# high agreement of malicious, we blacklist it. LATER: Use some metric to perform online learning based on flow info for the 
+		# incoming flow once we decide to blacklist. 
+
+		# Agreement is an INTERNAL DOMAIN PROCESS: Rows - MAC addresses (i.e., subjects); columns - categories (i.e, attack type [1+] or non-malicious [0]); cells - agreements; 
+		kap = 0.0
+		if self.domain_id == topic_obj.domain_id:
+			# BL format: {mac_addr : {ap_hash: [attack_type_0_cnt, attack_type_1_cnt]}
+			# AP hash will allow us to count votes per access point and not double-, triple-, or n-count
+			if topic_obj.mac_addr not in self.internal_blacklist:
+				self.internal_blacklist[topic_obj.mac_addr] = np.zeros((1,2))
+
+			table = self.internal_blacklist[topic_obj.mac_addr]
+			if topic_obj.attack_type == 0:
+				table[0][0] += 1
+			else:
+				table[0][1] += 1 
+
+			# Rule for memory constraint and runtime use: For real-time, we will keep a singular table of 1x2, in which the cells represent benign/mal agreement
+			kap = fleiss_kappa(self.internal_blacklist[topic_obj.mac_addr], method='randolph')
+			
+			if np.abs(kap) >= 0.50:
+				# check to see which is greater, benign or malicious;
+				if table[0][1] > table[0][0]:
+					# Ban it for a time if it's not in the list already. (aka if in list do nothing.)
+					# If malicious is greater, set flag to ban the mac
+				else:
+					pass
+					# else, move on.
+
+		if self.domain_id != topic.domain_id and topic_obj.ban_mac == True:
+			# simply check to see if the object has a ban flag. If so, ban it for the same time. If it is already in the list, however, do nothing. 
+			pass
+
+
+
+	def blacklist_pub_callback(self):
+
+		# If the determination is that a malicious node is found in buffers: Publishing MAC of adversary + Attack Type + Model Type + Flow Info
+		# Meaning if blacklist object is not none, we transmit.
+
+		if self.blacklist_obj is None:
+			return
+
+
+		# Check to see if the object is in the banlist. If so, set ban flag.
+		
+		topic_obj = pickle.dumps(self.blacklist_obj)
+		topic_obj_encoded = base64.b64encode(topic_obj)
+		topic_obj_str = topic_obj_encoded.decode('UTF-8')
+
+		self.defaultMsg.data = topic_obj_str
+		self.blacklist_publisher.publish(self.defaultMsg)
+
+
+
 
 
 def main(args=None):

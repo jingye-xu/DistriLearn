@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+import numpy as np
+
 # Code from: https://www.statsmodels.org/stable/_modules/statsmodels/stats/inter_rater.html
 def fleiss_kappa(table, method='fleiss'):
 	"""Fleiss' and Randolph's kappa multi-rater agreement measure

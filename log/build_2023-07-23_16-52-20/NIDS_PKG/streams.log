@@ -1,0 +1,28 @@
+[0.580s] Invoking command in '/home/gmo/Desktop/ids_workspace/DistriLearn/src/NIDS_PKG': PYTHONPATH=/home/gmo/Desktop/ids_workspace/DistriLearn/build/NIDS_PKG/prefix_override:/home/gmo/Desktop/ids_workspace/DistriLearn/install/NIDS_PKG/lib/python3.8/site-packages:${PYTHONPATH} /usr/bin/python3 setup.py egg_info --egg-base ../../build/NIDS_PKG build --build-base /home/gmo/Desktop/ids_workspace/DistriLearn/build/NIDS_PKG/build install --record /home/gmo/Desktop/ids_workspace/DistriLearn/build/NIDS_PKG/install.log --install-scripts $base/lib/NIDS_PKG --single-version-externally-managed
+[0.772s] running egg_info
+[0.772s] writing ../../build/NIDS_PKG/NIDS_PKG.egg-info/PKG-INFO
+[0.772s] writing dependency_links to ../../build/NIDS_PKG/NIDS_PKG.egg-info/dependency_links.txt
+[0.773s] writing entry points to ../../build/NIDS_PKG/NIDS_PKG.egg-info/entry_points.txt
+[0.773s] writing requirements to ../../build/NIDS_PKG/NIDS_PKG.egg-info/requires.txt
+[0.773s] writing top-level names to ../../build/NIDS_PKG/NIDS_PKG.egg-info/top_level.txt
+[0.797s] reading manifest file '../../build/NIDS_PKG/NIDS_PKG.egg-info/SOURCES.txt'
+[0.797s] writing manifest file '../../build/NIDS_PKG/NIDS_PKG.egg-info/SOURCES.txt'
+[0.797s] running build
+[0.797s] running build_py
+[0.798s] copying NIDS_PKG/ap_unified_ids_node.py -> /home/gmo/Desktop/ids_workspace/DistriLearn/build/NIDS_PKG/build/lib/NIDS_PKG
+[0.798s] copying NIDS_PKG/kappa_coeff.py -> /home/gmo/Desktop/ids_workspace/DistriLearn/build/NIDS_PKG/build/lib/NIDS_PKG
+[0.798s] running install
+[0.798s] running install_lib
+[0.799s] copying /home/gmo/Desktop/ids_workspace/DistriLearn/build/NIDS_PKG/build/lib/NIDS_PKG/ap_unified_ids_node.py -> /home/gmo/Desktop/ids_workspace/DistriLearn/install/NIDS_PKG/lib/python3.8/site-packages/NIDS_PKG
+[0.799s] copying /home/gmo/Desktop/ids_workspace/DistriLearn/build/NIDS_PKG/build/lib/NIDS_PKG/kappa_coeff.py -> /home/gmo/Desktop/ids_workspace/DistriLearn/install/NIDS_PKG/lib/python3.8/site-packages/NIDS_PKG
+[0.799s] byte-compiling /home/gmo/Desktop/ids_workspace/DistriLearn/install/NIDS_PKG/lib/python3.8/site-packages/NIDS_PKG/ap_unified_ids_node.py to ap_unified_ids_node.cpython-38.pyc
+[0.802s] byte-compiling /home/gmo/Desktop/ids_workspace/DistriLearn/install/NIDS_PKG/lib/python3.8/site-packages/NIDS_PKG/kappa_coeff.py to kappa_coeff.cpython-38.pyc
+[0.802s] running install_data
+[0.803s] running install_egg_info
+[0.804s] removing '/home/gmo/Desktop/ids_workspace/DistriLearn/install/NIDS_PKG/lib/python3.8/site-packages/NIDS_PKG-0.0.0-py3.8.egg-info' (and everything under it)
+[0.804s] Copying ../../build/NIDS_PKG/NIDS_PKG.egg-info to /home/gmo/Desktop/ids_workspace/DistriLearn/install/NIDS_PKG/lib/python3.8/site-packages/NIDS_PKG-0.0.0-py3.8.egg-info
+[0.804s] running install_scripts
+[0.815s] Installing ap_node script to /home/gmo/Desktop/ids_workspace/DistriLearn/install/NIDS_PKG/lib/NIDS_PKG
+[0.815s] Installing master_node script to /home/gmo/Desktop/ids_workspace/DistriLearn/install/NIDS_PKG/lib/NIDS_PKG
+[0.815s] writing list of installed files to '/home/gmo/Desktop/ids_workspace/DistriLearn/build/NIDS_PKG/install.log'
+[0.829s] Invoked command in '/home/gmo/Desktop/ids_workspace/DistriLearn/src/NIDS_PKG' returned '0': PYTHONPATH=/home/gmo/Desktop/ids_workspace/DistriLearn/build/NIDS_PKG/prefix_override:/home/gmo/Desktop/ids_workspace/DistriLearn/install/NIDS_PKG/lib/python3.8/site-packages:${PYTHONPATH} /usr/bin/python3 setup.py egg_info --egg-base ../../build/NIDS_PKG build --build-base /home/gmo/Desktop/ids_workspace/DistriLearn/build/NIDS_PKG/build install --record /home/gmo/Desktop/ids_workspace/DistriLearn/build/NIDS_PKG/install.log --install-scripts $base/lib/NIDS_PKG --single-version-externally-managed

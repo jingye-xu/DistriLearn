@@ -152,6 +152,8 @@ class BlackListComposition:
 		self.flow = flow
 		self.domain_id = os.environ['DOMAIN_ID']
 		self.ap_hash = ap_hash
+		self.kappa = 0.0
+		self.ban_mac = False
 
 
 MODEL_TYPE = 1 # 0 for scikit, 1 for pytorch - should be enum instead but python isn't clean like that
@@ -193,7 +195,7 @@ class AccessPointNode(Node):
 		self.OUTGOING_MSG_QUEUE_SIZE = 10 # Max queue size for outgoing messages to subsribers
 		self.INCOMING_MSG_QUEUE_SIZE = 10 # Max queue size for incoming messages to subscribers/from publishers
 
-		self.capture_name = 'tmp_capture'
+		self.capture_name = '/tmp/tmp_capture'
 		self.net_interface = net_interface
 		self.domain_id = os.environ['DOMAIN_ID']
 
@@ -241,6 +243,7 @@ class AccessPointNode(Node):
 		self.blacklist_obj =  None
 		self.defaultMsg = String()
 
+
 	# This subsystem is subscribed to by ALL masters, and ALL access points for preemptive decision making. 
 	def blacklist_sub_callback(self, data):
 
@@ -254,16 +257,7 @@ class AccessPointNode(Node):
 		# incoming flow once we decide to blacklist. 
 
 		# Agreement is an INTERNAL DOMAIN PROCESS: Rows - MAC addresses (i.e., subjects); columns - categories (i.e, attack type [1+] or non-malicious [0]); cells - agreements; 
-		print(topic_obj.mac_addr)
-		print(topic_obj.attack_type)
-		print(topic_obj.model_type)
-		print(topic_obj.model_name)
-		print(topic_obj.flow)
-		print(topic_obj.ap_hash)
-		print(topic_obj.domain_id)
-		print("-=-=-=-=-=-=-")
-		
-
+		kap = 0.0
 		if self.domain_id == topic_obj.domain_id:
 			# BL format: {mac_addr : {ap_hash: [attack_type_0_cnt, attack_type_1_cnt]}
 			# AP hash will allow us to count votes per access point and not double-, triple-, or n-count
@@ -278,9 +272,19 @@ class AccessPointNode(Node):
 
 			# Rule for memory constraint and runtime use: For real-time, we will keep a singular table of 1x2, in which the cells represent benign/mal agreement
 			kap = fleiss_kappa(self.internal_blacklist[topic_obj.mac_addr], method='randolph')
-			print(kap)
+			
+			if np.abs(kap) >= 0.50:
+				# check to see which is greater, benign or malicious;
+				if table[0][1] > table[0][0]:
+					# Ban it for a time if it's not in the list already. (aka if in list do nothing.)
+					# If malicious is greater, set flag to ban the mac
+				else:
+					pass
+					# else, move on.
 
-		# TODO: Start blacklists here. 
+		if self.domain_id != topic.domain_id and topic_obj.ban_mac == True:
+			# simply check to see if the object has a ban flag. If so, ban it for the same time. If it is already in the list, however, do nothing. 
+			pass
 
 
 
@@ -291,7 +295,9 @@ class AccessPointNode(Node):
 
 		if self.blacklist_obj is None:
 			return
-		
+
+		# Check to see if the object is in the banlist. If so, set ban flag. 
+
 		topic_obj = pickle.dumps(self.blacklist_obj)
 		topic_obj_encoded = base64.b64encode(topic_obj)
 		topic_obj_str = topic_obj_encoded.decode('UTF-8')
