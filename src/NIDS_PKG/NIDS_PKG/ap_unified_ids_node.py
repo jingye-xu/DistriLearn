@@ -233,7 +233,7 @@ class AccessPointNode(Node):
 
 		self.inference_buffer = {}
 
-		#BL format: macid_integer: (mac_addr, {ap_hash: attack_type, cnt})
+		# BL format: macid_integer: (mac_addr, {ap_hash: [attack_type_0_cnt, attack_type_1_cnt]})
 		self.internal_blacklist = {}
 
 		self.blacklist_obj =  None
@@ -263,9 +263,18 @@ class AccessPointNode(Node):
 		
 
 		if self.domain_id == topic_obj.domain_id:
-			# BL format: macid_integer: (mac_addr, {ap_hash: attack_type, cnt})
+			# BL format: macid_integer: (mac_addr, {ap_hash: [attack_type_0_cnt, attack_type_1_cnt]})
 			# AP hash will allow us to count votes per access point and not double-, triple-, or n-count
-			pass
+			if topic_obj.mac_id not in self.internal_blacklist:
+				self.internal_blacklist[topic_obj.mac_id] = (topic_obj.mac_addr, {topic_obj.attack_type : np.zeros(2)})
+
+			ap_hash_dict = self.internal_blacklist[topic_obj.mac_id][1]
+
+			if topic_obj.attack_type == 0:
+				ap_hash_dict[self.ap_hash][0] += 1
+			else:
+				ap_hash_dict[self.ap_hash][1] += 1 
+
 		else:
 			pass
 
