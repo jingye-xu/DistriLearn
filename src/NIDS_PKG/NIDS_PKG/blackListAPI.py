@@ -58,9 +58,9 @@ def getEffectiveTime(aging_time: int=3600):
     effective_time = current_time + datetime.timedelta(seconds=aging_time)
 
     stop_date = effective_time.strftime("%Y-%m-%d")
-    sstop_time = effective_time.strftime("%H:%M:%S")
+    stop_time = effective_time.strftime("%H:%M:%S")
 
     return start_date, start_time, stop_date, stop_time
-    
+
 if __name__ == "__main__":
-    print(getEffectiveTime)
+    print(getEffectiveTime())
