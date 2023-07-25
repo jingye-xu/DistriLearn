@@ -104,7 +104,7 @@ def findBlackList(blackList: dict, src_ip: str="", dest_ip: str="", src_port: st
                 continue
         
         # passed all checks
-        return key
+        return int(key)
     
     # default return -1
     return -1
