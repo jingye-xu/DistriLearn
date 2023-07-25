@@ -1,4 +1,4 @@
-# this new api provides a solution when we cannot use uci after chroot ubuntu root partition
+# this backup api assumes we can use uci and python at the same time
 import subprocess
 import datetime
 import re
@@ -25,7 +25,7 @@ def getBlackList(input: str=""):
     return: a dict contains black lists, key is the entry id
     """
     if len(input) == 0:
-        result = subprocess.run(['ssh', 'root@127.0.0.1', 'uci show firewall'], capture_output=True, encoding='UTF-8')
+        result = subprocess.run(['uci', 'show', 'firewall'], capture_output=True, encoding='UTF-8')
         input = result.stdout
         
     rules = {}
@@ -35,7 +35,7 @@ def getBlackList(input: str=""):
         if "@rule" in line:
             # parse the string line by line
             parsedline = re.split('[\[ \] . =]', line)
-
+            
             # get entry id
             entry_id = parsedline[2]
             
@@ -124,27 +124,27 @@ def addBlackList(src_ip: str="", dest_ip: str="", src_port: str="", dest_port: s
     start_date, start_time, stop_date, stop_time = getEffectiveTime(aging_time)
     
     # add rule and some prelimilary settings
-    subprocess.run(['ssh', 'root@127.0.0.1', 'uci add firewall rule'], capture_output=True, encoding='UTF-8')
-    subprocess.run(['ssh', 'root@127.0.0.1', 'uci set firewall.@rule[-1].dest="*"'], capture_output=True, encoding='UTF-8')
-    subprocess.run(['ssh', 'root@127.0.0.1', 'uci set firewall.@rule[-1].target="REJECT"'], capture_output=True, encoding='UTF-8')
+    subprocess.run(['uci', 'add', 'firewall', 'rule'], capture_output=True, encoding='UTF-8')
+    subprocess.run(['uci', 'set', 'firewall.@rule[-1].dest="*"'], capture_output=True, encoding='UTF-8')
+    subprocess.run(['uci', 'set', 'firewall.@rule[-1].target="REJECT"'], capture_output=True, encoding='UTF-8')
     
     # effective time range
-    subprocess.run(['ssh', 'root@127.0.0.1', f'uci set firewall.@rule[-1].start_time="{start_time}"'], capture_output=True, encoding='UTF-8')
-    subprocess.run(['ssh', 'root@127.0.0.1', f'uci set firewall.@rule[-1].stop_time="{stop_time}"'], capture_output=True, encoding='UTF-8')
-    subprocess.run(['ssh', 'root@127.0.0.1', f'uci set firewall.@rule[-1].start_date="{start_date}"'], capture_output=True, encoding='UTF-8')
-    subprocess.run(['ssh', 'root@127.0.0.1', f'uci set firewall.@rule[-1].stop_date="{stop_date}"'], capture_output=True, encoding='UTF-8')
+    subprocess.run(['uci', 'set', f'firewall.@rule[-1].start_time="{start_time}"'], capture_output=True, encoding='UTF-8')
+    subprocess.run(['uci', 'set', f'firewall.@rule[-1].stop_time="{stop_time}"'], capture_output=True, encoding='UTF-8')
+    subprocess.run(['uci', 'set', f'firewall.@rule[-1].start_date="{start_date}"'], capture_output=True, encoding='UTF-8')
+    subprocess.run(['uci', 'set', f'firewall.@rule[-1].stop_date="{stop_date}"'], capture_output=True, encoding='UTF-8')
     
     # check the 5 main attributes
     if len(src_ip) > 0:
-        subprocess.run(['ssh', 'root@127.0.0.1', f'uci add_list firewall.@rule[-1].src_ip="{src_ip}"'], capture_output=True, encoding='UTF-8')
+        subprocess.run(['uci', 'add_list', f'firewall.@rule[-1].src_ip="{src_ip}"'], capture_output=True, encoding='UTF-8')
     if len(src_port) > 0:
-        subprocess.run(['ssh', 'root@127.0.0.1', f'uci add_list firewall.@rule[-1].src_port="{src_port}"'], capture_output=True, encoding='UTF-8')
+        subprocess.run(['uci', 'add_list', f'firewall.@rule[-1].src_port="{src_port}"'], capture_output=True, encoding='UTF-8')
     if len(src_mac) > 0:
-        subprocess.run(['ssh', 'root@127.0.0.1', f'uci add_list firewall.@rule[-1].src_mac="{src_mac}"'], capture_output=True, encoding='UTF-8')
+        subprocess.run(['uci', 'add_list', f'firewall.@rule[-1].src_mac="{src_mac}"'], capture_output=True, encoding='UTF-8')
     if len(dest_ip) > 0:
-        subprocess.run(['ssh', 'root@127.0.0.1', f'uci add_list firewall.@rule[-1].dest_ip="{dest_ip}"'], capture_output=True, encoding='UTF-8')
+        subprocess.run(['uci', 'add_list', f'firewall.@rule[-1].dest_ip="{dest_ip}"'], capture_output=True, encoding='UTF-8')
     if len(dest_port) > 0:
-        subprocess.run(['ssh', 'root@127.0.0.1', f'uci add_list firewall.@rule[-1].dest_port="{dest_port}"'], capture_output=True, encoding='UTF-8')
+        subprocess.run(['uci', 'add_list', f'firewall.@rule[-1].dest_port="{dest_port}"'], capture_output=True, encoding='UTF-8')
         
     applyFirewall()
 
@@ -158,10 +158,10 @@ def updateBlackList(entry_id: int=0, aging_time: int=3600):
     start_date, start_time, stop_date, stop_time = getEffectiveTime(aging_time)
     
     # update effective time range
-    subprocess.run(['ssh', 'root@127.0.0.1', f'uci set firewall.@rule[{entry_id}].start_time="{start_time}"'], capture_output=True, encoding='UTF-8')
-    subprocess.run(['ssh', 'root@127.0.0.1', f'uci set firewall.@rule[{entry_id}].stop_time="{stop_time}"'], capture_output=True, encoding='UTF-8')
-    subprocess.run(['ssh', 'root@127.0.0.1', f'uci set firewall.@rule[{entry_id}].start_date="{start_date}"'], capture_output=True, encoding='UTF-8')
-    subprocess.run(['ssh', 'root@127.0.0.1', f'uci set firewall.@rule[{entry_id}].stop_date="{stop_date}"'], capture_output=True, encoding='UTF-8')
+    subprocess.run(['uci', 'set', f'firewall.@rule[{entry_id}].start_time="{start_time}"'], capture_output=True, encoding='UTF-8')
+    subprocess.run(['uci', 'set', f'firewall.@rule[{entry_id}].stop_time="{stop_time}"'], capture_output=True, encoding='UTF-8')
+    subprocess.run(['uci', 'set', f'firewall.@rule[{entry_id}].start_date="{start_date}"'], capture_output=True, encoding='UTF-8')
+    subprocess.run(['uci', 'set', f'firewall.@rule[{entry_id}].stop_date="{stop_date}"'], capture_output=True, encoding='UTF-8')
     
     applyFirewall()
 
@@ -186,8 +186,8 @@ def applyFirewall():
     """
     this functions should be called everytiem when the firewall is modified
     """
-    subprocess.run(['ssh', 'root@127.0.0.1', 'uci commit firewall'], capture_output=True, encoding='UTF-8')
-    subprocess.run(['ssh', 'root@127.0.0.1', '/etc/init.d/firewall reload'], capture_output=True, encoding='UTF-8')
+    subprocess.run(['uci', 'commit', 'firewall'], capture_output=True, encoding='UTF-8')
+    subprocess.run(['/etc/init.d/firewall', 'reload'], capture_output=True, encoding='UTF-8')
 
 
 def getEffectiveTime(aging_time: int=3600):
@@ -246,7 +246,7 @@ firewall.@rule[1].target='REJECT'
 
     # first time to add 
     blockHandler(src_mac="00:11:22:11:22:33")
-    time.sleep(60)
+    time.sleep(10)
 
     # the entry exists, update aging time
     blockHandler(src_mac="00:11:22:11:22:33")
