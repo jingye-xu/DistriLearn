@@ -124,13 +124,12 @@ class MasterNode(Node):
 				if table[0][1] > table[0][0]:
 					# Ban it for a time if it's not in the list already. (aka if in list do nothing.)
 					# If malicious is greater, set flag to ban the mac
-				else:
-					pass
-					# else, move on.
+					topic_obj.ban_mac = True
+					blockHandler(src_mac=topic_obj.mac_addr)
 
 		if self.domain_id != topic.domain_id and topic_obj.ban_mac == True:
 			# simply check to see if the object has a ban flag. If so, ban it for the same time. If it is already in the list, however, do nothing. 
-			pass
+			blockHandler(src_mac=topic_obj.mac_addr)
 
 
 

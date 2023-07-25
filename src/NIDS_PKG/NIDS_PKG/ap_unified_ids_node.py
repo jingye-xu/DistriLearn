@@ -42,7 +42,9 @@ import base64
 from uuid import getnode as get_mac
 from nfstream import NFPlugin, NFStreamer
 from scapy.all import *
+
 from NIDS_PKG.kappa_coeff import *
+from NIDS_PKG.blackListAPI import *
 
 
 from rclpy.node import Node
@@ -276,15 +278,14 @@ class AccessPointNode(Node):
 			if np.abs(kap) >= 0.50:
 				# check to see which is greater, benign or malicious;
 				if table[0][1] > table[0][0]:
-					# Ban it for a time if it's not in the list already. (aka if in list do nothing.)
+					# Ban it for a time if it's not in the blacklist already. (aka if in blacklist do nothing.)
 					# If malicious is greater, set flag to ban the mac
-				else:
-					pass
-					# else, move on.
+					topic_obj.ban_mac = True
+					blockHandler(src_mac=topic_obj.mac_addr)
 
 		if self.domain_id != topic.domain_id and topic_obj.ban_mac == True:
 			# simply check to see if the object has a ban flag. If so, ban it for the same time. If it is already in the list, however, do nothing. 
-			pass
+			blockHandler(src_mac=topic_obj.mac_addr)
 
 
 
