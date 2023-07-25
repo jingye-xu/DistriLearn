@@ -1,6 +1,7 @@
 import subprocess
 import datetime
 import re
+import time
 import sys
 
 
@@ -68,6 +69,10 @@ def findBlackList(blackList: dict, src_ip: str="", dest_ip: str="", src_port: st
     return: -1 if not found, or an interget >= 0 f found
     """
     
+    # dict is empty
+    if not blackList:
+        return -1
+
     # input validation check
     if sum(len(src_ip), len(src_mac), len(src_port), len(dest_ip), len(dest_port)) == 0:
         print("invalid search. existing...")
@@ -160,6 +165,22 @@ def updateBlackList(entry_id: int=0, aging_time: int=3600):
     applyFirewall()
 
 
+def blockHandler(src_ip: str="", dest_ip: str="", src_port: str="", dest_port: str="", src_mac: str="", aging_time: int=3600):
+
+    # get existing black list
+    existingBlackList = getBlackList()
+
+    # search whether the required black entry exists
+    result = findBlackList(existingBlackList, src_ip, dest_ip, src_port, dest_port, src_mac)
+
+    # not found
+    if result < 0:
+        addBlackList(src_ip, dest_ip, src_port, dest_port, src_mac, aging_time)
+    # found
+    else:
+        updateBlackList(result, aging_time)
+
+
 def applyFirewall():
     """
     this functions should be called everytiem when the firewall is modified
@@ -220,4 +241,14 @@ firewall.@rule[1]=rule
 firewall.@rule[1].src_mac='00:22:11:11:22:11'
 firewall.@rule[1].dest='*'
 firewall.@rule[1].target='REJECT'
-"""
+""" 
+
+    # first time to add 
+    blockHandler(src_mac="00:11:22:11:22:33")
+    time.sleep(10)
+
+    # the entry exists, update aging time
+    blockHandler(src_mac="00:11:22:11:22:33")
+
+    # add new
+    blockHandler(src_mac="44:11:22:11:22:44")
