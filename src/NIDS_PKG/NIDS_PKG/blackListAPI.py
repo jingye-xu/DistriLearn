@@ -46,7 +46,7 @@ def getBlackList(input: str=""):
                 # only cares the attribute in attributes
                 if attribute in attributes:
                     # update value
-                    setattr(rules[entry_id], attribute, parsedline[5])
+                    setattr(rules[entry_id], attribute, parsedline[5].replace("'", ""))
             
             # not added before
             else:
@@ -57,7 +57,7 @@ def getBlackList(input: str=""):
                     
                     # add new key into the rules
                     newEntry = BlackList()
-                    setattr(newEntry, attribute, parsedline[5])
+                    setattr(newEntry, attribute, parsedline[5].replace("'", ""))
                     rules[entry_id] = newEntry
 
     return rules
