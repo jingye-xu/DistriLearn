@@ -75,7 +75,7 @@ def findBlackList(blackList: dict, src_ip: str="", dest_ip: str="", src_port: st
         return -1
 
     # input validation check
-    if sum(len(src_ip), len(src_mac), len(src_port), len(dest_ip), len(dest_port)) == 0:
+    if max(len(src_ip), len(src_mac), len(src_port), len(dest_ip), len(dest_port)) == 0:
         print("invalid search. existing...")
         sys.exit(1)
     
@@ -116,7 +116,7 @@ def addBlackList(src_ip: str="", dest_ip: str="", src_port: str="", dest_port: s
     """
     
     # input validation check
-    if sum(len(src_ip), len(src_mac), len(src_port), len(dest_ip), len(dest_port)) == 0:
+    if max(len(src_ip), len(src_mac), len(src_port), len(dest_ip), len(dest_port)) == 0:
         print("invalid search. existing...")
         sys.exit(1)
     
