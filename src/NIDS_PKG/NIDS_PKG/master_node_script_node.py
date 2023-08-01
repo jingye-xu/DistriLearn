@@ -6,11 +6,30 @@ import socket
 import datetime
 import hashlib
 import time
+import base64
+import pickle
 
 from rclpy.node import Node
 from std_msgs.msg import String
 from uuid import getnode as get_mac
 
+from NIDS_PKG.kappa_coeff import *
+from NIDS_PKG.blackListAPI import *
+
+class BlackListComposition:
+
+	def __init__(self, ma, attack_type, model_name, model_type, ap_hash, flow):
+
+		self.mac_addr = ma
+		#self.mac_id = int(f'{ma[0:2]}{ma[3:5]}{ma[6:8]}{ma[9:11]}{ma[12:14]}{ma[15:17]}',16)
+		self.attack_type = attack_type
+		self.model_name = model_name
+		self.model_type = model_type
+		self.flow = flow
+		self.domain_id = os.environ['DOMAIN_ID']
+		self.ap_hash = ap_hash
+		self.kappa = 0.0
+		self.ban_mac = False
 
 class MasterNode(Node):
 
@@ -41,6 +60,7 @@ class MasterNode(Node):
 
 		self.blacklist_obj =  None
 		self.defaultMsg = String()
+		self.domain_id = os.environ['DOMAIN_ID']
 
 
 	def master_dispatch_callback(self):
@@ -158,6 +178,10 @@ class MasterNode(Node):
 def main(args=None):
 	rclpy.init(args=args)
 
+	if 'DOMAIN_ID' not in os.environ:
+		print('Domain ID not set. Do so using \'export DOMAIN_ID=<domain>\'')
+		sys.exit(1)
+	
 	master_node = MasterNode()
 
 	rclpy.spin(master_node)
