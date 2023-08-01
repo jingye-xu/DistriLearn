@@ -9,6 +9,9 @@ import time
 import base64
 import pickle
 
+import pandas as pd
+import numpy as np
+
 from rclpy.node import Node
 from std_msgs.msg import String
 from uuid import getnode as get_mac
@@ -48,6 +51,15 @@ class MasterNode(Node):
 
 		# Master node subcribes to IDS service topic
 		self.ids_service_subscriber = self.create_subscription(String, 'ids_service', self.ids_service_listener, 10)
+
+		self.OUTGOING_MSG_QUEUE_SIZE = 10 # Max queue size for outgoing messages to subsribers
+		self.INCOMING_MSG_QUEUE_SIZE = 10 # Max queue size for incoming messages to subscribers/from publishers
+
+		# Blacklist subsystem (TODO: Place in own node) -> everyone in the complex/enterprise will publish and subscribe to it. 
+		self.blacklist_publisher = self.create_publisher(String, 'blacklist_subsytem', self.OUTGOING_MSG_QUEUE_SIZE)
+		_ = self.create_timer(timer_period, self.blacklist_pub_callback)
+
+		self.blacklist_subscriber = self.create_subscription(String, 'blacklist_subsytem', self.blacklist_sub_callback, self.INCOMING_MSG_QUEUE_SIZE)
 
 		self.BENIGN_THRESHOLD = 150
 		self.MALICIOUS_THRESHOLD = 150
