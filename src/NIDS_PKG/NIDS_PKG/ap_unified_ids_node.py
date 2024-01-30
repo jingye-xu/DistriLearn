@@ -559,6 +559,7 @@ class AccessPointNode(Node):
 	def sniff_traffic(self, tmp_file_name, listen_interface):
 		# Temporary sniffing workaround for VM environment:
 		#os.system(f"sshpass -p \"{pfsense_pass}\" ssh root@{pfsense_wan_ip} \"tcpdump -i {lan_nic} -c {MAX_PACKET_SNIFF} -w - \'not (src {ssh_client_ip} and port {ssh_client_port}) and not (src {pfsense_lan_ip} and dst {ssh_client_ip} and port 22)\'\" 2>/dev/null > {tmp_file_name}")
+		os.system(f"echo \"{tmp_file_name}\" > /tmp/pktname.txt") # for use in nprobe's system.
 		os.system(f"tcpdump --immediate-mode -p -i {listen_interface} -c {self.MAX_PACKET_SNIFF} -w - 2>/dev/null > {tmp_file_name}")
 
 
