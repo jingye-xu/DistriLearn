@@ -54,91 +54,27 @@ from std_msgs.msg import String
 import warnings
 warnings.filterwarnings(action='ignore')
 
-NUM_INPUT = 38
+# This is to accomadate packages on the home directory (i.e. the autoencoder)
+sys.path.append(f'{os.environ["HOME"]}/{ids_work}')
+
+import AnomalyAutoEncoder
 
 
-class Net(nn.Module):
-	def __init__(self) -> None:
-		super(Net, self).__init__()
-		self.fc1 = nn.Linear(in_features=NUM_INPUT, out_features=30)
-		self.fc2 = nn.Linear(in_features=30, out_features=20)
-		self.fc3 = nn.Linear(in_features=20, out_features=1)
+class AnomalyDetector:
 
-	def forward(self, x: torch.Tensor) -> torch.Tensor:
-		output = self.fc1(x)
-		output = torch.relu(output)
-		output = self.fc2(output)
-		output = torch.relu(output)
-		output = self.fc3(output)
-		output = torch.sigmoid(output)
+    def __init__(self, path, input_output_size):
 
-		return output
+        self.anomaly_autoencoder = AnomalyAutoEncoder(input_output_size)
+        self.anomaly_autoencoder.load_weights(path)
 
 
-class ModelDriver:
-
-	def __init__(self, path, scaler_path):
-		self.model_path = path
-		print(f'Loaded model: {path}')
-		self.model = None
-		self.scaler = joblib.load(scaler_path)
-		print(f'Loaded scaler: {self.scaler}')
-
-	def get_instance(self):
-		pass
-
-	def load_model(self):
-		pass
-
-	def predict(self, dataframe):
-		pass
-
-
-class ScikitModelDriver(ModelDriver):
-
-	def __init__(self, model_path, scaler_path):
-		super().__init__(model_path, scaler_path)
-
-	def get_instance(self):         
-		if self.model is None:
-			self.load_model()
-		return self.model
-
-	def load_model(self):
-		sci_model = joblib.load(self.model_path)
-		self.model = sci_model
-
-	def predict(self, dataframe):
-		vals = self.scaler.transform(dataframe.values)
-		predictions = self.model.predict(vals)
-		results = [0 if result < 0.5 else 1 for result in predictions]
-		return results
-
-
-class PyTorchModelDriver(ModelDriver):
-
-	def __init__(self, model_path, net_class, scaler_path):
-		super().__init__(model_path, scaler_path)
-		self.net = net_class
-
-	def get_instance(self):
-		if self.model == None:
-			self.load_model()
-		return self.model
-
-	def load_model(self):
-		model = self.net
-		model.load_state_dict(torch.load(self.model_path))
-		model.eval()
-		self.model = model
-
-	def predict(self, dataframe):
-		vals = self.scaler.transform(dataframe.values)
-		data_tensor = torch.tensor(vals, dtype=torch.float)
-		data_tensor = torch.FloatTensor(data_tensor)
-		results = self.model(data_tensor)
-		results = [0 if result[0] < 0.6 else 1 for result in results.detach().numpy()]
-		return results
+    def get_inference(flow_data, threshold=(0.024148070913876787 - 0.01)):
+        # Basic reconstruction
+        reconstruction = self.model.predict(flow_data)
+        reconstruction_error = tf.keras.losses.mae(reconstruction, flow_data)
+        if reconstruction_error >= threshold:
+            return 1.0
+        return 0.0
 
 
 
@@ -158,33 +94,15 @@ class BlackListComposition:
 		self.ban_mac = False
 
 
-MODEL_TYPE = 1 # 0 for scikit, 1 for pytorch - should be enum instead but python isn't clean like that
-
-PATH_PREF = f"./ModelPack/clean_17_models/NN"
-
-SCIKIT_MODEL_PATH = f"{PATH_PREF}/kn_2017.pkl"
-SCALER_PATH = f"{PATH_PREF}/scaler_nn_17.pkl"
-PYTORCH_MODEL_PATH = f"{PATH_PREF}/simple_nn_17.pth"
-MODEL_NAME = ""
-
-
 class AccessPointNode(Node):
 
 	def __init__(self, net_interface):
 		super().__init__('access_point_node')
 
-		self.model_driver = None
 
-		global MODEL_NAME
 
-		if MODEL_TYPE == 0:
-			self.model_driver = ScikitModelDriver(SCIKIT_MODEL_PATH, SCALER_PATH)
-			MODEL_NAME = SCIKIT_MODEL_PATH.split('/')[-1]
-		else:
-			self.model_driver = PyTorchModelDriver(PYTORCH_MODEL_PATH, Net(), SCALER_PATH)
-			MODEL_NAME = PYTORCH_MODEL_PATH.split('/')[-1]
-
-		self.model = self.model_driver.get_instance()
+		
+		self.model = AnomalyDetector()
 
 		timer_period = 0.2 # seconds for "refresh rate" of publisher callbacks
 
@@ -402,16 +320,17 @@ class AccessPointNode(Node):
 		# 	tmp = String()
 		# 	tmp.data = f'AP: {self.ap_hash};{self.master_hash}'
 		# 	self.inference_topic_publisher.publish(tmp)
-
 		# Temporary
 
 		# capture data from network
-		self.sniff_traffic(self.capture_name, self.net_interface)
+		# parameters: tmp_file_name, listen_interface, chroot_dir
+		self.sniff_traffic(self.capture_name, self.net_interface, f"/mnt/debby")
 
 		# turn it into flow
-		stream = NFStreamer(self.capture_name, statistical_analysis=True, decode_tunnels=False, accounting_mode=3)
-		mapped = map(self.create_data_frame_entry_from_flow, iter(stream))
-		df = pd.DataFrame(mapped)
+		self.create_fows(self.capture_name, f"/mnt/debby")
+		# TODO: Get format of nprobe outputs. 
+		df = self.read_traffic_cap(f"/mnt/debby/flow_outs/")
+		
 
 		self.dataframe = pd.concat([self.dataframe, df], ignore_index=True)
 		self.dataframe.dropna(how='all', inplace=True)
@@ -578,8 +497,24 @@ class AccessPointNode(Node):
 
 
 	# Read flows from nprobes outputs.
-	def read_traffic_cap(self, flow_file):
-		pass
+	def read_traffic_cap(self, flow_dir):
+		
+		# Obtain all fragmented flows for traffic capture
+		flows = os.listdir(flow_dir)
+
+		# Read first csv to create dataframe
+		df = pd.read_csv(flows[0], low_memory = False)
+
+		# Concatenate all following csv files to the dataframe
+		for csv in flows[1:]:
+			sub_df = pd.read_csv(csv, low_memory = False)
+			df = pd.concat([df, sub_df])
+
+		# Delete old flows and finally return dataframe
+		os.rmdir(flow_dir)
+
+		return df
+
 
 
 	def hash_value(self, val):
