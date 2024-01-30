@@ -559,11 +559,11 @@ class AccessPointNode(Node):
 
 
 
-	def sniff_traffic(self, tmp_file_name, listen_interface):
+	def sniff_traffic(self, tmp_file_name, listen_interface, chroot_dir):
 		# Temporary sniffing workaround for VM environment:
-		#os.system(f"sshpass -p \"{pfsense_pass}\" ssh root@{pfsense_wan_ip} \"tcpdump -i {lan_nic} -c {MAX_PACKET_SNIFF} -w - \'not (src {ssh_client_ip} and port {ssh_client_port}) and not (src {pfsense_lan_ip} and dst {ssh_client_ip} and port 22)\'\" 2>/dev/null > {tmp_file_name}")
-		os.system(f"echo \"{tmp_file_name}\" > /tmp/pktname.txt") # for use in nprobe's system.
-		os.system(f"tcpdump --immediate-mode -p -i {listen_interface} -c {self.MAX_PACKET_SNIFF} -w - 2>/dev/null > {tmp_file_name}")
+		#     os.system(f"sshpass -p \"{pfsense_pass}\" ssh root@{pfsense_wan_ip} \"tcpdump -i {lan_nic} -c {MAX_PACKET_SNIFF} -w - \'not (src {ssh_client_ip} and port {ssh_client_port}) and not (src {pfsense_lan_ip} and dst {ssh_client_ip} and port 22)\'\" 2>/dev/null > {tmp_file_name}")
+		os.system(f"echo \"{tmp_file_name}\" > {chroot_dir}/tmp/pktname.txt") # for use in nprobe's system.
+		os.system(f"tcpdump --immediate-mode -p -i {listen_interface} -c {self.MAX_PACKET_SNIFF} -w - 2>/dev/null > {chroot_dir}/{tmp_file_name}")
 
 
 	# Create flows using nprobe's reading of pcap capability
@@ -574,9 +574,7 @@ class AccessPointNode(Node):
 
 		# chroot can do amazing things - you can even execute binaries with full arguments! example: chroot ./debbytest/ /bin/cat /etc/os-release
 		#	chroot <fs location> <binary> <args>
-		# TODO: Change feature list to the ones in our ML models
-		os.system(f"nprobe -T \"%IPV4_SRC_ADDR %IPV4_DST_ADDR %L4_SRC_PORT %L4_DST_PORT %PROTOCOL %L7_PROTO %IN_BYTES %OUT_BYTES %IN_PKTS %OUT_PKTS %FLOW_DURATION_MILLISECONDS %TCP_FLAGS %CLIENT_TCP_FLAGS %SERVER_TCP_FLAGS %DURATION_IN %DURATION_OUT %MIN_TTL %MAX_TTL %LONGEST_FLOW_PKT %SHORTEST_FLOW_PKT %MIN_IP_PKT_LEN %MAX_IP_PKT_LEN %SRC_TO_DST_SECOND_BYTES %DST_TO_SRC_SECOND_BYTES %RETRANSMITTED_IN_BYTES %RETRANSMITTED_IN_PKTS %RETRANSMITTED_OUT_BYTES %RETRANSMITTED_OUT_PKTS %SRC_TO_DST_AVG_THROUGHPUT %DST_TO_SRC_AVG_THROUGHPUT %NUM_PKTS_UP_TO_128_BYTES %NUM_PKTS_128_TO_256_BYTES %NUM_PKTS_256_TO_512_BYTES %NUM_PKTS_512_TO_1024_BYTES %NUM_PKTS_1024_TO_1514_BYTES %TCP_WIN_MAX_IN %TCP_WIN_MAX_OUT %ICMP_TYPE %ICMP_IPV4_TYPE %DNS_QUERY_ID %DNS_QUERY_TYPE %DNS_TTL_ANSWER %FTP_COMMAND_RET_CODE\" --pcap-file-list /tmp/pktname.txt --dump-path '{chroot_dir}/flow_outs' --dump-format t --csv-separator")
-
+		os.system(f"chroot {chroot_dir} nprobe -T \"%IPV4_SRC_ADDR %IPV4_DST_ADDR %L4_SRC_PORT %L4_DST_PORT %PROTOCOL %L7_PROTO %IN_BYTES %OUT_BYTES %IN_PKTS %OUT_PKTS %FLOW_DURATION_MILLISECONDS %TCP_FLAGS %CLIENT_TCP_FLAGS %SERVER_TCP_FLAGS %DURATION_IN %DURATION_OUT %MIN_TTL %MAX_TTL %LONGEST_FLOW_PKT %SHORTEST_FLOW_PKT %MIN_IP_PKT_LEN %MAX_IP_PKT_LEN %SRC_TO_DST_SECOND_BYTES %DST_TO_SRC_SECOND_BYTES %RETRANSMITTED_IN_BYTES %RETRANSMITTED_IN_PKTS %RETRANSMITTED_OUT_BYTES %RETRANSMITTED_OUT_PKTS %SRC_TO_DST_AVG_THROUGHPUT %DST_TO_SRC_AVG_THROUGHPUT %NUM_PKTS_UP_TO_128_BYTES %NUM_PKTS_128_TO_256_BYTES %NUM_PKTS_256_TO_512_BYTES %NUM_PKTS_512_TO_1024_BYTES %NUM_PKTS_1024_TO_1514_BYTES %TCP_WIN_MAX_IN %TCP_WIN_MAX_OUT %ICMP_TYPE %ICMP_IPV4_TYPE %DNS_QUERY_ID %DNS_QUERY_TYPE %DNS_TTL_ANSWER %FTP_COMMAND_RET_CODE\" --pcap-file-list /tmp/pktname.txt --dump-path '{chroot_dir}/flow_outs' --dump-format t --csv-separator")
 
 
 	# Read flows from nprobes outputs.
