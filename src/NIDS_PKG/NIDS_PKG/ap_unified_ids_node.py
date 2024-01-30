@@ -55,23 +55,28 @@ import warnings
 warnings.filterwarnings(action='ignore')
 
 # This is to accomadate packages on the home directory (i.e. the autoencoder)
-sys.path.append(f'{os.environ["HOME"]}/{ids_work}')
+sys.path.append(f'{os.environ["HOME"]}/ids_work')
 
 import AnomalyAutoEncoder
 
-
 class AnomalyDetector:
 
-    def __init__(self, path, input_output_size):
+	# We can assume defaults here. AE trained on input size of 40, and the path is the 4th checkpoint! :)
+    def __init__(self, path=f'{os.environ["HOME"]}/ids_work/anomaly_autoencoder_weights4.ckpt', input_output_size=40):
 
         self.anomaly_autoencoder = AnomalyAutoEncoder(input_output_size)
         self.anomaly_autoencoder.load_weights(path)
 
 
     def get_inference(flow_data, threshold=(0.024148070913876787 - 0.01)):
+    	# remove features that cause overfit.
+    	# For the huge dataset: flow_data.drop(columns=['IPV4_SRC_ADDR', 'IPV4_DST_ADDR', 'Label', 'Attack'], inplace=True)
+
+    	flow_data.drop(columns=['IPV4_SRC_ADDR', 'IPV4_DST_ADDR', 'Attack', 'L4_DST_PORT'], inplace=True)
         # Basic reconstruction
         reconstruction = self.model.predict(flow_data)
         reconstruction_error = tf.keras.losses.mae(reconstruction, flow_data)
+        # If the reconstruction error is beyond our threshold, then it is malicious (not fitting within benign distribution.)
         if reconstruction_error >= threshold:
             return 1.0
         return 0.0
@@ -99,9 +104,6 @@ class AccessPointNode(Node):
 	def __init__(self, net_interface):
 		super().__init__('access_point_node')
 
-
-
-		
 		self.model = AnomalyDetector()
 
 		timer_period = 0.2 # seconds for "refresh rate" of publisher callbacks
@@ -328,40 +330,20 @@ class AccessPointNode(Node):
 
 		# turn it into flow
 		self.create_fows(self.capture_name, f"/mnt/debby")
-		# TODO: Get format of nprobe outputs. 
+
 		df = self.read_traffic_cap(f"/mnt/debby/flow_outs/")
 		
 
-		self.dataframe = pd.concat([self.dataframe, df], ignore_index=True)
-		self.dataframe.dropna(how='all', inplace=True)
-
-		inf_report = None
-		if len(self.dataframe) >= 30:
-			for start in range(0, len(self.dataframe), 30):
-				subdf = self.dataframe[start:start+30]
-				subdf.reset_index(drop=True,inplace=True)
-				inf_report = self.make_inference(self.dataframe)
-				# publish if master node is available
-				if self.COLLAB_MODE and inf_report is not None:
-					print(f'Sending report to master: {self.master_hash}')
-					tmp = String()
-					tmp.data = self.build_inf_report(inf_report)
-					self.inference_topic_publisher.publish(tmp)
-				self.dataframe = df
-		else:
-			inf_report = self.make_inference(self.dataframe)
-			# publish if master node is available
-			if self.COLLAB_MODE and inf_report is not None:
-				print(f'Sending report to master: {self.master_hash}')
-				tmp = String()
-				tmp.data = self.build_inf_report(inf_report)
-				self.inference_topic_publisher.publish(tmp)
+		inf_report = self.make_inference(self.dataframe)
+		# publish if master node is available
+		if self.COLLAB_MODE and inf_report is not None:
+			print(f'Sending report to master: {self.master_hash}')
+			tmp = String()
+			tmp.data = self.build_inf_report(inf_report)
+			self.inference_topic_publisher.publish(tmp)
 			
 
-		if len(self.dataframe) >= 105:
-			self.dataframe = df
-
-		# if no master node, report here.
+		# If no master node, report here.
 		# if making local reports, THEN we can create a blacklist object to send to the topic.
 		if inf_report is not None and self.COLLAB_MODE == False:
 
@@ -497,10 +479,14 @@ class AccessPointNode(Node):
 
 
 	# Read flows from nprobes outputs.
-	def read_traffic_cap(self, flow_dir):
+	def read_traffic_cap(self, base_flow_dir):
 		
+		# Format of flow outputs example: 2024/01/30/14/45-39.flows.temp
+		# The format is then: year/month/day/hour/minute-n.file_ext
+		# Realistically there should only be one at a time anyway, so that should be okay. 
+
 		# Obtain all fragmented flows for traffic capture
-		flows = os.listdir(flow_dir)
+		flows = os.listdir(base_flow_dir)
 
 		# Read first csv to create dataframe
 		df = pd.read_csv(flows[0], low_memory = False)
