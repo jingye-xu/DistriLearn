@@ -334,7 +334,7 @@ class AccessPointNode(Node):
 		df = self.read_traffic_cap(f"/mnt/debby/flow_outs/")
 		
 
-		inf_report = self.make_inference(self.dataframe)
+		inf_report = self.make_inference(df)
 		# publish if master node is available
 		if self.COLLAB_MODE and inf_report is not None:
 			print(f'Sending report to master: {self.master_hash}')
@@ -361,15 +361,19 @@ class AccessPointNode(Node):
 				self.blacklist_obj = BlackListComposition(mac_addr, attack_encoding, MODEL_NAME, MODEL_TYPE, self.ap_hash, None)
 			
 
-
+	# Prepare string report for the master. 
 	def build_inf_report(self, inf_data):
+		# format: master hash $ mac $ type (0 or 1) $ count
+		# TODO: Prepare BERT inputs (sentence of flow data). 
 		return f'{self.master_hash}${inf_data[0]}${inf_data[1]}${inf_data[2]}'
 
 
+	# Thresholded based inference buffers. 
 	def make_inference(self, df):
 		inf_res = None
 		# Pass input dataframe to the model, for all rows but only columns 1 through the end. The 0th column are the source mac addresses.
-		predictions = self.model_driver.predict(df.iloc[:,1:])
+		predictions = self.model.predict(df.iloc[:,1:])
+
 		# predictions do not contain mac, so we need to do a parallel iteration for dataframe
 		mac_index = 0
 		while mac_index < len(df):
@@ -444,22 +448,6 @@ class AccessPointNode(Node):
 		return mhash + '$' + str(self.master_queue[mhash][0]) + '$' + self.master_queue[mhash][1]
 
 
-	def create_data_frame_entry_from_flow(self, flow):
-		# Create dataframe entry with fields respective to model only.
-		# old * 0.001
-		bytes_sec = flow.bidirectional_bytes / ((flow.bidirectional_duration_ms + 1) / 1000) 
-		packets_sec = flow.bidirectional_packets / ((flow.bidirectional_duration_ms + 1) / 1000)
-		fwd_packets_sec = flow.src2dst_packets / ((flow.src2dst_duration_ms + 1) / 1000)  
-		bwd_packets_sec = flow.dst2src_packets / ((flow.dst2src_duration_ms + 1) / 1000)  
-		fwd_iat_total = flow.src2dst_max_piat_ms # total time between two packets in forward direction
-		bwd_iat_total = flow.dst2src_max_piat_ms # total time between two packets in the backward direction
-		avg_packet_size = flow.bidirectional_bytes / flow.bidirectional_packets
-		packet_length_variance = flow.bidirectional_stddev_ps ** 2
-		
-		return [flow.src_mac, flow.dst_port, flow.bidirectional_duration_ms, flow.src2dst_packets, flow.dst2src_packets, flow.src2dst_bytes, flow.dst2src_bytes, flow.src2dst_max_ps, flow.src2dst_min_ps, flow.src2dst_mean_ps, flow.src2dst_stddev_ps, flow.dst2src_max_ps, flow.dst2src_min_ps, flow.dst2src_mean_ps, flow.dst2src_stddev_ps, bytes_sec, packets_sec, flow.bidirectional_mean_piat_ms, flow.bidirectional_max_piat_ms, flow.bidirectional_min_piat_ms, fwd_iat_total, flow.src2dst_mean_piat_ms, flow.src2dst_stddev_piat_ms, flow.src2dst_max_piat_ms, flow.src2dst_min_piat_ms, bwd_iat_total, flow.dst2src_mean_piat_ms, flow.dst2src_stddev_piat_ms, flow.dst2src_max_piat_ms, flow.dst2src_min_piat_ms, fwd_packets_sec, bwd_packets_sec, flow.bidirectional_min_ps, flow.bidirectional_max_ps, flow.bidirectional_mean_ps, flow.bidirectional_stddev_ps, packet_length_variance, flow.bidirectional_rst_packets, avg_packet_size]
-
-
-
 	def sniff_traffic(self, tmp_file_name, listen_interface, chroot_dir):
 		# Temporary sniffing workaround for VM environment:
 		#     os.system(f"sshpass -p \"{pfsense_pass}\" ssh root@{pfsense_wan_ip} \"tcpdump -i {lan_nic} -c {MAX_PACKET_SNIFF} -w - \'not (src {ssh_client_ip} and port {ssh_client_port}) and not (src {pfsense_lan_ip} and dst {ssh_client_ip} and port 22)\'\" 2>/dev/null > {tmp_file_name}")
@@ -507,7 +495,6 @@ class AccessPointNode(Node):
 		hasher = hashlib.sha256()
 		hasher.update(val.encode('UTF-8'))
 		return hasher.hexdigest()
-
 
 
 
