@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
 
+"""
+Master runs bert model :)
+"""
+
+
 import os
 import rclpy
 import socket

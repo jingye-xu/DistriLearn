@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 
 """
-SERVER_DIST.PY: MAIN SCRIPT FOR THE CLUSTER
-
+Access points script
 		* tested using Python version 3.9.10
-		* Dask 
 		* Pyenv to change python versions
+
+APs run autoencoder and forward all flows to BERT. 
 """
 
 import time
@@ -244,6 +244,9 @@ class AccessPointNode(Node):
 
 		self.blacklist_obj =  None
 		self.defaultMsg = String()
+
+
+
 
 
 	# This subsystem is subscribed to by ALL masters, and ALL access points for preemptive decision making. 
@@ -562,6 +565,20 @@ class AccessPointNode(Node):
 		os.system(f"echo \"{tmp_file_name}\" > /tmp/pktname.txt") # for use in nprobe's system.
 		os.system(f"tcpdump --immediate-mode -p -i {listen_interface} -c {self.MAX_PACKET_SNIFF} -w - 2>/dev/null > {tmp_file_name}")
 
+
+	# Create flows using nprobe's reading of pcap capability
+	def create_fows(self, tmp_file_name, out_dir):
+		
+		if not os.path.exists('./flow_outs'):
+			os.system('mkdir ./flow_outs')
+
+		# TODO: Change feature list to the ones in our ML models
+		os.system(f"nprobe -T \"@NTOPNG@\" --pcap-file-list /tmp/pktname.txt --dump-path './flow_outs' --dump-format t --csv-separator")
+
+
+	# Read flows from nprobes outputs.
+	def read_traffic_cap(self, flow_file):
+		pass
 
 
 	def hash_value(self, val):
