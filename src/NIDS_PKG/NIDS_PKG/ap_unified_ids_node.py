@@ -334,7 +334,7 @@ class AccessPointNode(Node):
 		df = self.read_traffic_cap(f"/mnt/debby/flow_outs/")
 		
 
-		inf_report = self.make_inference(df)
+		inf_report = self.make_inference_confidence(df)
 		# publish if master node is available
 		if self.COLLAB_MODE and inf_report is not None:
 			print(f'Sending report to master: {self.master_hash}')
@@ -366,6 +366,56 @@ class AccessPointNode(Node):
 		# format: master hash $ mac $ type (0 or 1) $ count
 		# TODO: Prepare BERT inputs (sentence of flow data). 
 		return f'{self.master_hash}${inf_data[0]}${inf_data[1]}${inf_data[2]}'
+
+
+	# Infer using thresholds, but instead of returning the inference using a count, return the confidence. 
+	def make_inference_confidence(self, df):
+		inf_res = None
+		# Pass input dataframe to the model, for all rows but only columns 1 through the end. The 0th column are the source mac addresses.
+		predictions = self.model.predict(df.iloc[:,1:])
+
+		# predictions do not contain mac, so we need to do a parallel iteration for dataframe
+		mac_index = 0
+		while mac_index < len(df):
+			# df[column][row_num]
+			mac_addr = df[0][mac_index]
+			prediction = predictions[mac_index]
+
+			if mac_addr not in self.inference_buffer:
+				# Here a new encoding is introduced: 2 - means the total # of appearances for this mac.
+				self.inference_buffer[mac_addr] = {0:0,1:0,2:0}
+
+			# buffers have an internal dictionary encoding of benign (0) and malicious (1). Thus, if the prediction is 0, we key into that and update the value. Same for malicious.
+			self.inference_buffer[mac_addr][prediction] += 1
+			self.inference_buffer[mac_addr][2] += 1
+
+			# Check evidence threshold, and flush whichever surpasses first for this mac. If a threshold is surpassed, then we make a report for this MAC. Hence, the break in the stamtent.
+			# NOTICE: that we divide the inference count by the buffer's count. This is the confidence for the autoencoder.
+			if self.inference_buffer[mac_addr][0] >= self.BENIGN_THRESHOLD:
+				inf_cnt = self.inference_buffer[mac_addr][0]
+				self.inference_buffer[mac_addr][0] = 0
+				confidence = inf_cnt / self.inference_buffer[mac_addr][2]
+				inf_res = ( mac_addr, 0, confidence)
+				break
+			if self.inference_buffer[mac_addr][1] >= self.MALICIOUS_THRESHOLD:
+				inf_cnt = self.inference_buffer[mac_addr][1]
+				if self.inference_buffer[mac_addr][1] != 0:
+					self.inference_buffer[mac_addr][1] //= self.inference_buffer[mac_addr][1]
+				if self.inference_buffer[mac_addr][0] != 0:
+					self.inference_buffer[mac_addr][0] //= self.inference_buffer[mac_addr][0]
+				confidence = inf_cnt / self.inference_buffer[mac_addr][2]
+				inf_res = (mac_addr, 1, confidence)
+				break
+
+			mac_index += 1
+
+
+		if len(self.inference_buffer) >= self.MAX_BUFFER_SIZE:
+			self.inference_buffer = {}
+
+		# Inference result format: (mac, encoding [malicious,benign], count)
+		return inf_res
+
 
 
 	# Thresholded based inference buffers. 
