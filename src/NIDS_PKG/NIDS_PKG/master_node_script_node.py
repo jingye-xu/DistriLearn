@@ -80,6 +80,7 @@ class MasterNode(Node):
 		self.domain_id = os.environ['DOMAIN_ID']
 
 
+
 	def master_dispatch_callback(self):
 		
 		mast_hash = String()
