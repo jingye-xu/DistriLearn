@@ -114,7 +114,7 @@ class MasterNode(Node):
 		    	embedding = self.model.obtain_embedding_for(flow)
 		    	entry = [{"vector":embed1, "flow": flow, "confidence" : confidence, "pred":int(prediction), "inference_sum": int(prediction), "total_inferences": 1}]
 				self.tbl.add(entry)
-
+			self.tbl.add(entry)
 		except:
 		    # Already exists, so just move on.
 		    self.tbl = db.open_table("flow_table")
@@ -180,13 +180,23 @@ class MasterNode(Node):
 				cumulative_sum += (row['confidence'] * row['pred'])
 			# Apply sigmoid after weighted sum calculation like the NN.
 			cumulative_sum = self.sig(cumulative_sum)
+
 			
 			# Since we are using sigmoid, we can use a threshold to say whether it is 0 or 1.
 			# I will just maximize what I can and say anything above 0.6 (60%) is malicious, and anything below 0.6 is benign (<= 50%)
+			report = 0
 			if cumulative_sum < 0.6:
+				report = 0
 				print(f'\033[32;1m[{dt_string}]\033[0m {inf_mac} - \033[32;1mNormal.\033[0m')
 			if report_cnt >= 0.6:
+				report = 1
 				print(f'\033[31;1m[{dt_string}]\033[0m {inf_mac} - \033[31;1mSuspicious.\033[0m')
+
+			# Insert data back into the database 
+			entry = [{"vector": embedding, "flow": flow_s, "confidence" : confidence, "pred":report, "inference_sum": report, "total_inferences": 1}]
+				self.tbl.add(entry)
+			# Input this entry back into the table.
+			self.tbl.add(entry)
 
 
 
