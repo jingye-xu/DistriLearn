@@ -129,6 +129,8 @@ class MasterNode(Node):
 		mast_hash.data = self.master_hash + '$' + str(self.init_time)
 		self.master_dispatch_publisher.publish(mast_hash)
 
+	def sig(self, x):
+ 		return 1/(1 + np.exp(-x))
 
 
 	def ids_service_listener(self, inf_report):
@@ -157,30 +159,32 @@ class MasterNode(Node):
 
 			# Now we have k similar flows with the values "vector" "flow" "confidence" "pred" "inference_sum" "total_inferences"
 			# The confidence updates via the inference sum, and its total inferences. 
+			search_results['total_inferences'] = search_results['total_inferences'].apply(lambda x : x + 1)
+			for _, row in search_results.iterrows():
+				# For each flow in the k that we pulled out, update its inference sum and confidence with the new values.
+				row['inference_sum'] += pred
+				row['confidence'] = (row['inference_sum'] / row['total_inferences'])
+				# Now, update the table with this new flow metadata (flows are usually always unique). We can turn the dataframe back into its original state of a dictionary.
+				self.tbl.update(where=f"flow = {row['flow']}", values=[row.to_dict()])
 
-			# Take into consideration all the confidences we have for the autoencoder, the BERT model, and the k flows. 
-			# Make the decision, report, and update all the confidences
+			# Once we iterate through everything, now we need to take all values under consideration. 
+			# Use all the confidences we have for the autoencoder, the BERT model, and the k flows to make a determination for this source address. 
+			# So make the decision and report.
+			# Since each prediction is binary, and the confidences are technically weights, we can then use that as a pseudo neural network input; that is, we can use a sigmoid function.
+				# Sigmoid : Take in a vector of values, along with weights, sum it and produce a value between 0 and 1.
+				# 1/(1 + e^x); to use it as a neural activation it is sum(weight * input) + bias
+			# Even though we can do this quicker and more effectively, for correctness, I will just use a loop.
+			cumulative_sum = (pred * confidence)
+			for _, row in search_results.iterrows():
+				cumulative_sum += (row['confidence'] * row['pred'])
 
+			# Since we are using sigmoid, we can use a threshold to say whether it is 0 or 1.
+			# I will just maximize what I can and say anything above 0.6 (60%) is malicious, and anything below 0.6 is benign (<= 50%)
+			if cumulative_sum < 0.6:
+				print(f'\033[32;1m[{dt_string}]\033[0m {inf_mac} - \033[32;1mNormal.\033[0m')
+			if report_cnt >= 0.6:
+				print(f'\033[31;1m[{dt_string}]\033[0m {inf_mac} - \033[31;1mSuspicious.\033[0m')
 
-
-		# Fill buffer
-		# if inf_mac not in self.evidence_buffer:
-		# 	self.evidence_buffer[inf_mac] = {0:0,1:0}
-		# self.evidence_buffer[inf_mac][inf_encoding] += inf_cnt
-
-		# # Report if filled threshold
-		# gmtime = time.gmtime()
-		# dt_string = "%s:%s:%s" % (gmtime.tm_hour, gmtime.tm_min, gmtime.tm_sec)
-		# report_cnt = self.evidence_buffer[inf_mac][inf_encoding]
-
-		# if inf_report is not None:
-		# 	if report_cnt >= self.BENIGN_THRESHOLD:
-		# 		print(f'\033[32;1m[{dt_string}]\033[0m {inf_mac} - \033[32;1mNormal.\033[0m')
-		# 	if report_cnt >= self.MALICIOUS_THRESHOLD:
-		# 		print(f'\033[31;1m[{dt_string}]\033[0m {inf_mac} - \033[31;1mSuspicious.\033[0m')
-
-		# if len(self.evidence_buffer) >= self.MAX_BUFFER_SIZE:
-		# 	self.evidence_buffer = {}
 
 
 
