@@ -173,8 +173,9 @@ class MasterNode(Node):
 			# Since each prediction is binary, and the confidences are technically weights, we can then use that as a pseudo neural network input; that is, we can use a sigmoid function.
 				# Sigmoid : Take in a vector of values, along with weights, sum it and produce a value between 0 and 1.
 				# 1/(1 + e^x); to use it as a neural activation it is sum(weight * input) + bias
+			# This is initialized with BERT's weights (left) + autoencoder weights (right)
+			cumulative_sum = (pred * confidence) + (inf_encoding * confidence)
 			# Even though we can do this quicker and more effectively, for correctness, I will just use a loop.
-			cumulative_sum = (pred * confidence)
 			for _, row in search_results.iterrows():
 				cumulative_sum += (row['confidence'] * row['pred'])
 
