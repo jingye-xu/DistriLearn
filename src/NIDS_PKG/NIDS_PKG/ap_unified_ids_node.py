@@ -57,6 +57,64 @@ warnings.filterwarnings(action='ignore')
 # This is to accomadate packages on the home directory (i.e. the autoencoder)
 sys.path.append(f'{os.environ["HOME"]}/ids_work')
 
+
+
+
+feature_description_dict = {
+	
+
+	IPV4_SRC_ADDR:'IPv4 source address',
+	IPV4_DST_ADDR:'IPv4 destination address',
+	L4_SRC_PORT:'IPv4 source port number',
+	L4_DST_PORT:'IPv4 destination port number',
+	PROTOCOL:'IP protocol identifier byte',
+	L7_PROTO:'Layer 7 protocol (numeric)',
+	IN_BYTES:'Incoming number of bytes',
+	OUT_BYTES:'Outgoing number of bytes',
+	IN_PKTS:'Incoming number of packets',
+	OUT_PKTS:'Outgoing number of packets',
+	FLOW_DURATION_MILLISECONDS:'Flow duration in milliseconds',
+	TCP_FLAGS:'Cumulative of all TCP flags',
+	CLIENT_TCP_FLAGS:'Cumulative of all client TCP flags',
+	SERVER_TCP_FLAGS:'Cumulative of all server TCP flags',
+	DURATION_IN:'Client to Server stream duration milliseconds',
+	DURATION_OUT:'Client to Server stream duration milliseconds',
+	MIN_TTL:'Min flow time to live',
+	MAX_TTL:'Max flow time to live',
+	LONGEST_FLOW_PKT:'Longest packet (bytes) of the flow',
+	SHORTEST_FLOW_PKT:'Shortest packet (bytes) of the flow',
+	MIN_IP_PKT_LEN:'Length of the smallest flow IP packet observed',
+	MAX_IP_PKT_LEN:'Length of the largest flow IP packet observed',
+	SRC_TO_DST_SECOND_BYTES:'Source to destination Bytes per second',
+	DST_TO_SRC_SECOND_BYTES:'Destination to source Bytes per second',
+	RETRANSMITTED_IN_BYTES:'Source to destination retransmitted TCP flow bytes',
+	RETRANSMITTED_IN_PKTS:'Source to destination retransmitted TCP flow packets',
+	RETRANSMITTED_OUT_BYTES:'Destination to source retransmitted TCP flow bytes',
+	RETRANSMITTED_OUT_PKTS:'Destination to source retransmitted TCP flow packets',
+	SRC_TO_DST_AVG_THROUGHPUT:'Source to destination average throughput',
+	DST_TO_SRC_AVG_THROUGHPUT:'Destination to source average throughput',
+	NUM_PKTS_UP_TO_128_BYTES:'Packets whose IP size <= 128',
+	NUM_PKTS_128_TO_256_BYTES:'Packets whose IP size > 128 and <= 256',
+	NUM_PKTS_256_TO_512_BYTES:'Packets whose IP size > 256 and <= 512',
+	NUM_PKTS_512_TO_1024_BYTES:'Packets whose IP size > 512 and <= 1024',
+	NUM_PKTS_1024_TO_1514_BYTES:'Packets whose IP size >= 1024 and <= 1514',
+	TCP_WIN_MAX_IN:'Source to destination max TCP Window',
+	TCP_WIN_MAX_OUT:'Destination to source max TCP Window',
+	ICMP_TYPE:'ICMP Type * 256 + ICMP code',
+	ICMP_IPV4_TYPE:'ICMP Type',
+	DNS_QUERY_ID:'DNS query transaction Id',
+	DNS_QUERY_TYPE:'DNS query type',
+	DNS_TTL_ANSWER:'Time to live of the first A record (if any)',
+	FTP_COMMAND_RET_CODE:'FTP client command return code'
+	
+}
+
+
+
+
+
+
+
 import AnomalyAutoEncoder
 
 class AnomalyDetector:
@@ -339,7 +397,7 @@ class AccessPointNode(Node):
 		if self.COLLAB_MODE and inf_report is not None:
 			print(f'Sending report to master: {self.master_hash}')
 			tmp = String()
-			tmp.data = self.build_inf_report_bert(inf_report)
+			tmp.data = self.build_inf_report_bert(inf_report, df)
 			self.inference_topic_publisher.publish(tmp)
 			
 
