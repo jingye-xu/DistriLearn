@@ -106,7 +106,7 @@ feature_description_dict = {
 	DNS_QUERY_TYPE:'DNS query type',
 	DNS_TTL_ANSWER:'Time to live of the first A record (if any)',
 	FTP_COMMAND_RET_CODE:'FTP client command return code'
-	
+
 }
 
 
@@ -422,14 +422,13 @@ class AccessPointNode(Node):
 	# Prepare string report for the master. 
 	def build_inf_report(self, inf_data):
 		# format: master hash $ mac $ type (0 or 1) $ count
-		# TODO: Prepare BERT inputs (sentence of flow data). 
 		return f'{self.master_hash}${inf_data[0]}${inf_data[1]}${inf_data[2]}'
 
 
 	# Prepare string report for the master. This is the function that will be used for our BERT masters. So we
 	# encode the data into its own sentence for the model to take in because bert takes in sentences. 
 	def build_inf_report_bert(self, inf_data, df):
-		# format: master hash $ mac $ type (0 or 1) $ count $ BERT_sentence
+		# format: master hash $ mac $ type (0 or 1) $ count $ BERT_sentences
 		bert_cols_to_drop =['IPV4_SRC_ADDR', 'IPV4_DST_ADDR', 'TCP_FLAGS', 'CLIENT_TCP_FLAGS', 'SERVER_TCP_FLAGS', 'MIN_TTL', 'MAX_TTL', 'NUM_PKTS_UP_TO_128_BYTES', 'NUM_PKTS_128_TO_256_BYTES', 'NUM_PKTS_256_TO_512_BYTES', 'NUM_PKTS_512_TO_1024_BYTES', 'NUM_PKTS_1024_TO_1514_BYTES', 'TCP_WIN_MAX_IN', 'TCP_WIN_MAX_OUT', 'ICMP_TYPE', 'ICMP_IPV4_TYPE', 'DNS_QUERY_ID', 'DNS_QUERY_TYPE', 'DNS_TTL_ANSWER', 'FTP_COMMAND_RET_CODE']
 		
 		# Get only values in the dataframe where the address matched the one we are reporting at the moment. This is reset every inference.

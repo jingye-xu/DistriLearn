@@ -24,6 +24,10 @@ from uuid import getnode as get_mac
 from NIDS_PKG.kappa_coeff import *
 from NIDS_PKG.blackListAPI import *
 
+import lancedb
+import pyarrow as pa
+
+
 class BlackListComposition:
 
 	def __init__(self, ma, attack_type, model_name, model_type, ap_hash, flow):
@@ -81,6 +85,44 @@ class MasterNode(Node):
 
 
 
+		db = lancedb.connect(f"{os.environ['HOME']}/flow_db")
+
+		# create a table for the embeddings
+		schema = pa.schema(
+		[ # 985 and 512 or 768
+		    pa.field("vector", pa.list_(pa.float64(), list_size=768)),
+		    pa.field("flow", pa.string()),
+		    pa.field("confidence", pa.int32()),
+		    pa.field("pred", pa.int32()),
+		    pa.field("inference_sum", pa.int32()),
+		    pa.field("total_inferences", pa.int32()),
+		])
+
+
+		self.model = BertFlowLM()
+		self.tbl = None
+		try:
+		    # Create empty table using defined schema.
+		    self.tbl = db.create_table("flow_table", schema=schema)
+
+		    # Initialize database with data from training. Create embeddings using model with confidences' metadata too. 
+		    data = pd.read_csv(f'{os.environ["HOME"]}/NF-UNSW-NB15-v2.csvLabelWiseSentenceClass.csv',low_memory=False)
+		    for index, row in data.itterows():
+		    	flow = row['Flow']
+		    	prediction = row['Label']
+		    	confidence = 1.0 # because it is ground truth, it has highest weight (i.e., 100%).
+		    	embedding = self.model.obtain_embedding_for(flow)
+		    	entry = [{"vector":embed1, "flow": flow, "confidence" : confidence, "pred":int(prediction), "inference_sum": int(prediction), "total_inferences": 1}]
+				self.tbl.add(entry)
+
+		except:
+		    # Already exists, so just move on.
+		    self.tbl = db.open_table("flow_table")
+
+		
+
+
+
 	def master_dispatch_callback(self):
 		
 		mast_hash = String()
@@ -91,6 +133,7 @@ class MasterNode(Node):
 
 	def ids_service_listener(self, inf_report):
 
+		# format: master hash $ mac $ type (0 or 1) $ count $ BERT_sentences
 		inf_tokens = inf_report.data.split('$')
 
 		if inf_tokens[0] != self.master_hash:
@@ -98,27 +141,46 @@ class MasterNode(Node):
 			return
 
 		inf_mac = inf_tokens[1]
-		inf_encoding = int(inf_tokens[2])
-		inf_cnt = int(inf_tokens[3])
+		inf_encoding = int(inf_tokens[2]) # type
+		inf_cnt = int(inf_tokens[3]) # confidence.
+
+		# Select top k from the database
+		# Make sure to iterate after index 4 because that's ALL the flows. 
+		for flow_s in inf_tokens[4:]:
+			if flow_s == '$' or flow_s == '':
+				continue
+			# Predict on flow sentence and get confidence.
+			pred, confidence = self.model.infer(flow_s)
+			# Obtain embedding for the flow sentence
+			embedding = self.model.obtain_embedding_for(flow_s)
+			search_results = self.tbl.search(embedding).metric("cosine").limit(10)
+
+			# Now we have k similar flows with the values "vector" "flow" "confidence" "pred" "inference_sum" "total_inferences"
+			# The confidence updates via the inference sum, and its total inferences. 
+
+			# Take into consideration all the confidences we have for the autoencoder, the BERT model, and the k flows. 
+			# Make the decision, report, and update all the confidences
+
+
 
 		# Fill buffer
-		if inf_mac not in self.evidence_buffer:
-			self.evidence_buffer[inf_mac] = {0:0,1:0}
-		self.evidence_buffer[inf_mac][inf_encoding] += inf_cnt
+		# if inf_mac not in self.evidence_buffer:
+		# 	self.evidence_buffer[inf_mac] = {0:0,1:0}
+		# self.evidence_buffer[inf_mac][inf_encoding] += inf_cnt
 
-		# Report if filled threshold
-		gmtime = time.gmtime()
-		dt_string = "%s:%s:%s" % (gmtime.tm_hour, gmtime.tm_min, gmtime.tm_sec)
-		report_cnt = self.evidence_buffer[inf_mac][inf_encoding]
+		# # Report if filled threshold
+		# gmtime = time.gmtime()
+		# dt_string = "%s:%s:%s" % (gmtime.tm_hour, gmtime.tm_min, gmtime.tm_sec)
+		# report_cnt = self.evidence_buffer[inf_mac][inf_encoding]
 
-		if inf_report is not None:
-			if report_cnt >= self.BENIGN_THRESHOLD:
-				print(f'\033[32;1m[{dt_string}]\033[0m {inf_mac} - \033[32;1mNormal.\033[0m')
-			if report_cnt >= self.MALICIOUS_THRESHOLD:
-				print(f'\033[31;1m[{dt_string}]\033[0m {inf_mac} - \033[31;1mSuspicious.\033[0m')
+		# if inf_report is not None:
+		# 	if report_cnt >= self.BENIGN_THRESHOLD:
+		# 		print(f'\033[32;1m[{dt_string}]\033[0m {inf_mac} - \033[32;1mNormal.\033[0m')
+		# 	if report_cnt >= self.MALICIOUS_THRESHOLD:
+		# 		print(f'\033[31;1m[{dt_string}]\033[0m {inf_mac} - \033[31;1mSuspicious.\033[0m')
 
-		if len(self.evidence_buffer) >= self.MAX_BUFFER_SIZE:
-			self.evidence_buffer = {}
+		# if len(self.evidence_buffer) >= self.MAX_BUFFER_SIZE:
+		# 	self.evidence_buffer = {}
 
 
 
