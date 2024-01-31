@@ -178,7 +178,9 @@ class MasterNode(Node):
 			# Even though we can do this quicker and more effectively, for correctness, I will just use a loop.
 			for _, row in search_results.iterrows():
 				cumulative_sum += (row['confidence'] * row['pred'])
-
+			# Apply sigmoid after weighted sum calculation like the NN.
+			cumulative_sum = self.sig(cumulative_sum)
+			
 			# Since we are using sigmoid, we can use a threshold to say whether it is 0 or 1.
 			# I will just maximize what I can and say anything above 0.6 (60%) is malicious, and anything below 0.6 is benign (<= 50%)
 			if cumulative_sum < 0.6:
