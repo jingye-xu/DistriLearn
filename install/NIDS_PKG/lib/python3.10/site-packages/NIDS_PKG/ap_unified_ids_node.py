@@ -116,19 +116,19 @@ from anomalydetectionarchitecture import AnomalyAutoEncoder
 class AnomalyDetector:
 
 	# We can assume defaults here. AE trained on input size of 40, and the path is the 4th checkpoint! :)
-	def __init__(self, path=f'{os.environ["HOME"]}/ids_work/anomaly_autoencoder_weights4.ckpt', input_output_size=40):
+	def __init__(self, path=f'{os.environ["HOME"]}/ids_work/anomaly_autoencoder_weights4', input_output_size=40):
 
 		self.anomaly_autoencoder = AnomalyAutoEncoder(input_output_size)
 		self.anomaly_autoencoder.load_weights(path)
 
 
-	def get_inference(flow_data, threshold=(0.024148070913876787 - 0.01)):
+	def predict(flow_data, threshold=(0.024148070913876787 - 0.01)):
 		# remove features that cause overfit.
 		# For the huge dataset: flow_data.drop(columns=['IPV4_SRC_ADDR', 'IPV4_DST_ADDR', 'Label', 'Attack'], inplace=True)
 
-		flow_data.drop(columns=['IPV4_SRC_ADDR', 'IPV4_DST_ADDR', 'Attack', 'L4_DST_PORT'], inplace=True)
+		flow_data.drop(columns=['IPV4_SRC_ADDR', 'IPV4_DST_ADDR', 'L4_DST_PORT'], inplace=True)
 		# Basic reconstruction
-		reconstruction = self.model.predict(flow_data)
+		reconstruction = self.anomaly_autoencoder.predict(flow_data)
 		reconstruction_error = tf.keras.losses.mae(reconstruction, flow_data)
 		# If the reconstruction error is beyond our threshold, then it is malicious (not fitting within benign distribution.)
 		if reconstruction_error >= threshold:
@@ -610,7 +610,6 @@ class AccessPointNode(Node):
 	# Read flows from nprobes outputs.
 	def read_traffic_cap(self, base_flow_dir):
 
-		header = ["IPV4_SRC_ADDR", "IPV4_DST_ADDR", "L4_SRC_PORT", "L4_DST_PORT", "PROTOCOL", "L7_PROTO", "IN_BYTES", "OUT_BYTES", "IN_PKTS", "OUT_PKTS", "FLOW_DURATION_MILLISECONDS", "TCP_FLAGS", "CLIENT_TCP_FLAGS", "SERVER_TCP_FLAGS", "DURATION_IN", "DURATION_OUT", "MIN_TTL", "MAX_TTL", "LONGEST_FLOW_PKT", "SHORTEST_FLOW_PKT", "MIN_IP_PKT_LEN", "MAX_IP_PKT_LEN", "SRC_TO_DST_SECOND_BYTES", "DST_TO_SRC_SECOND_BYTES", "RETRANSMITTED_IN_BYTES", "RETRANSMITTED_IN_PKTS", "RETRANSMITTED_OUT_BYTES", "RETRANSMITTED_OUT_PKTS", "SRC_TO_DST_AVG_THROUGHPUT", "DST_TO_SRC_AVG_THROUGHPUT", "NUM_PKTS_UP_TO_128_BYTES", "NUM_PKTS_128_TO_256_BYTES", "NUM_PKTS_256_TO_512_BYTES", "NUM_PKTS_512_TO_1024_BYTES", "NUM_PKTS_1024_TO_1514_BYTES", "TCP_WIN_MAX_IN", "TCP_WIN_MAX_OUT", "ICMP_TYPE", "ICMP_IPV4_TYPE", "DNS_QUERY_ID", "DNS_QUERY_TYPE", "DNS_TTL_ANSWER", "FTP_COMMAND_RET_CODE"]
 		
 		# Format of flow outputs example: 2024/01/30/14/45-39.flows.temp
 		# The format is then: year/month/day/hour/minute-n.file_ext
