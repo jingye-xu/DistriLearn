@@ -116,10 +116,13 @@ from anomalydetectionarchitecture import AnomalyAutoEncoder
 class AnomalyDetector:
 
 	# We can assume defaults here. AE trained on input size of 40, and the path is the 4th checkpoint! :)
-	def __init__(self, path=f'{os.environ["HOME"]}/ids_work/anomaly_autoencoder_weights4', input_output_size=40):
+	def __init__(self, path=f'{os.environ["HOME"]}/ids_work/anomaly_autoencoder_weights4.ckpt', input_output_size=40):
 
 		self.anomaly_autoencoder = AnomalyAutoEncoder(input_output_size)
-		self.anomaly_autoencoder.load_weights(path)
+		import tensorflow as tf
+		checkpoint = tf.train.Checkpoint(self.anomaly_autoencoder)
+		checkpoint.restore(path)
+		#self.anomaly_autoencoder.load_weights(path)
 
 
 	def predict(flow_data, threshold=(0.024148070913876787 - 0.01)):

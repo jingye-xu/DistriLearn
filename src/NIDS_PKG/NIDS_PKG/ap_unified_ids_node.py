@@ -116,7 +116,7 @@ from anomalydetectionarchitecture import AnomalyAutoEncoder
 class AnomalyDetector:
 
 	# We can assume defaults here. AE trained on input size of 40, and the path is the 4th checkpoint! :)
-	def __init__(self, path=f'{os.environ["HOME"]}/ids_work/anomaly_autoencoder_weights4', input_output_size=40):
+	def __init__(self, path=f'{os.environ["HOME"]}/ids_work/anomaly_autoencoder_weights4.ckpt', input_output_size=40):
 
 		self.anomaly_autoencoder = AnomalyAutoEncoder(input_output_size)
 		import tensorflow as tf
