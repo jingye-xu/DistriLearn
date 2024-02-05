@@ -194,7 +194,7 @@ class MasterNode(Node):
 
 			# Insert data back into the database 
 			entry = [{"vector": embedding, "flow": flow_s, "confidence" : confidence, "pred":report, "inference_sum": report, "total_inferences": 1}]
-				self.tbl.add(entry)
+			self.tbl.add(entry)
 			# Input this entry back into the table.
 			self.tbl.add(entry)
 
