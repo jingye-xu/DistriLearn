@@ -126,7 +126,7 @@ class AnomalyDetector:
 		# remove features that cause overfit.
 		# For the huge dataset: flow_data.drop(columns=['IPV4_SRC_ADDR', 'IPV4_DST_ADDR', 'Label', 'Attack'], inplace=True)
 
-		flow_data.drop(columns=['IPV4_SRC_ADDR', 'IPV4_DST_ADDR', 'Attack', 'L4_DST_PORT'], inplace=True)
+		flow_data.drop(columns=['IPV4_SRC_ADDR', 'IPV4_DST_ADDR', 'L4_DST_PORT'], inplace=True)
 		# Basic reconstruction
 		reconstruction = self.anomaly_autoencoder.predict(flow_data)
 		reconstruction_error = tf.keras.losses.mae(reconstruction, flow_data)
