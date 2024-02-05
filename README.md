@@ -8,9 +8,11 @@ This NIDS branch is already a ROS workspace. Within the `src` folder is the NIDS
 
 After any edits you make, you must build the workspace (After building the workspace, of course) using `colcon`. Then you can execute `source` on your workspace directory under the `./install/setup.bash` directory of the workspace. I usually prefer to source the underlay and overlay after each build.
 
+You may run the workspace using this command: `ros2 run NIDS_PKG [ap_node|master_node]`
 
 When installing ROS, you may be inclined to use Ubuntu. We can debootstrap Ubuntu, but Debian is also plausible since Ubuntu is based on Debian (you can find the chart). To add the ROS repository to debian, you need to use the correct ditribution. To see the distributions, check here: http://packages.ros.org/ros2. For instance, if I am using Debian 12 (Bookworm), I would use `http://packages.ros.org/ros2/ubuntu bookworm main`. This can be interpolated as such: `http://packages.ros.org/ros2 $(lsb_release -cs) main`. For our research, we are deploying on smaller devices. Pay attention to which Linux you are using. It is better to install ROS from source on Debian, than the binaries. If you build from source, the underlay will be different!
 
 
 
 NOTE: Run the code from the root DistriLearn workspace!
+

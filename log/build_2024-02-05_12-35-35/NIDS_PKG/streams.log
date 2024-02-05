@@ -1,0 +1,61 @@
+[0.635s] Invoking command in '/home/gmo-pop/Desktop/DistriLearn/src/NIDS_PKG': PYTHONPATH=/home/gmo-pop/Desktop/DistriLearn/build/NIDS_PKG/prefix_override:/home/gmo-pop/Desktop/DistriLearn/install/NIDS_PKG/lib/python3.10/site-packages: /usr/bin/python3 setup.py egg_info --egg-base ../../build/NIDS_PKG build --build-base /home/gmo-pop/Desktop/DistriLearn/build/NIDS_PKG/build install --record /home/gmo-pop/Desktop/DistriLearn/build/NIDS_PKG/install.log --install-scripts $base/lib/NIDS_PKG --single-version-externally-managed
+[0.722s] /home/gmo-pop/.local/lib/python3.10/site-packages/setuptools/dist.py:472: SetuptoolsDeprecationWarning: Invalid dash-separated options
+[0.722s] !!
+[0.722s] 
+[0.722s]         ********************************************************************************
+[0.722s]         Usage of dash-separated 'script-dir' will not be supported in future
+[0.722s]         versions. Please use the underscore name 'script_dir' instead.
+[0.722s] 
+[0.722s]         By 2024-Sep-26, you need to update your project and remove deprecated calls
+[0.722s]         or your builds will no longer be supported.
+[0.722s] 
+[0.722s]         See https://setuptools.pypa.io/en/latest/userguide/declarative_config.html for details.
+[0.722s]         ********************************************************************************
+[0.722s] 
+[0.722s] !!
+[0.722s]   opt = self.warn_dash_deprecation(opt, section)
+[0.800s] running egg_info
+[0.813s] writing ../../build/NIDS_PKG/NIDS_PKG.egg-info/PKG-INFO
+[0.813s] writing dependency_links to ../../build/NIDS_PKG/NIDS_PKG.egg-info/dependency_links.txt
+[0.813s] writing entry points to ../../build/NIDS_PKG/NIDS_PKG.egg-info/entry_points.txt
+[0.813s] writing requirements to ../../build/NIDS_PKG/NIDS_PKG.egg-info/requires.txt
+[0.813s] writing top-level names to ../../build/NIDS_PKG/NIDS_PKG.egg-info/top_level.txt
+[0.839s] reading manifest file '../../build/NIDS_PKG/NIDS_PKG.egg-info/SOURCES.txt'
+[0.840s] writing manifest file '../../build/NIDS_PKG/NIDS_PKG.egg-info/SOURCES.txt'
+[0.840s] running build
+[0.840s] running build_py
+[0.840s] copying NIDS_PKG/blackListAPI.py -> /home/gmo-pop/Desktop/DistriLearn/build/NIDS_PKG/build/lib/NIDS_PKG
+[0.840s] copying NIDS_PKG/kappa_coeff.py -> /home/gmo-pop/Desktop/DistriLearn/build/NIDS_PKG/build/lib/NIDS_PKG
+[0.840s] copying NIDS_PKG/master_node_script_node.py -> /home/gmo-pop/Desktop/DistriLearn/build/NIDS_PKG/build/lib/NIDS_PKG
+[0.841s] copying NIDS_PKG/blackListAPI_backup.py -> /home/gmo-pop/Desktop/DistriLearn/build/NIDS_PKG/build/lib/NIDS_PKG
+[0.841s] copying NIDS_PKG/__init__.py -> /home/gmo-pop/Desktop/DistriLearn/build/NIDS_PKG/build/lib/NIDS_PKG
+[0.841s] copying NIDS_PKG/ap_unified_ids_node.py -> /home/gmo-pop/Desktop/DistriLearn/build/NIDS_PKG/build/lib/NIDS_PKG
+[0.841s] running install
+[0.841s] /home/gmo-pop/.local/lib/python3.10/site-packages/setuptools/_distutils/cmd.py:66: SetuptoolsDeprecationWarning: setup.py install is deprecated.
+[0.841s] !!
+[0.842s] 
+[0.842s]         ********************************************************************************
+[0.842s]         Please avoid running ``setup.py`` directly.
+[0.842s]         Instead, use pypa/build, pypa/installer or other
+[0.842s]         standards-based tools.
+[0.842s] 
+[0.842s]         See https://blog.ganssle.io/articles/2021/10/setup-py-deprecated.html for details.
+[0.842s]         ********************************************************************************
+[0.842s] 
+[0.842s] !!
+[0.842s]   self.initialize_options()
+[0.845s] running install_lib
+[0.858s] copying /home/gmo-pop/Desktop/DistriLearn/build/NIDS_PKG/build/lib/NIDS_PKG/master_node_script_node.py -> /home/gmo-pop/Desktop/DistriLearn/install/NIDS_PKG/lib/python3.10/site-packages/NIDS_PKG
+[0.858s] copying /home/gmo-pop/Desktop/DistriLearn/build/NIDS_PKG/build/lib/NIDS_PKG/kappa_calcs.py -> /home/gmo-pop/Desktop/DistriLearn/install/NIDS_PKG/lib/python3.10/site-packages/NIDS_PKG
+[0.858s] byte-compiling /home/gmo-pop/Desktop/DistriLearn/install/NIDS_PKG/lib/python3.10/site-packages/NIDS_PKG/master_node_script_node.py to master_node_script_node.cpython-310.pyc
+[0.860s] running install_data
+[0.872s] copying resource/NIDS_PKG -> /home/gmo-pop/Desktop/DistriLearn/install/NIDS_PKG/share/ament_index/resource_index/packages
+[0.872s] copying package.xml -> /home/gmo-pop/Desktop/DistriLearn/install/NIDS_PKG/share/NIDS_PKG
+[0.873s] running install_egg_info
+[0.886s] removing '/home/gmo-pop/Desktop/DistriLearn/install/NIDS_PKG/lib/python3.10/site-packages/NIDS_PKG-0.0.0-py3.10.egg-info' (and everything under it)
+[0.886s] Copying ../../build/NIDS_PKG/NIDS_PKG.egg-info to /home/gmo-pop/Desktop/DistriLearn/install/NIDS_PKG/lib/python3.10/site-packages/NIDS_PKG-0.0.0-py3.10.egg-info
+[0.887s] running install_scripts
+[1.000s] Installing ap_node script to /home/gmo-pop/Desktop/DistriLearn/install/NIDS_PKG/lib/NIDS_PKG
+[1.000s] Installing master_node script to /home/gmo-pop/Desktop/DistriLearn/install/NIDS_PKG/lib/NIDS_PKG
+[1.000s] writing list of installed files to '/home/gmo-pop/Desktop/DistriLearn/build/NIDS_PKG/install.log'
+[1.016s] Invoked command in '/home/gmo-pop/Desktop/DistriLearn/src/NIDS_PKG' returned '0': PYTHONPATH=/home/gmo-pop/Desktop/DistriLearn/build/NIDS_PKG/prefix_override:/home/gmo-pop/Desktop/DistriLearn/install/NIDS_PKG/lib/python3.10/site-packages: /usr/bin/python3 setup.py egg_info --egg-base ../../build/NIDS_PKG build --build-base /home/gmo-pop/Desktop/DistriLearn/build/NIDS_PKG/build install --record /home/gmo-pop/Desktop/DistriLearn/build/NIDS_PKG/install.log --install-scripts $base/lib/NIDS_PKG --single-version-externally-managed

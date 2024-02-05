@@ -1,0 +1,95 @@
+[0.000000] (-) TimerEvent: {}
+[0.000353] (NIDS_PKG) JobQueued: {'identifier': 'NIDS_PKG', 'dependencies': OrderedDict()}
+[0.000483] (NIDS_PKG) JobStarted: {'identifier': 'NIDS_PKG'}
+[0.099456] (-) TimerEvent: {}
+[0.199698] (-) TimerEvent: {}
+[0.299975] (-) TimerEvent: {}
+[0.400237] (-) TimerEvent: {}
+[0.500447] (-) TimerEvent: {}
+[0.600637] (-) TimerEvent: {}
+[0.700818] (-) TimerEvent: {}
+[0.801035] (-) TimerEvent: {}
+[0.901240] (-) TimerEvent: {}
+[1.001449] (-) TimerEvent: {}
+[1.101654] (-) TimerEvent: {}
+[1.129124] (NIDS_PKG) Command: {'cmd': ['/usr/bin/python3', 'setup.py', 'egg_info', '--egg-base', '../../build/NIDS_PKG', 'build', '--build-base', '/home/gmo-pop/Desktop/DistriLearn/build/NIDS_PKG/build', 'install', '--record', '/home/gmo-pop/Desktop/DistriLearn/build/NIDS_PKG/install.log', '--install-scripts', '$base/lib/NIDS_PKG', '--single-version-externally-managed'], 'cwd': '/home/gmo-pop/Desktop/DistriLearn/src/NIDS_PKG', 'env': {'LESSOPEN': '| /usr/bin/lesspipe %s', 'USER': 'gmo-pop', 'XDG_SESSION_TYPE': 'x11', 'SHLVL': '1', 'LD_LIBRARY_PATH': '/usr/local/cuda/lib64:/usr/local/cuda-11.2/lib64', 'HOME': '/home/gmo-pop', 'OLDPWD': '/home/gmo-pop/Desktop', 'DESKTOP_SESSION': 'pop', 'GNOME_SHELL_SESSION_MODE': 'pop', 'GTK_MODULES': 'gail:atk-bridge', 'SYSTEMD_EXEC_PID': '2593', 'DBUS_SESSION_BUS_ADDRESS': 'unix:path=/run/user/1000/bus', 'COLORTERM': 'truecolor', 'GTK_IM_MODULE': 'ibus', 'LOGNAME': 'gmo-pop', '_': '/usr/bin/colcon', 'XDG_SESSION_CLASS': 'user', 'USERNAME': 'gmo-pop', 'TERM': 'xterm-256color', 'GNOME_DESKTOP_SESSION_ID': 'this-is-deprecated', 'WINDOWPATH': '2', 'PATH': '/home/gmo-pop/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin', 'SESSION_MANAGER': 'local/gmo-pop-os:@/tmp/.ICE-unix/2570,unix/gmo-pop-os:/tmp/.ICE-unix/2570', 'XDG_MENU_PREFIX': 'gnome-', 'GNOME_TERMINAL_SCREEN': '/org/gnome/Terminal/screen/b73cbea9_c8c7_4e53_86fa_8afbc8c530e9', 'XDG_RUNTIME_DIR': '/run/user/1000', 'DISPLAY': ':1', 'LANG': 'en_US.UTF-8', 'XDG_CURRENT_DESKTOP': 'pop:GNOME', 'XMODIFIERS': '@im=ibus', 'XDG_SESSION_DESKTOP': 'pop', 'XAUTHORITY': '/run/user/1000/gdm/Xauthority', 'LS_COLORS': 'rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.zst=01;31:*.tzst=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.wim=01;31:*.swm=01;31:*.dwm=01;31:*.esd=01;31:*.jpg=01;35:*.jpeg=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.webp=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.oga=00;36:*.opus=00;36:*.spx=00;36:*.xspf=00;36:', 'GNOME_TERMINAL_SERVICE': ':1.105', 'SSH_AGENT_LAUNCHER': 'gnome-keyring', 'SSH_AUTH_SOCK': '/run/user/1000/keyring/ssh', 'SHELL': '/bin/bash', 'QT_ACCESSIBILITY': '1', 'GDMSESSION': 'pop', 'LESSCLOSE': '/usr/bin/lesspipe %s %s', 'GPG_AGENT_INFO': '/run/user/1000/gnupg/S.gpg-agent:0:1', 'QT_IM_MODULE': 'ibus', 'PWD': '/home/gmo-pop/Desktop/DistriLearn/build/NIDS_PKG', 'XDG_CONFIG_DIRS': '/etc/xdg/xdg-pop:/etc/xdg', 'XDG_DATA_DIRS': '/usr/share/pop:/usr/share/gnome:/home/gmo-pop/.local/share/flatpak/exports/share:/var/lib/flatpak/exports/share:/usr/local/share/:/usr/share/', 'COLCON': '1', 'VTE_VERSION': '6800', 'PYTHONPATH': '/home/gmo-pop/Desktop/DistriLearn/build/NIDS_PKG/prefix_override:/home/gmo-pop/Desktop/DistriLearn/install/NIDS_PKG/lib/python3.10/site-packages:'}, 'shell': False}
+[1.201745] (-) TimerEvent: {}
+[1.220029] (NIDS_PKG) StderrLine: {'line': b'/home/gmo-pop/.local/lib/python3.10/site-packages/setuptools/dist.py:472: SetuptoolsDeprecationWarning: Invalid dash-separated options\n'}
+[1.220224] (NIDS_PKG) StderrLine: {'line': b'!!\n'}
+[1.220321] (NIDS_PKG) StderrLine: {'line': b'\n'}
+[1.220408] (NIDS_PKG) StderrLine: {'line': b'        ********************************************************************************\n'}
+[1.220494] (NIDS_PKG) StderrLine: {'line': b"        Usage of dash-separated 'script-dir' will not be supported in future\n"}
+[1.220579] (NIDS_PKG) StderrLine: {'line': b"        versions. Please use the underscore name 'script_dir' instead.\n"}
+[1.220665] (NIDS_PKG) StderrLine: {'line': b'\n'}
+[1.220747] (NIDS_PKG) StderrLine: {'line': b'        By 2024-Sep-26, you need to update your project and remove deprecated calls\n'}
+[1.220845] (NIDS_PKG) StderrLine: {'line': b'        or your builds will no longer be supported.\n'}
+[1.220941] (NIDS_PKG) StderrLine: {'line': b'\n'}
+[1.221038] (NIDS_PKG) StderrLine: {'line': b'        See https://setuptools.pypa.io/en/latest/userguide/declarative_config.html for details.\n'}
+[1.221136] (NIDS_PKG) StderrLine: {'line': b'        ********************************************************************************\n'}
+[1.221233] (NIDS_PKG) StderrLine: {'line': b'\n'}
+[1.221330] (NIDS_PKG) StderrLine: {'line': b'!!\n'}
+[1.221427] (NIDS_PKG) StderrLine: {'line': b'  opt = self.warn_dash_deprecation(opt, section)\n'}
+[1.298061] (NIDS_PKG) StdoutLine: {'line': b'running egg_info\n'}
+[1.301846] (-) TimerEvent: {}
+[1.310490] (NIDS_PKG) StdoutLine: {'line': b'writing ../../build/NIDS_PKG/NIDS_PKG.egg-info/PKG-INFO\n'}
+[1.310865] (NIDS_PKG) StdoutLine: {'line': b'writing dependency_links to ../../build/NIDS_PKG/NIDS_PKG.egg-info/dependency_links.txt\n'}
+[1.311036] (NIDS_PKG) StdoutLine: {'line': b'writing entry points to ../../build/NIDS_PKG/NIDS_PKG.egg-info/entry_points.txt\n'}
+[1.311150] (NIDS_PKG) StdoutLine: {'line': b'writing requirements to ../../build/NIDS_PKG/NIDS_PKG.egg-info/requires.txt\n'}
+[1.311259] (NIDS_PKG) StdoutLine: {'line': b'writing top-level names to ../../build/NIDS_PKG/NIDS_PKG.egg-info/top_level.txt\n'}
+[1.336898] (NIDS_PKG) StdoutLine: {'line': b"reading manifest file '../../build/NIDS_PKG/NIDS_PKG.egg-info/SOURCES.txt'\n"}
+[1.348782] (NIDS_PKG) StdoutLine: {'line': b"writing manifest file '../../build/NIDS_PKG/NIDS_PKG.egg-info/SOURCES.txt'\n"}
+[1.348966] (NIDS_PKG) StdoutLine: {'line': b'running build\n'}
+[1.349079] (NIDS_PKG) StdoutLine: {'line': b'running build_py\n'}
+[1.349168] (NIDS_PKG) StdoutLine: {'line': b'copying NIDS_PKG/blackListAPI.py -> /home/gmo-pop/Desktop/DistriLearn/build/NIDS_PKG/build/lib/NIDS_PKG\n'}
+[1.349309] (NIDS_PKG) StdoutLine: {'line': b'copying NIDS_PKG/kappa_coeff.py -> /home/gmo-pop/Desktop/DistriLearn/build/NIDS_PKG/build/lib/NIDS_PKG\n'}
+[1.349560] (NIDS_PKG) StdoutLine: {'line': b'copying NIDS_PKG/master_node_script_node.py -> /home/gmo-pop/Desktop/DistriLearn/build/NIDS_PKG/build/lib/NIDS_PKG\n'}
+[1.349736] (NIDS_PKG) StdoutLine: {'line': b'copying NIDS_PKG/blackListAPI_backup.py -> /home/gmo-pop/Desktop/DistriLearn/build/NIDS_PKG/build/lib/NIDS_PKG\n'}
+[1.349870] (NIDS_PKG) StdoutLine: {'line': b'copying NIDS_PKG/__init__.py -> /home/gmo-pop/Desktop/DistriLearn/build/NIDS_PKG/build/lib/NIDS_PKG\n'}
+[1.349979] (NIDS_PKG) StdoutLine: {'line': b'copying NIDS_PKG/ap_unified_ids_node.py -> /home/gmo-pop/Desktop/DistriLearn/build/NIDS_PKG/build/lib/NIDS_PKG\n'}
+[1.350317] (NIDS_PKG) StdoutLine: {'line': b'running install\n'}
+[1.350624] (NIDS_PKG) StderrLine: {'line': b'/home/gmo-pop/.local/lib/python3.10/site-packages/setuptools/_distutils/cmd.py:66: SetuptoolsDeprecationWarning: setup.py install is deprecated.\n'}
+[1.350749] (NIDS_PKG) StderrLine: {'line': b'!!\n'}
+[1.350856] (NIDS_PKG) StderrLine: {'line': b'\n'}
+[1.350951] (NIDS_PKG) StderrLine: {'line': b'        ********************************************************************************\n'}
+[1.351037] (NIDS_PKG) StderrLine: {'line': b'        Please avoid running ``setup.py`` directly.\n'}
+[1.351121] (NIDS_PKG) StderrLine: {'line': b'        Instead, use pypa/build, pypa/installer or other\n'}
+[1.351206] (NIDS_PKG) StderrLine: {'line': b'        standards-based tools.\n'}
+[1.351289] (NIDS_PKG) StderrLine: {'line': b'\n'}
+[1.351374] (NIDS_PKG) StderrLine: {'line': b'        See https://blog.ganssle.io/articles/2021/10/setup-py-deprecated.html for details.\n'}
+[1.351459] (NIDS_PKG) StderrLine: {'line': b'        ********************************************************************************\n'}
+[1.351543] (NIDS_PKG) StderrLine: {'line': b'\n'}
+[1.351626] (NIDS_PKG) StderrLine: {'line': b'!!\n'}
+[1.351710] (NIDS_PKG) StderrLine: {'line': b'  self.initialize_options()\n'}
+[1.354397] (NIDS_PKG) StdoutLine: {'line': b'running install_lib\n'}
+[1.367193] (NIDS_PKG) StdoutLine: {'line': b'creating /home/gmo-pop/Desktop/DistriLearn/install/NIDS_PKG/lib/python3.10/site-packages/NIDS_PKG\n'}
+[1.367365] (NIDS_PKG) StdoutLine: {'line': b'copying /home/gmo-pop/Desktop/DistriLearn/build/NIDS_PKG/build/lib/NIDS_PKG/blackListAPI.py -> /home/gmo-pop/Desktop/DistriLearn/install/NIDS_PKG/lib/python3.10/site-packages/NIDS_PKG\n'}
+[1.367491] (NIDS_PKG) StdoutLine: {'line': b'copying /home/gmo-pop/Desktop/DistriLearn/build/NIDS_PKG/build/lib/NIDS_PKG/kappa_coeff.py -> /home/gmo-pop/Desktop/DistriLearn/install/NIDS_PKG/lib/python3.10/site-packages/NIDS_PKG\n'}
+[1.367602] (NIDS_PKG) StdoutLine: {'line': b'copying /home/gmo-pop/Desktop/DistriLearn/build/NIDS_PKG/build/lib/NIDS_PKG/master_node_script_node.py -> /home/gmo-pop/Desktop/DistriLearn/install/NIDS_PKG/lib/python3.10/site-packages/NIDS_PKG\n'}
+[1.367708] (NIDS_PKG) StdoutLine: {'line': b'copying /home/gmo-pop/Desktop/DistriLearn/build/NIDS_PKG/build/lib/NIDS_PKG/blackListAPI_backup.py -> /home/gmo-pop/Desktop/DistriLearn/install/NIDS_PKG/lib/python3.10/site-packages/NIDS_PKG\n'}
+[1.367815] (NIDS_PKG) StdoutLine: {'line': b'copying /home/gmo-pop/Desktop/DistriLearn/build/NIDS_PKG/build/lib/NIDS_PKG/kappa_calcs.py -> /home/gmo-pop/Desktop/DistriLearn/install/NIDS_PKG/lib/python3.10/site-packages/NIDS_PKG\n'}
+[1.367933] (NIDS_PKG) StdoutLine: {'line': b'copying /home/gmo-pop/Desktop/DistriLearn/build/NIDS_PKG/build/lib/NIDS_PKG/__init__.py -> /home/gmo-pop/Desktop/DistriLearn/install/NIDS_PKG/lib/python3.10/site-packages/NIDS_PKG\n'}
+[1.368045] (NIDS_PKG) StdoutLine: {'line': b'copying /home/gmo-pop/Desktop/DistriLearn/build/NIDS_PKG/build/lib/NIDS_PKG/ap_unified_ids_node.py -> /home/gmo-pop/Desktop/DistriLearn/install/NIDS_PKG/lib/python3.10/site-packages/NIDS_PKG\n'}
+[1.368346] (NIDS_PKG) StdoutLine: {'line': b'byte-compiling /home/gmo-pop/Desktop/DistriLearn/install/NIDS_PKG/lib/python3.10/site-packages/NIDS_PKG/blackListAPI.py to blackListAPI.cpython-310.pyc\n'}
+[1.369562] (NIDS_PKG) StdoutLine: {'line': b'byte-compiling /home/gmo-pop/Desktop/DistriLearn/install/NIDS_PKG/lib/python3.10/site-packages/NIDS_PKG/kappa_coeff.py to kappa_coeff.cpython-310.pyc\n'}
+[1.369761] (NIDS_PKG) StdoutLine: {'line': b'byte-compiling /home/gmo-pop/Desktop/DistriLearn/install/NIDS_PKG/lib/python3.10/site-packages/NIDS_PKG/master_node_script_node.py to master_node_script_node.cpython-310.pyc\n'}
+[1.370139] (NIDS_PKG) StderrLine: {'line': b'Sorry: TabError: inconsistent use of tabs and spaces in indentation (master_node_script_node.py, line 116)\n'}
+[1.370279] (NIDS_PKG) StdoutLine: {'line': b'byte-compiling /home/gmo-pop/Desktop/DistriLearn/install/NIDS_PKG/lib/python3.10/site-packages/NIDS_PKG/blackListAPI_backup.py to blackListAPI_backup.cpython-310.pyc\n'}
+[1.371053] (NIDS_PKG) StdoutLine: {'line': b'byte-compiling /home/gmo-pop/Desktop/DistriLearn/install/NIDS_PKG/lib/python3.10/site-packages/NIDS_PKG/kappa_calcs.py to kappa_calcs.cpython-310.pyc\n'}
+[1.371286] (NIDS_PKG) StdoutLine: {'line': b'byte-compiling /home/gmo-pop/Desktop/DistriLearn/install/NIDS_PKG/lib/python3.10/site-packages/NIDS_PKG/__init__.py to __init__.cpython-310.pyc\n'}
+[1.371410] (NIDS_PKG) StdoutLine: {'line': b'byte-compiling /home/gmo-pop/Desktop/DistriLearn/install/NIDS_PKG/lib/python3.10/site-packages/NIDS_PKG/ap_unified_ids_node.py to ap_unified_ids_node.cpython-310.pyc\n'}
+[1.371688] (NIDS_PKG) StderrLine: {'line': b'Sorry: TabError: inconsistent use of tabs and spaces in indentation (ap_unified_ids_node.py, line 131)\n'}
+[1.371831] (NIDS_PKG) StdoutLine: {'line': b'running install_data\n'}
+[1.383998] (NIDS_PKG) StdoutLine: {'line': b'copying resource/NIDS_PKG -> /home/gmo-pop/Desktop/DistriLearn/install/NIDS_PKG/share/ament_index/resource_index/packages\n'}
+[1.384172] (NIDS_PKG) StdoutLine: {'line': b'copying package.xml -> /home/gmo-pop/Desktop/DistriLearn/install/NIDS_PKG/share/NIDS_PKG\n'}
+[1.384306] (NIDS_PKG) StdoutLine: {'line': b'running install_egg_info\n'}
+[1.397272] (NIDS_PKG) StdoutLine: {'line': b'Copying ../../build/NIDS_PKG/NIDS_PKG.egg-info to /home/gmo-pop/Desktop/DistriLearn/install/NIDS_PKG/lib/python3.10/site-packages/NIDS_PKG-0.0.0-py3.10.egg-info\n'}
+[1.398061] (NIDS_PKG) StdoutLine: {'line': b'running install_scripts\n'}
+[1.401940] (-) TimerEvent: {}
+[1.502154] (-) TimerEvent: {}
+[1.511426] (NIDS_PKG) StdoutLine: {'line': b'Installing ap_node script to /home/gmo-pop/Desktop/DistriLearn/install/NIDS_PKG/lib/NIDS_PKG\n'}
+[1.511598] (NIDS_PKG) StdoutLine: {'line': b'Installing master_node script to /home/gmo-pop/Desktop/DistriLearn/install/NIDS_PKG/lib/NIDS_PKG\n'}
+[1.511927] (NIDS_PKG) StdoutLine: {'line': b"writing list of installed files to '/home/gmo-pop/Desktop/DistriLearn/build/NIDS_PKG/install.log'\n"}
+[1.528107] (NIDS_PKG) CommandEnded: {'returncode': 0}
+[1.602452] (-) TimerEvent: {}
+[1.660413] (NIDS_PKG) JobEnded: {'identifier': 'NIDS_PKG', 'rc': 0}
+[1.661133] (-) EventReactorShutdown: {}

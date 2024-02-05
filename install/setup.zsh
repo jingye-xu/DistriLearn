@@ -9,7 +9,7 @@
 _colcon_prefix_chain_zsh_source_script() {
   if [ -f "$1" ]; then
     if [ -n "$COLCON_TRACE" ]; then
-      echo ". \"$1\""
+      echo "# . \"$1\""
     fi
     . "$1"
   else
@@ -19,7 +19,7 @@ _colcon_prefix_chain_zsh_source_script() {
 
 # source chained prefixes
 # setting COLCON_CURRENT_PREFIX avoids determining the prefix in the sourced script
-COLCON_CURRENT_PREFIX="/opt/ros/foxy"
+COLCON_CURRENT_PREFIX="/opt/ros/iron"
 _colcon_prefix_chain_zsh_source_script "$COLCON_CURRENT_PREFIX/local_setup.zsh"
 
 # source this prefix
