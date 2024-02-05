@@ -50,6 +50,7 @@ from NIDS_PKG.blackListAPI import *
 from rclpy.node import Node
 from std_msgs.msg import String
 
+import datetime
 
 import warnings
 warnings.filterwarnings(action='ignore')
@@ -108,11 +109,6 @@ feature_description_dict = {
 	FTP_COMMAND_RET_CODE:'FTP client command return code'
 
 }
-
-
-
-
-
 
 
 import AnomalyAutoEncoder
@@ -382,14 +378,15 @@ class AccessPointNode(Node):
 		# 	self.inference_topic_publisher.publish(tmp)
 		# Temporary
 
+		chroot_dir = os.environ['CHROOT_DIR']
 		# capture data from network
 		# parameters: tmp_file_name, listen_interface, chroot_dir
-		self.sniff_traffic(self.capture_name, self.net_interface, f"/mnt/debby")
+		self.sniff_traffic(self.capture_name, self.net_interface, chroot_dir)
 
 		# turn it into flow
-		self.create_fows(self.capture_name, f"/mnt/debby")
+		self.create_fows(self.capture_name, chroot_dir)
 
-		df = self.read_traffic_cap(f"/mnt/debby/flow_outs/")
+		df = self.read_traffic_cap(f"{chroot_dir}/flow_outs/")
 		
 
 		inf_report = self.make_inference_confidence(df)
@@ -413,10 +410,10 @@ class AccessPointNode(Node):
 
 			if attack_encoding == 0:
 				print(f'\033[32;1m[{dt_string}]\033[0m {mac_addr} - \033[32;1mNormal.\033[0m')
-				self.blacklist_obj = BlackListComposition(mac_addr, attack_encoding, MODEL_NAME, MODEL_TYPE, self.ap_hash, None)
+				#self.blacklist_obj = BlackListComposition(mac_addr, attack_encoding, MODEL_NAME, MODEL_TYPE, self.ap_hash, None)
 			else:
 				print(f'\033[31;1m[{dt_string}]\033[0m {mac_addr} - \033[31;1mSuspicious.\033[0m')
-				self.blacklist_obj = BlackListComposition(mac_addr, attack_encoding, MODEL_NAME, MODEL_TYPE, self.ap_hash, None)
+				#self.blacklist_obj = BlackListComposition(mac_addr, attack_encoding, MODEL_NAME, MODEL_TYPE, self.ap_hash, None)
 			
 
 	# Prepare string report for the master. 
@@ -594,7 +591,7 @@ class AccessPointNode(Node):
 
 		# chroot can do amazing things - you can even execute binaries with full arguments! example: chroot ./debbytest/ /bin/cat /etc/os-release
 		#	chroot <fs location> <binary> <args>
-		os.system(f"chroot {chroot_dir} nprobe -T \"%IPV4_SRC_ADDR %IPV4_DST_ADDR %L4_SRC_PORT %L4_DST_PORT %PROTOCOL %L7_PROTO %IN_BYTES %OUT_BYTES %IN_PKTS %OUT_PKTS %FLOW_DURATION_MILLISECONDS %TCP_FLAGS %CLIENT_TCP_FLAGS %SERVER_TCP_FLAGS %DURATION_IN %DURATION_OUT %MIN_TTL %MAX_TTL %LONGEST_FLOW_PKT %SHORTEST_FLOW_PKT %MIN_IP_PKT_LEN %MAX_IP_PKT_LEN %SRC_TO_DST_SECOND_BYTES %DST_TO_SRC_SECOND_BYTES %RETRANSMITTED_IN_BYTES %RETRANSMITTED_IN_PKTS %RETRANSMITTED_OUT_BYTES %RETRANSMITTED_OUT_PKTS %SRC_TO_DST_AVG_THROUGHPUT %DST_TO_SRC_AVG_THROUGHPUT %NUM_PKTS_UP_TO_128_BYTES %NUM_PKTS_128_TO_256_BYTES %NUM_PKTS_256_TO_512_BYTES %NUM_PKTS_512_TO_1024_BYTES %NUM_PKTS_1024_TO_1514_BYTES %TCP_WIN_MAX_IN %TCP_WIN_MAX_OUT %ICMP_TYPE %ICMP_IPV4_TYPE %DNS_QUERY_ID %DNS_QUERY_TYPE %DNS_TTL_ANSWER %FTP_COMMAND_RET_CODE\" --pcap-file-list /tmp/pktname.txt --dump-path '{chroot_dir}/flow_outs' --dump-format t --csv-separator , --dont-drop-privileges")
+		os.system(f"chroot {chroot_dir} nprobe -T \"%IPV4_SRC_ADDR %IPV4_DST_ADDR %L4_SRC_PORT %L4_DST_PORT %PROTOCOL %L7_PROTO %IN_BYTES %OUT_BYTES %IN_PKTS %OUT_PKTS %FLOW_DURATION_MILLISECONDS %TCP_FLAGS %CLIENT_TCP_FLAGS %SERVER_TCP_FLAGS %DURATION_IN %DURATION_OUT %MIN_TTL %MAX_TTL %LONGEST_FLOW_PKT %SHORTEST_FLOW_PKT %MIN_IP_PKT_LEN %MAX_IP_PKT_LEN %SRC_TO_DST_SECOND_BYTES %DST_TO_SRC_SECOND_BYTES %RETRANSMITTED_IN_BYTES %RETRANSMITTED_IN_PKTS %RETRANSMITTED_OUT_BYTES %RETRANSMITTED_OUT_PKTS %SRC_TO_DST_AVG_THROUGHPUT %DST_TO_SRC_AVG_THROUGHPUT %NUM_PKTS_UP_TO_128_BYTES %NUM_PKTS_128_TO_256_BYTES %NUM_PKTS_256_TO_512_BYTES %NUM_PKTS_512_TO_1024_BYTES %NUM_PKTS_1024_TO_1514_BYTES %TCP_WIN_MAX_IN %TCP_WIN_MAX_OUT %ICMP_TYPE %ICMP_IPV4_TYPE %DNS_QUERY_ID %DNS_QUERY_TYPE %DNS_TTL_ANSWER %FTP_COMMAND_RET_CODE\" --pcap-file-list /tmp/pktname.txt --dump-path 'flow_outs' --dump-format t --csv-separator , --dont-drop-privileges")
 
 
 	# Read flows from nprobes outputs.
@@ -603,6 +600,14 @@ class AccessPointNode(Node):
 		# Format of flow outputs example: 2024/01/30/14/45-39.flows.temp
 		# The format is then: year/month/day/hour/minute-n.file_ext
 		# Realistically there should only be one at a time anyway, so that should be okay. 
+		curr_dat = datetime.datetime.now()
+		os_sep = os.path.sep
+		mo = "0" + str(curr_dat.month) if curr_dat.month < 10 else str(curr_dat.month)
+		da = "0" + str(curr_dat.day) if curr_dat.day < 10 else str(curr_dat.day)
+		times = time.strftime('%H:%M').split(':')
+		hr = times[0]
+
+		direct = f"{curr_dat.year}{os_sep}{mo}{os_sep}{da}{os_sep}{hr}{os_sep}"
 
 		# Obtain all fragmented flows for traffic capture
 		flows = os.listdir(base_flow_dir)
@@ -638,6 +643,10 @@ def main(args=None):
 
 	if 'DOMAIN_ID' not in os.environ:
 		print('Missing environment variable for domain id. Set it using \'export DOMAIN_ID=domain\' (e.g., power_plant)')
+		sys.exit(0)
+
+	if 'CHROOT_DIR' not in os.environ:
+		print('Missing environment variable for chroot dir. Set it using \'export CHROOT_DIR=domain\' (e.g., /mnt/debby)')
 		sys.exit(0)
 
 	interface_selector, int_choice_msg = make_pretty_interfaces()
