@@ -40,7 +40,7 @@ import base64
 
 
 from uuid import getnode as get_mac
-from nfstream import NFPlugin, NFStreamer
+#from nfstream import NFPlugin, NFStreamer
 #from scapy.all import *
 
 from NIDS_PKG.kappa_coeff import *
@@ -64,54 +64,54 @@ sys.path.append(f'{os.environ["HOME"]}/ids_work')
 feature_description_dict = {
 	
 
-	IPV4_SRC_ADDR:'IPv4 source address',
-	IPV4_DST_ADDR:'IPv4 destination address',
-	L4_SRC_PORT:'IPv4 source port number',
-	L4_DST_PORT:'IPv4 destination port number',
-	PROTOCOL:'IP protocol identifier byte',
-	L7_PROTO:'Layer 7 protocol (numeric)',
-	IN_BYTES:'Incoming number of bytes',
-	OUT_BYTES:'Outgoing number of bytes',
-	IN_PKTS:'Incoming number of packets',
-	OUT_PKTS:'Outgoing number of packets',
-	FLOW_DURATION_MILLISECONDS:'Flow duration in milliseconds',
-	TCP_FLAGS:'Cumulative of all TCP flags',
-	CLIENT_TCP_FLAGS:'Cumulative of all client TCP flags',
-	SERVER_TCP_FLAGS:'Cumulative of all server TCP flags',
-	DURATION_IN:'Client to Server stream duration milliseconds',
-	DURATION_OUT:'Client to Server stream duration milliseconds',
-	MIN_TTL:'Min flow time to live',
-	MAX_TTL:'Max flow time to live',
-	LONGEST_FLOW_PKT:'Longest packet (bytes) of the flow',
-	SHORTEST_FLOW_PKT:'Shortest packet (bytes) of the flow',
-	MIN_IP_PKT_LEN:'Length of the smallest flow IP packet observed',
-	MAX_IP_PKT_LEN:'Length of the largest flow IP packet observed',
-	SRC_TO_DST_SECOND_BYTES:'Source to destination Bytes per second',
-	DST_TO_SRC_SECOND_BYTES:'Destination to source Bytes per second',
-	RETRANSMITTED_IN_BYTES:'Source to destination retransmitted TCP flow bytes',
-	RETRANSMITTED_IN_PKTS:'Source to destination retransmitted TCP flow packets',
-	RETRANSMITTED_OUT_BYTES:'Destination to source retransmitted TCP flow bytes',
-	RETRANSMITTED_OUT_PKTS:'Destination to source retransmitted TCP flow packets',
-	SRC_TO_DST_AVG_THROUGHPUT:'Source to destination average throughput',
-	DST_TO_SRC_AVG_THROUGHPUT:'Destination to source average throughput',
-	NUM_PKTS_UP_TO_128_BYTES:'Packets whose IP size <= 128',
-	NUM_PKTS_128_TO_256_BYTES:'Packets whose IP size > 128 and <= 256',
-	NUM_PKTS_256_TO_512_BYTES:'Packets whose IP size > 256 and <= 512',
-	NUM_PKTS_512_TO_1024_BYTES:'Packets whose IP size > 512 and <= 1024',
-	NUM_PKTS_1024_TO_1514_BYTES:'Packets whose IP size >= 1024 and <= 1514',
-	TCP_WIN_MAX_IN:'Source to destination max TCP Window',
-	TCP_WIN_MAX_OUT:'Destination to source max TCP Window',
-	ICMP_TYPE:'ICMP Type * 256 + ICMP code',
-	ICMP_IPV4_TYPE:'ICMP Type',
-	DNS_QUERY_ID:'DNS query transaction Id',
-	DNS_QUERY_TYPE:'DNS query type',
-	DNS_TTL_ANSWER:'Time to live of the first A record (if any)',
-	FTP_COMMAND_RET_CODE:'FTP client command return code'
+	'IPV4_SRC_ADDR':'IPv4 source address',
+	'IPV4_DST_ADDR':'IPv4 destination address',
+	'L4_SRC_PORT':'IPv4 source port number',
+	'L4_DST_PORT':'IPv4 destination port number',
+	'PROTOCOL':'IP protocol identifier byte',
+	'L7_PROTO':'Layer 7 protocol (numeric)',
+	'IN_BYTES':'Incoming number of bytes',
+	'OUT_BYTES':'Outgoing number of bytes',
+	'IN_PKTS':'Incoming number of packets',
+	'OUT_PKTS':'Outgoing number of packets',
+	'FLOW_DURATION_MILLISECONDS':'Flow duration in milliseconds',
+	'TCP_FLAGS':'Cumulative of all TCP flags',
+	'CLIENT_TCP_FLAGS':'Cumulative of all client TCP flags',
+	'SERVER_TCP_FLAGS':'Cumulative of all server TCP flags',
+	'DURATION_IN':'Client to Server stream duration milliseconds',
+	'DURATION_OUT':'Client to Server stream duration milliseconds',
+	'MIN_TTL':'Min flow time to live',
+	'MAX_TTL':'Max flow time to live',
+	'LONGEST_FLOW_PKT':'Longest packet (bytes) of the flow',
+	'SHORTEST_FLOW_PKT':'Shortest packet (bytes) of the flow',
+	'MIN_IP_PKT_LEN':'Length of the smallest flow IP packet observed',
+	'MAX_IP_PKT_LEN':'Length of the largest flow IP packet observed',
+	'SRC_TO_DST_SECOND_BYTES':'Source to destination Bytes per second',
+	'DST_TO_SRC_SECOND_BYTES':'Destination to source Bytes per second',
+	'RETRANSMITTED_IN_BYTES':'Source to destination retransmitted TCP flow bytes',
+	'RETRANSMITTED_IN_PKTS':'Source to destination retransmitted TCP flow packets',
+	'RETRANSMITTED_OUT_BYTES':'Destination to source retransmitted TCP flow bytes',
+	'RETRANSMITTED_OUT_PKTS':'Destination to source retransmitted TCP flow packets',
+	'SRC_TO_DST_AVG_THROUGHPUT':'Source to destination average throughput',
+	'DST_TO_SRC_AVG_THROUGHPUT':'Destination to source average throughput',
+	'NUM_PKTS_UP_TO_128_BYTES':'Packets whose IP size <= 128',
+	'NUM_PKTS_128_TO_256_BYTES':'Packets whose IP size > 128 and <= 256',
+	'NUM_PKTS_256_TO_512_BYTES':'Packets whose IP size > 256 and <= 512',
+	'NUM_PKTS_512_TO_1024_BYTES':'Packets whose IP size > 512 and <= 1024',
+	'NUM_PKTS_1024_TO_1514_BYTES':'Packets whose IP size >= 1024 and <= 1514',
+	'TCP_WIN_MAX_IN':'Source to destination max TCP Window',
+	'TCP_WIN_MAX_OUT':'Destination to source max TCP Window',
+	'ICMP_TYPE':'ICMP Type * 256 + ICMP code',
+	'ICMP_IPV4_TYPE':'ICMP Type',
+	'DNS_QUERY_ID':'DNS query transaction Id',
+	'DNS_QUERY_TYPE':'DNS query type',
+	'DNS_TTL_ANSWER':'Time to live of the first A record (if any)',
+	'FTP_COMMAND_RET_CODE':'FTP client command return code'
 
 }
 
 
-import AnomalyAutoEncoder
+from anomalydetectionarchitecture import AnomalyAutoEncoder
 
 class AnomalyDetector:
 
@@ -178,7 +178,7 @@ class AccessPointNode(Node):
 		self.dataframe = pd.DataFrame()
 
 		self.ap_mac = get_mac()
-		self.ap_hash = self.hash_value('ap' + str(datetime.now()) + str(self.ap_mac))
+		self.ap_hash = self.hash_value('ap' + str(datetime.datetime.now()) + str(self.ap_mac))
 
 		# Access points will subscribe to dispatch topic for masters
 		self.dispatch_subscriber = self.create_subscription(String, 'master_node_dispatch', self.master_dispatch_listener, self.INCOMING_MSG_QUEUE_SIZE)
@@ -580,7 +580,7 @@ class AccessPointNode(Node):
 		# Temporary sniffing workaround for VM environment:
 		#     os.system(f"sshpass -p \"{pfsense_pass}\" ssh root@{pfsense_wan_ip} \"tcpdump -i {lan_nic} -c {MAX_PACKET_SNIFF} -w - \'not (src {ssh_client_ip} and port {ssh_client_port}) and not (src {pfsense_lan_ip} and dst {ssh_client_ip} and port 22)\'\" 2>/dev/null > {tmp_file_name}")
 		os.system(f"echo \"{tmp_file_name}\" > {chroot_dir}/tmp/pktname.txt") # for use in nprobe's system.
-		os.system(f"tcpdump --immediate-mode -p -i {listen_interface} -c {self.MAX_PACKET_SNIFF} -w - 2>/dev/null > {chroot_dir}/{tmp_file_name}")
+		os.system(f"tcpdump --immediate-mode -p -i {listen_interface} -c {self.MAX_PACKET_SNIFF} -w - 2>/dev/null > {chroot_dir}/{tmp_file_name}.pcap")
 
 
 	# Create flows using nprobe's reading of pcap capability
@@ -591,7 +591,7 @@ class AccessPointNode(Node):
 
 		# chroot can do amazing things - you can even execute binaries with full arguments! example: chroot ./debbytest/ /bin/cat /etc/os-release
 		#	chroot <fs location> <binary> <args>
-		os.system(f"chroot {chroot_dir} nprobe -T \"%IPV4_SRC_ADDR %IPV4_DST_ADDR %L4_SRC_PORT %L4_DST_PORT %PROTOCOL %L7_PROTO %IN_BYTES %OUT_BYTES %IN_PKTS %OUT_PKTS %FLOW_DURATION_MILLISECONDS %TCP_FLAGS %CLIENT_TCP_FLAGS %SERVER_TCP_FLAGS %DURATION_IN %DURATION_OUT %MIN_TTL %MAX_TTL %LONGEST_FLOW_PKT %SHORTEST_FLOW_PKT %MIN_IP_PKT_LEN %MAX_IP_PKT_LEN %SRC_TO_DST_SECOND_BYTES %DST_TO_SRC_SECOND_BYTES %RETRANSMITTED_IN_BYTES %RETRANSMITTED_IN_PKTS %RETRANSMITTED_OUT_BYTES %RETRANSMITTED_OUT_PKTS %SRC_TO_DST_AVG_THROUGHPUT %DST_TO_SRC_AVG_THROUGHPUT %NUM_PKTS_UP_TO_128_BYTES %NUM_PKTS_128_TO_256_BYTES %NUM_PKTS_256_TO_512_BYTES %NUM_PKTS_512_TO_1024_BYTES %NUM_PKTS_1024_TO_1514_BYTES %TCP_WIN_MAX_IN %TCP_WIN_MAX_OUT %ICMP_TYPE %ICMP_IPV4_TYPE %DNS_QUERY_ID %DNS_QUERY_TYPE %DNS_TTL_ANSWER %FTP_COMMAND_RET_CODE\" --pcap-file-list /tmp/pktname.txt --dump-path 'flow_outs' --dump-format t --csv-separator , --dont-drop-privileges")
+		# os.system(f"echo '' | sudo -S chroot {chroot_dir} nprobe -T \"%IPV4_SRC_ADDR %IPV4_DST_ADDR %L4_SRC_PORT %L4_DST_PORT %PROTOCOL %L7_PROTO %IN_BYTES %OUT_BYTES %IN_PKTS %OUT_PKTS %FLOW_DURATION_MILLISECONDS %TCP_FLAGS %CLIENT_TCP_FLAGS %SERVER_TCP_FLAGS %DURATION_IN %DURATION_OUT %MIN_TTL %MAX_TTL %LONGEST_FLOW_PKT %SHORTEST_FLOW_PKT %MIN_IP_PKT_LEN %MAX_IP_PKT_LEN %SRC_TO_DST_SECOND_BYTES %DST_TO_SRC_SECOND_BYTES %RETRANSMITTED_IN_BYTES %RETRANSMITTED_IN_PKTS %RETRANSMITTED_OUT_BYTES %RETRANSMITTED_OUT_PKTS %SRC_TO_DST_AVG_THROUGHPUT %DST_TO_SRC_AVG_THROUGHPUT %NUM_PKTS_UP_TO_128_BYTES %NUM_PKTS_128_TO_256_BYTES %NUM_PKTS_256_TO_512_BYTES %NUM_PKTS_512_TO_1024_BYTES %NUM_PKTS_1024_TO_1514_BYTES %TCP_WIN_MAX_IN %TCP_WIN_MAX_OUT %ICMP_TYPE %ICMP_IPV4_TYPE %DNS_QUERY_ID %DNS_QUERY_TYPE %DNS_TTL_ANSWER %FTP_COMMAND_RET_CODE\" --pcap-file-list /tmp/pktname.txt --dump-path 'flow_outs' --dump-format t --csv-separator , --dont-drop-privileges")
 
 
 	# Read flows from nprobes outputs.
