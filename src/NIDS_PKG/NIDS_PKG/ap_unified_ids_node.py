@@ -577,10 +577,18 @@ class AccessPointNode(Node):
 
 
 	def sniff_traffic(self, tmp_file_name, listen_interface, chroot_dir):
+
+		usr = os.getuid()
+
 		# Temporary sniffing workaround for VM environment:
 		#     os.system(f"sshpass -p \"{pfsense_pass}\" ssh root@{pfsense_wan_ip} \"tcpdump -i {lan_nic} -c {MAX_PACKET_SNIFF} -w - \'not (src {ssh_client_ip} and port {ssh_client_port}) and not (src {pfsense_lan_ip} and dst {ssh_client_ip} and port 22)\'\" 2>/dev/null > {tmp_file_name}")
-		os.system(f"echo \"{tmp_file_name}\" > {chroot_dir}/tmp/pktname.txt") # for use in nprobe's system.
-		os.system(f"tcpdump --immediate-mode -p -i {listen_interface} -c {self.MAX_PACKET_SNIFF} -w - 2>/dev/null > {chroot_dir}/{tmp_file_name}.pcap")
+		os.system(f"echo \"{tmp_file_name}.pcap\" > {chroot_dir}/tmp/pktname.txt") # for use in nprobe's system.
+		add_sudo = ""
+		if usr != 0:
+			add_sudo = f"echo '{os.environ['ROOT_PASS']}' | sudo -S "
+			print(add_sudo)
+
+		os.system(f"{add_sudo}tcpdump --immediate-mode -p -i {listen_interface} -c {self.MAX_PACKET_SNIFF} -w - 2>/dev/null > {chroot_dir}/{tmp_file_name}.pcap")
 
 
 	# Create flows using nprobe's reading of pcap capability
@@ -589,13 +597,20 @@ class AccessPointNode(Node):
 		if not os.path.exists(f'{chroot_dir}/flow_outs'):
 			os.system(f'mkdir {chroot_dir}/flow_outs')
 
+		usr = os.getuid()
+		add_sudo = ""
+		if usr != 0:
+			add_sudo = f"echo '{os.environ['ROOT_PASS']}' | sudo -S "
+
 		# chroot can do amazing things - you can even execute binaries with full arguments! example: chroot ./debbytest/ /bin/cat /etc/os-release
 		#	chroot <fs location> <binary> <args>
-		# os.system(f"echo '' | sudo -S chroot {chroot_dir} nprobe -T \"%IPV4_SRC_ADDR %IPV4_DST_ADDR %L4_SRC_PORT %L4_DST_PORT %PROTOCOL %L7_PROTO %IN_BYTES %OUT_BYTES %IN_PKTS %OUT_PKTS %FLOW_DURATION_MILLISECONDS %TCP_FLAGS %CLIENT_TCP_FLAGS %SERVER_TCP_FLAGS %DURATION_IN %DURATION_OUT %MIN_TTL %MAX_TTL %LONGEST_FLOW_PKT %SHORTEST_FLOW_PKT %MIN_IP_PKT_LEN %MAX_IP_PKT_LEN %SRC_TO_DST_SECOND_BYTES %DST_TO_SRC_SECOND_BYTES %RETRANSMITTED_IN_BYTES %RETRANSMITTED_IN_PKTS %RETRANSMITTED_OUT_BYTES %RETRANSMITTED_OUT_PKTS %SRC_TO_DST_AVG_THROUGHPUT %DST_TO_SRC_AVG_THROUGHPUT %NUM_PKTS_UP_TO_128_BYTES %NUM_PKTS_128_TO_256_BYTES %NUM_PKTS_256_TO_512_BYTES %NUM_PKTS_512_TO_1024_BYTES %NUM_PKTS_1024_TO_1514_BYTES %TCP_WIN_MAX_IN %TCP_WIN_MAX_OUT %ICMP_TYPE %ICMP_IPV4_TYPE %DNS_QUERY_ID %DNS_QUERY_TYPE %DNS_TTL_ANSWER %FTP_COMMAND_RET_CODE\" --pcap-file-list /tmp/pktname.txt --dump-path 'flow_outs' --dump-format t --csv-separator , --dont-drop-privileges")
+		os.system(f"{add_sudo}chroot {chroot_dir} nprobe -T \"%IPV4_SRC_ADDR %IPV4_DST_ADDR %L4_SRC_PORT %L4_DST_PORT %PROTOCOL %L7_PROTO %IN_BYTES %OUT_BYTES %IN_PKTS %OUT_PKTS %FLOW_DURATION_MILLISECONDS %TCP_FLAGS %CLIENT_TCP_FLAGS %SERVER_TCP_FLAGS %DURATION_IN %DURATION_OUT %MIN_TTL %MAX_TTL %LONGEST_FLOW_PKT %SHORTEST_FLOW_PKT %MIN_IP_PKT_LEN %MAX_IP_PKT_LEN %SRC_TO_DST_SECOND_BYTES %DST_TO_SRC_SECOND_BYTES %RETRANSMITTED_IN_BYTES %RETRANSMITTED_IN_PKTS %RETRANSMITTED_OUT_BYTES %RETRANSMITTED_OUT_PKTS %SRC_TO_DST_AVG_THROUGHPUT %DST_TO_SRC_AVG_THROUGHPUT %NUM_PKTS_UP_TO_128_BYTES %NUM_PKTS_128_TO_256_BYTES %NUM_PKTS_256_TO_512_BYTES %NUM_PKTS_512_TO_1024_BYTES %NUM_PKTS_1024_TO_1514_BYTES %TCP_WIN_MAX_IN %TCP_WIN_MAX_OUT %ICMP_TYPE %ICMP_IPV4_TYPE %DNS_QUERY_ID %DNS_QUERY_TYPE %DNS_TTL_ANSWER %FTP_COMMAND_RET_CODE\" --pcap-file-list /tmp/pktname.txt --dump-path 'flow_outs' --dump-format t --csv-separator , --dont-drop-privileges")
 
 
 	# Read flows from nprobes outputs.
 	def read_traffic_cap(self, base_flow_dir):
+
+		header = ["IPV4_SRC_ADDR", "IPV4_DST_ADDR", "L4_SRC_PORT", "L4_DST_PORT", "PROTOCOL", "L7_PROTO", "IN_BYTES", "OUT_BYTES", "IN_PKTS", "OUT_PKTS", "FLOW_DURATION_MILLISECONDS", "TCP_FLAGS", "CLIENT_TCP_FLAGS", "SERVER_TCP_FLAGS", "DURATION_IN", "DURATION_OUT", "MIN_TTL", "MAX_TTL", "LONGEST_FLOW_PKT", "SHORTEST_FLOW_PKT", "MIN_IP_PKT_LEN", "MAX_IP_PKT_LEN", "SRC_TO_DST_SECOND_BYTES", "DST_TO_SRC_SECOND_BYTES", "RETRANSMITTED_IN_BYTES", "RETRANSMITTED_IN_PKTS", "RETRANSMITTED_OUT_BYTES", "RETRANSMITTED_OUT_PKTS", "SRC_TO_DST_AVG_THROUGHPUT", "DST_TO_SRC_AVG_THROUGHPUT", "NUM_PKTS_UP_TO_128_BYTES", "NUM_PKTS_128_TO_256_BYTES", "NUM_PKTS_256_TO_512_BYTES", "NUM_PKTS_512_TO_1024_BYTES", "NUM_PKTS_1024_TO_1514_BYTES", "TCP_WIN_MAX_IN", "TCP_WIN_MAX_OUT", "ICMP_TYPE", "ICMP_IPV4_TYPE", "DNS_QUERY_ID", "DNS_QUERY_TYPE", "DNS_TTL_ANSWER", "FTP_COMMAND_RET_CODE"]
 		
 		# Format of flow outputs example: 2024/01/30/14/45-39.flows.temp
 		# The format is then: year/month/day/hour/minute-n.file_ext
@@ -607,22 +622,35 @@ class AccessPointNode(Node):
 		times = time.strftime('%H:%M').split(':')
 		hr = times[0]
 
-		direct = f"{curr_dat.year}{os_sep}{mo}{os_sep}{da}{os_sep}{hr}{os_sep}"
+		direct = f"{base_flow_dir}{curr_dat.year}{os_sep}{mo}{os_sep}{da}{os_sep}"
 
 		# Obtain all fragmented flows for traffic capture
-		flows = os.listdir(direct)
+		flows_sub = os.listdir(direct)
+		sub_dir = direct + flows_sub[-1]
+
+		flows = os.listdir(sub_dir)
+		flows = list(map(lambda x : sub_dir + os.path.sep + x, flows))
 
 		# Read first csv to create dataframe
-		df = pd.read_csv(flows[0], low_memory = False)
+		df = pd.read_csv(flows[0], encoding='utf8', engine='python')
 
 		# Concatenate all following csv files to the dataframe
 		for csv in flows[1:]:
-			sub_df = pd.read_csv(csv, low_memory = False)
+			print(csv)
+			sub_df = pd.read_csv(csv, encoding='utf8', engine='python')
 			df = pd.concat([df, sub_df])
 
 		# Delete old flows and finally return dataframe
-		flow_dir = f"{base_flow_dir}{os_sep}{curr_dat.year}{os_sep}"
-		os.rmdir(flow_dir)
+		flow_dir = f"{base_flow_dir}{curr_dat.year}{os_sep}"
+		usr = os.getuid()
+		add_sudo = ""
+		if usr != 0:
+			add_sudo = f"echo '{os.environ['ROOT_PASS']}' | sudo -S "
+
+		# chroot can do amazing things - you can even execute binaries with full arguments! example: chroot ./debbytest/ /bin/cat /etc/os-release
+		#	chroot <fs location> <binary> <args>
+		os.system(f"{add_sudo}rm -rf {flow_dir}")
+
 
 		return df
 
