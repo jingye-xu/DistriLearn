@@ -610,7 +610,7 @@ class AccessPointNode(Node):
 		direct = f"{curr_dat.year}{os_sep}{mo}{os_sep}{da}{os_sep}{hr}{os_sep}"
 
 		# Obtain all fragmented flows for traffic capture
-		flows = os.listdir(base_flow_dir)
+		flows = os.listdir(direct)
 
 		# Read first csv to create dataframe
 		df = pd.read_csv(flows[0], low_memory = False)
@@ -621,6 +621,7 @@ class AccessPointNode(Node):
 			df = pd.concat([df, sub_df])
 
 		# Delete old flows and finally return dataframe
+		flow_dir = f"{base_flow_dir}{os_sep}{curr_dat.year}{os_sep}"
 		os.rmdir(flow_dir)
 
 		return df
