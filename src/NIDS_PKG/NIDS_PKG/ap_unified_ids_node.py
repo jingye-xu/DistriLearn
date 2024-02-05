@@ -125,7 +125,7 @@ class AnomalyDetector:
 		#self.anomaly_autoencoder.load_weights(path)
 
 
-	def predict(flow_data, threshold=(0.024148070913876787 - 0.01)):
+	def predict(self, flow_data, threshold=(0.024148070913876787 - 0.01)):
 		# remove features that cause overfit.
 		# For the huge dataset: flow_data.drop(columns=['IPV4_SRC_ADDR', 'IPV4_DST_ADDR', 'Label', 'Attack'], inplace=True)
 
