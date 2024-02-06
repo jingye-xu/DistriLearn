@@ -130,8 +130,10 @@ class AnomalyDetector:
 		
 		
 		flow_data2 = flow_data.drop(columns=['IPV4_SRC_ADDR', 'IPV4_DST_ADDR', 'L4_DST_PORT', 'IN_DST_MAC'])
-		flow_data2 = flow_data2.astype('float64')
-		
+		try:
+			flow_data2 = flow_data2.astype('float64')
+		except:
+			return
 		infs = []
 		# Let's take the flow and iterate to reconstruct each flow. 
 		for row in range(len(flow_data2)):
@@ -188,10 +190,10 @@ class AccessPointNode(Node):
 		timer_period = 0.2 # seconds for "refresh rate" of publisher callbacks
 
 		self.COLLAB_MODE = False # False means local AP operation
-		self.MAX_PACKET_SNIFF = 150
+		self.MAX_PACKET_SNIFF = 20
 
-		self.MALICIOUS_THRESHOLD = 5 # Number of reports for malicious before sending to master or reporting.
-		self.BENIGN_THRESHOLD = 5 # Number of report for bengin before sending to master or reporting. 
+		self.MALICIOUS_THRESHOLD = 1 # Number of reports for malicious before sending to master or reporting.
+		self.BENIGN_THRESHOLD = 1 # Number of report for bengin before sending to master or reporting. 
 		self.MAX_BUFFER_SIZE = 10 # maximum size for buffer with respect to memory
 		self.OUTGOING_MSG_QUEUE_SIZE = 10 # Max queue size for outgoing messages to subsribers
 		self.INCOMING_MSG_QUEUE_SIZE = 10 # Max queue size for incoming messages to subscribers/from publishers
@@ -468,8 +470,8 @@ class AccessPointNode(Node):
 		df.drop(columns=bert_cols_to_drop, inplace=True)
 		
 		new_df = pd.DataFrame()
-		new_df['Flow'] = df.apply(lambda row: ' '.join([f"{feature_description_dict[col]} is {int(val)}." for col, val in zip(df, row)]), axis=1)
-		print(new_df)
+		new_df['Flow'] = df.apply(lambda row: ' '.join([f"{feature_description_dict[col]} is {float(val)}." for col, val in zip(df, row)]), axis=1)
+		
 		# TODO: Prepare BERT inputs (sentence of flow data). 
 		bert_inp = ''
 		for _, row in new_df.iterrows():
@@ -641,7 +643,7 @@ class AccessPointNode(Node):
 
 		# chroot can do amazing things - you can even execute binaries with full arguments! example: chroot ./debbytest/ /bin/cat /etc/os-release
 		#	chroot <fs location> <binary> <args>
-		os.system(f"{add_sudo}chroot {chroot_dir} nprobe -T \"%IN_SRC_MAC %IN_DST_MAC %IPV4_SRC_ADDR %IPV4_DST_ADDR %L4_SRC_PORT %L4_DST_PORT %PROTOCOL %L7_PROTO %IN_BYTES %OUT_BYTES %IN_PKTS %OUT_PKTS %FLOW_DURATION_MILLISECONDS %TCP_FLAGS %CLIENT_TCP_FLAGS %SERVER_TCP_FLAGS %DURATION_IN %DURATION_OUT %MIN_TTL %MAX_TTL %LONGEST_FLOW_PKT %SHORTEST_FLOW_PKT %MIN_IP_PKT_LEN %MAX_IP_PKT_LEN %SRC_TO_DST_SECOND_BYTES %DST_TO_SRC_SECOND_BYTES %RETRANSMITTED_IN_BYTES %RETRANSMITTED_IN_PKTS %RETRANSMITTED_OUT_BYTES %RETRANSMITTED_OUT_PKTS %SRC_TO_DST_AVG_THROUGHPUT %DST_TO_SRC_AVG_THROUGHPUT %NUM_PKTS_UP_TO_128_BYTES %NUM_PKTS_128_TO_256_BYTES %NUM_PKTS_256_TO_512_BYTES %NUM_PKTS_512_TO_1024_BYTES %NUM_PKTS_1024_TO_1514_BYTES %TCP_WIN_MAX_IN %TCP_WIN_MAX_OUT %ICMP_TYPE %ICMP_IPV4_TYPE %DNS_QUERY_ID %DNS_QUERY_TYPE %DNS_TTL_ANSWER %FTP_COMMAND_RET_CODE\" --pcap-file-list /tmp/pktname.txt --dump-path 'flow_outs' --dump-format t --csv-separator , --dont-drop-privileges > /dev/null 2>&1")
+		os.system(f"{add_sudo}chroot {chroot_dir} nprobe --collector-passthrough -T \"%IN_SRC_MAC %IN_DST_MAC %IPV4_SRC_ADDR %IPV4_DST_ADDR %L4_SRC_PORT %L4_DST_PORT %PROTOCOL %L7_PROTO %IN_BYTES %OUT_BYTES %IN_PKTS %OUT_PKTS %FLOW_DURATION_MILLISECONDS %TCP_FLAGS %CLIENT_TCP_FLAGS %SERVER_TCP_FLAGS %DURATION_IN %DURATION_OUT %MIN_TTL %MAX_TTL %LONGEST_FLOW_PKT %SHORTEST_FLOW_PKT %MIN_IP_PKT_LEN %MAX_IP_PKT_LEN %SRC_TO_DST_SECOND_BYTES %DST_TO_SRC_SECOND_BYTES %RETRANSMITTED_IN_BYTES %RETRANSMITTED_IN_PKTS %RETRANSMITTED_OUT_BYTES %RETRANSMITTED_OUT_PKTS %SRC_TO_DST_AVG_THROUGHPUT %DST_TO_SRC_AVG_THROUGHPUT %NUM_PKTS_UP_TO_128_BYTES %NUM_PKTS_128_TO_256_BYTES %NUM_PKTS_256_TO_512_BYTES %NUM_PKTS_512_TO_1024_BYTES %NUM_PKTS_1024_TO_1514_BYTES %TCP_WIN_MAX_IN %TCP_WIN_MAX_OUT %ICMP_TYPE %ICMP_IPV4_TYPE %DNS_QUERY_ID %DNS_QUERY_TYPE %DNS_TTL_ANSWER %FTP_COMMAND_RET_CODE\" --pcap-file-list /tmp/pktname.txt --dump-path 'flow_outs' --dump-format t --csv-separator , --dont-drop-privileges > /dev/null 2>&1")
 
 
 	# Read flows from nprobes outputs.

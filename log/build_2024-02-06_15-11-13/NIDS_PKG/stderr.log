@@ -1,0 +1,7 @@
+/home/gmo-pop/.local/lib/python3.10/site-packages/setuptools/dist.py:717: UserWarning: Usage of dash-separated 'script-dir' will not be supported in future versions. Please use the underscore name 'script_dir' instead
+  warnings.warn(
+  File "/home/gmo-pop/Desktop/DistriLearn/install/NIDS_PKG/lib/python3.10/site-packages/NIDS_PKG/master_node_script_node.py", line 180
+    				entry = [{flow": row['flow'], "confidence" : row['confidence'], "pred": row['pred'], "inference_sum": row['inference_sum'], "total_inferences": row['total_inferences']}]
+    				                                                                                                                                             ^
+SyntaxError: unterminated string literal (detected at line 180)
+

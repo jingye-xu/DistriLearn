@@ -53,25 +53,7 @@ class MasterNode(Node):
 
 		timer_period = 0.2  # seconds
 
-		self.master_mac = get_mac()
-		self.master_hash = self.hash_value('master' + str(datetime.datetime.now()) + str(self.master_mac))
-		self.init_time = datetime.datetime.now()
-
-		# Master node publishes to master node dispatch topic
-		self.master_dispatch_publisher = self.create_publisher(String, 'master_node_dispatch', 10)
-		self.timer = self.create_timer(timer_period, self.master_dispatch_callback)
-
-		# Master node subcribes to IDS service topic
-		self.ids_service_subscriber = self.create_subscription(String, 'ids_service', self.ids_service_listener, 10)
-
-		self.OUTGOING_MSG_QUEUE_SIZE = 10 # Max queue size for outgoing messages to subsribers
-		self.INCOMING_MSG_QUEUE_SIZE = 10 # Max queue size for incoming messages to subscribers/from publishers
-
-		# Blacklist subsystem (TODO: Place in own node) -> everyone in the complex/enterprise will publish and subscribe to it. 
-		self.blacklist_publisher = self.create_publisher(String, 'blacklist_subsytem', self.OUTGOING_MSG_QUEUE_SIZE)
-		_ = self.create_timer(timer_period, self.blacklist_pub_callback)
-
-		self.blacklist_subscriber = self.create_subscription(String, 'blacklist_subsytem', self.blacklist_sub_callback, self.INCOMING_MSG_QUEUE_SIZE)
+		
 
 		self.BENIGN_THRESHOLD = 150
 		self.MALICIOUS_THRESHOLD = 150
@@ -95,7 +77,7 @@ class MasterNode(Node):
 		[ # 985 and 512 or 768
 			pa.field("vector", pa.list_(pa.float64(), list_size=768)),
 			pa.field("flow", pa.string()),
-			pa.field("confidence", pa.int32()),
+			pa.field("confidence", pa.float64()),
 			pa.field("pred", pa.int32()),
 			pa.field("inference_sum", pa.int32()),
 			pa.field("total_inferences", pa.int32()),
@@ -116,7 +98,7 @@ class MasterNode(Node):
 				prediction = row['Label']
 				confidence = 1.0 # because it is ground truth, it has highest weight (i.e., 100%).
 				embedding = self.model.obtain_embedding_for(flow)
-				entry = [{"vector":embed1, "flow": flow, "confidence" : confidence, "pred":int(prediction), "inference_sum": int(prediction), "total_inferences": 1}]
+				entry = [{"vector":embedding, "flow": flow, "confidence" : confidence, "pred":int(prediction), "inference_sum": int(prediction), "total_inferences": 1}]
 				self.tbl.add(entry)
 			print('Done initializing database')
 		except Exception as e:
@@ -125,6 +107,26 @@ class MasterNode(Node):
 			# Already exists, so just move on.
 			self.tbl = db.open_table("flow_table")
 			print('Done loading database.')
+
+		self.master_mac = get_mac()
+		self.master_hash = self.hash_value('master' + str(datetime.datetime.now()) + str(self.master_mac))
+		self.init_time = datetime.datetime.now()
+
+		# Master node publishes to master node dispatch topic
+		self.master_dispatch_publisher = self.create_publisher(String, 'master_node_dispatch', 10)
+		self.timer = self.create_timer(timer_period, self.master_dispatch_callback)
+
+		# Master node subcribes to IDS service topic
+		self.ids_service_subscriber = self.create_subscription(String, 'ids_service', self.ids_service_listener, 10)
+
+		self.OUTGOING_MSG_QUEUE_SIZE = 10 # Max queue size for outgoing messages to subsribers
+		self.INCOMING_MSG_QUEUE_SIZE = 10 # Max queue size for incoming messages to subscribers/from publishers
+
+		# Blacklist subsystem (TODO: Place in own node) -> everyone in the complex/enterprise will publish and subscribe to it. 
+		self.blacklist_publisher = self.create_publisher(String, 'blacklist_subsytem', self.OUTGOING_MSG_QUEUE_SIZE)
+		_ = self.create_timer(timer_period, self.blacklist_pub_callback)
+
+		self.blacklist_subscriber = self.create_subscription(String, 'blacklist_subsytem', self.blacklist_sub_callback, self.INCOMING_MSG_QUEUE_SIZE)
 
 		
 
@@ -152,27 +154,33 @@ class MasterNode(Node):
 		inf_mac = inf_tokens[1]
 		inf_encoding = int(inf_tokens[2]) # type
 		inf_cnt = float(inf_tokens[3]) # confidence.
-		print(f'Debug: {inf_tokens[4:]}')
+		
 		# Select top k from the database
 		# Make sure to iterate after index 4 because that's ALL the flows. 
 		for flow_s in inf_tokens[4:]:
 			if flow_s == '$' or flow_s == '':
 				continue
+			
 			# Predict on flow sentence and get confidence.
 			pred, confidence = self.model.infer(flow_s)
+			confidence = float(confidence.data[0])
 			# Obtain embedding for the flow sentence
 			embedding = self.model.obtain_embedding_for(flow_s)
-			search_results = self.tbl.search(embedding).metric("cosine").limit(10)
-
+			search_results = self.tbl.search(embedding).metric("cosine").limit(10).to_df()
+			
 			# Now we have k similar flows with the values "vector" "flow" "confidence" "pred" "inference_sum" "total_inferences"
 			# The confidence updates via the inference sum, and its total inferences. 
 			search_results['total_inferences'] = search_results['total_inferences'].apply(lambda x : x + 1)
+
 			for _, row in search_results.iterrows():
 				# For each flow in the k that we pulled out, update its inference sum and confidence with the new values.
 				row['inference_sum'] += pred
 				row['confidence'] = (row['inference_sum'] / row['total_inferences'])
+
+				entry = [{"vector": row['vector'], "flow": row['flow'], "confidence" : row['confidence'], "pred": row['pred'], "inference_sum": row['inference_sum'], "total_inferences": row['total_inferences']}]
+				
 				# Now, update the table with this new flow metadata (flows are usually always unique). We can turn the dataframe back into its original state of a dictionary.
-				self.tbl.update(where=f"flow = {row['flow']}", values=[row.to_dict()])
+				self.tbl.update(where=f"flow = \"{row['flow']}\"", values={'inference_sum' : int(row['inference_sum']), 'confidence' : float(row['confidence'])})
 
 			# Once we iterate through everything, now we need to take all values under consideration. 
 			# Use all the confidences we have for the autoencoder, the BERT model, and the k flows to make a determination for this source address. 
@@ -191,19 +199,20 @@ class MasterNode(Node):
 			
 			# Since we are using sigmoid, we can use a threshold to say whether it is 0 or 1.
 			# I will just maximize what I can and say anything above 0.6 (60%) is malicious, and anything below 0.6 is benign (<= 50%)
+			gmtime = time.gmtime()
+			dt_string = "%s:%s:%s" % (gmtime.tm_hour, gmtime.tm_min, gmtime.tm_sec)
 			report = 0
 			if cumulative_sum < 0.6:
 				report = 0
 				print(f'\033[32;1m[{dt_string}]\033[0m {inf_mac} - \033[32;1mNormal.\033[0m')
-			if report_cnt >= 0.6:
+			if cumulative_sum >= 0.6:
 				report = 1
 				print(f'\033[31;1m[{dt_string}]\033[0m {inf_mac} - \033[31;1mSuspicious.\033[0m')
 
 			# Insert data back into the database 
 			entry = [{"vector": embedding, "flow": flow_s, "confidence" : confidence, "pred":report, "inference_sum": report, "total_inferences": 1}]
 			self.tbl.add(entry)
-			# Input this entry back into the table.
-			self.tbl.add(entry)
+	
 
 
 
