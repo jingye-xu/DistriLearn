@@ -1,0 +1,24 @@
+[0.806s] Invoking command in '/home/gmo-pop/Desktop/DistriLearn/src/NIDS_PKG': PYTHONPATH=/home/gmo-pop/Desktop/DistriLearn/build/NIDS_PKG/prefix_override:/home/gmo-pop/Desktop/DistriLearn/install/NIDS_PKG/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 setup.py egg_info --egg-base ../../build/NIDS_PKG build --build-base /home/gmo-pop/Desktop/DistriLearn/build/NIDS_PKG/build install --record /home/gmo-pop/Desktop/DistriLearn/build/NIDS_PKG/install.log --install-scripts $base/lib/NIDS_PKG --single-version-externally-managed
+[1.033s] /home/gmo-pop/.local/lib/python3.10/site-packages/setuptools/dist.py:717: UserWarning: Usage of dash-separated 'script-dir' will not be supported in future versions. Please use the underscore name 'script_dir' instead
+[1.033s]   warnings.warn(
+[1.052s] running egg_info
+[1.052s] writing ../../build/NIDS_PKG/NIDS_PKG.egg-info/PKG-INFO
+[1.053s] writing dependency_links to ../../build/NIDS_PKG/NIDS_PKG.egg-info/dependency_links.txt
+[1.053s] writing entry points to ../../build/NIDS_PKG/NIDS_PKG.egg-info/entry_points.txt
+[1.053s] writing requirements to ../../build/NIDS_PKG/NIDS_PKG.egg-info/requires.txt
+[1.053s] writing top-level names to ../../build/NIDS_PKG/NIDS_PKG.egg-info/top_level.txt
+[1.054s] reading manifest file '../../build/NIDS_PKG/NIDS_PKG.egg-info/SOURCES.txt'
+[1.055s] writing manifest file '../../build/NIDS_PKG/NIDS_PKG.egg-info/SOURCES.txt'
+[1.055s] running build
+[1.055s] running build_py
+[1.055s] running install
+[1.055s] running install_lib
+[1.056s] running install_data
+[1.057s] running install_egg_info
+[1.058s] removing '/home/gmo-pop/Desktop/DistriLearn/install/NIDS_PKG/lib/python3.10/site-packages/NIDS_PKG-0.0.0-py3.10.egg-info' (and everything under it)
+[1.058s] Copying ../../build/NIDS_PKG/NIDS_PKG.egg-info to /home/gmo-pop/Desktop/DistriLearn/install/NIDS_PKG/lib/python3.10/site-packages/NIDS_PKG-0.0.0-py3.10.egg-info
+[1.059s] running install_scripts
+[1.072s] Installing ap_node script to /home/gmo-pop/Desktop/DistriLearn/install/NIDS_PKG/lib/NIDS_PKG
+[1.073s] Installing master_node script to /home/gmo-pop/Desktop/DistriLearn/install/NIDS_PKG/lib/NIDS_PKG
+[1.073s] writing list of installed files to '/home/gmo-pop/Desktop/DistriLearn/build/NIDS_PKG/install.log'
+[1.089s] Invoked command in '/home/gmo-pop/Desktop/DistriLearn/src/NIDS_PKG' returned '0': PYTHONPATH=/home/gmo-pop/Desktop/DistriLearn/build/NIDS_PKG/prefix_override:/home/gmo-pop/Desktop/DistriLearn/install/NIDS_PKG/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 setup.py egg_info --egg-base ../../build/NIDS_PKG build --build-base /home/gmo-pop/Desktop/DistriLearn/build/NIDS_PKG/build install --record /home/gmo-pop/Desktop/DistriLearn/build/NIDS_PKG/install.log --install-scripts $base/lib/NIDS_PKG --single-version-externally-managed

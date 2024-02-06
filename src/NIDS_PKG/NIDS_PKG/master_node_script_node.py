@@ -96,7 +96,7 @@ class MasterNode(Node):
 			for index, row in data.iterrows():
 				flow = row['Flow']
 				prediction = row['Label']
-				confidence = 1.0 # because it is ground truth, it has highest weight (i.e., 100%).
+				confidence = 100 # because it is ground truth, it has highest weight (i.e., 100%).
 				embedding = self.model.obtain_embedding_for(flow)
 				entry = [{"vector":embedding, "flow": flow, "confidence" : confidence, "pred":int(prediction), "inference_sum": int(prediction), "total_inferences": 1}]
 				self.tbl.add(entry)
@@ -163,7 +163,8 @@ class MasterNode(Node):
 			
 			# Predict on flow sentence and get confidence.
 			pred, confidence = self.model.infer(flow_s)
-			confidence = float(confidence.data[0])
+			#print(pred)
+			#confidence = float(confidence.data[0])
 			# Obtain embedding for the flow sentence
 			embedding = self.model.obtain_embedding_for(flow_s)
 			search_results = self.tbl.search(embedding).metric("cosine").limit(10).to_df()
