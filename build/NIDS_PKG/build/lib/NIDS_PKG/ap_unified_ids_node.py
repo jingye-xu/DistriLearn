@@ -109,7 +109,7 @@ feature_description_dict = {
 	'FTP_COMMAND_RET_CODE':'FTP client command return code'
 
 }
-
+import tensorflow as tf
 
 from anomalydetectionarchitecture import AnomalyAutoEncoder
 
@@ -119,24 +119,46 @@ class AnomalyDetector:
 	def __init__(self, path=f'{os.environ["HOME"]}/ids_work/anomaly_autoencoder_weights4.ckpt', input_output_size=40):
 
 		self.anomaly_autoencoder = AnomalyAutoEncoder(input_output_size)
-		import tensorflow as tf
 		checkpoint = tf.train.Checkpoint(self.anomaly_autoencoder)
 		checkpoint.restore(path)
 		#self.anomaly_autoencoder.load_weights(path)
 
 
-	def predict(flow_data, threshold=(0.024148070913876787 - 0.01)):
+	def predict(self, flow_data, threshold=(0.024148070913876787)):
 		# remove features that cause overfit.
 		# For the huge dataset: flow_data.drop(columns=['IPV4_SRC_ADDR', 'IPV4_DST_ADDR', 'Label', 'Attack'], inplace=True)
+		
+		
+		flow_data2 = flow_data.drop(columns=['IPV4_SRC_ADDR', 'IPV4_DST_ADDR', 'L4_DST_PORT', 'IN_DST_MAC'])
+		flow_data2 = flow_data2.astype('float64')
+		
+		infs = []
+		# Let's take the flow and iterate to reconstruct each flow. 
+		for row in range(len(flow_data2)):
+			src_addr = flow_data.iloc[[row]]['IPV4_SRC_ADDR'].values[0]
 
-		flow_data.drop(columns=['IPV4_SRC_ADDR', 'IPV4_DST_ADDR', 'L4_DST_PORT'], inplace=True)
-		# Basic reconstruction
-		reconstruction = self.anomaly_autoencoder.predict(flow_data)
-		reconstruction_error = tf.keras.losses.mae(reconstruction, flow_data)
-		# If the reconstruction error is beyond our threshold, then it is malicious (not fitting within benign distribution.)
-		if reconstruction_error >= threshold:
-			return 1.0
-		return 0.0
+			# Group flow batches into a mini dataframe.
+			mini_df = flow_data.loc[flow_data['IPV4_SRC_ADDR'] == src_addr]
+			mini_df.drop(columns=['IPV4_SRC_ADDR', 'IPV4_DST_ADDR', 'L4_DST_PORT', 'IN_DST_MAC'], inplace=True)
+			mini_df = mini_df.astype('float64')
+			
+			try:
+				
+				reconstruction = self.anomaly_autoencoder.predict(mini_df)
+				reconstruction_error = tf.keras.losses.mae(reconstruction, mini_df)
+				preds = tf.math.greater_equal(reconstruction_error, threshold)
+				cnt_anom = tf.math.count_nonzero(preds)
+				cnt_anom = cnt_anom.numpy()
+				# Fix this.
+				inf = 0.0
+				if cnt_anom >= (len(mini_df) / 2):
+				 	inf = 1.0
+				infs.append(inf)
+			except Exception as e:
+				pass
+			
+
+		return infs
 
 
 
@@ -166,11 +188,11 @@ class AccessPointNode(Node):
 		timer_period = 0.2 # seconds for "refresh rate" of publisher callbacks
 
 		self.COLLAB_MODE = False # False means local AP operation
-		self.MAX_PACKET_SNIFF = 25
+		self.MAX_PACKET_SNIFF = 150
 
-		self.MALICIOUS_THRESHOLD = 150 # Number of reports for malicious before sending to master or reporting.
-		self.BENIGN_THRESHOLD = 150 # Number of report for bengin before sending to master or reporting. 
-		self.MAX_BUFFER_SIZE = 100 # maximum size for buffer with respect to memory
+		self.MALICIOUS_THRESHOLD = 5 # Number of reports for malicious before sending to master or reporting.
+		self.BENIGN_THRESHOLD = 5 # Number of report for bengin before sending to master or reporting. 
+		self.MAX_BUFFER_SIZE = 10 # maximum size for buffer with respect to memory
 		self.OUTGOING_MSG_QUEUE_SIZE = 10 # Max queue size for outgoing messages to subsribers
 		self.INCOMING_MSG_QUEUE_SIZE = 10 # Max queue size for incoming messages to subscribers/from publishers
 
@@ -221,6 +243,9 @@ class AccessPointNode(Node):
 
 		self.blacklist_obj =  None
 		self.defaultMsg = String()
+
+		self.header = ["IN_SRC_MAC", "IN_DST_MAC", "IPV4_SRC_ADDR", "IPV4_DST_ADDR", "L4_SRC_PORT", "L4_DST_PORT", "PROTOCOL", "L7_PROTO", "IN_BYTES", "OUT_BYTES", "IN_PKTS", "OUT_PKTS", "FLOW_DURATION_MILLISECONDS", "TCP_FLAGS", "CLIENT_TCP_FLAGS", "SERVER_TCP_FLAGS", "DURATION_IN", "DURATION_OUT", "MIN_TTL", "MAX_TTL", "LONGEST_FLOW_PKT", "SHORTEST_FLOW_PKT", "MIN_IP_PKT_LEN", "MAX_IP_PKT_LEN", "SRC_TO_DST_SECOND_BYTES", "DST_TO_SRC_SECOND_BYTES", "RETRANSMITTED_IN_BYTES", "RETRANSMITTED_IN_PKTS", "RETRANSMITTED_OUT_BYTES", "RETRANSMITTED_OUT_PKTS", "SRC_TO_DST_AVG_THROUGHPUT", "DST_TO_SRC_AVG_THROUGHPUT", "NUM_PKTS_UP_TO_128_BYTES", "NUM_PKTS_128_TO_256_BYTES", "NUM_PKTS_256_TO_512_BYTES", "NUM_PKTS_512_TO_1024_BYTES", "NUM_PKTS_1024_TO_1514_BYTES", "TCP_WIN_MAX_IN", "TCP_WIN_MAX_OUT", "ICMP_TYPE", "ICMP_IPV4_TYPE", "DNS_QUERY_ID", "DNS_QUERY_TYPE", "DNS_TTL_ANSWER", "FTP_COMMAND_RET_CODE"]
+
 
 
 
@@ -391,6 +416,12 @@ class AccessPointNode(Node):
 
 		df = self.read_traffic_cap(f"{chroot_dir}/flow_outs/")
 		
+		#Check if it has all needed values. Else, return.
+		
+		if len(df.columns) != 45:
+			return
+		df.columns = self.header
+		
 
 		inf_report = self.make_inference_confidence(df)
 		# publish if master node is available
@@ -454,12 +485,16 @@ class AccessPointNode(Node):
 		inf_res = None
 		# Pass input dataframe to the model, for all rows but only columns 1 through the end. The 0th column are the source mac addresses.
 		predictions = self.model.predict(df.iloc[:,1:])
-
+		#print(df)
 		# predictions do not contain mac, so we need to do a parallel iteration for dataframe
 		mac_index = 0
+	
+		df.reset_index(drop=True, inplace=True)
+		
 		while mac_index < len(df):
 			# df[column][row_num]
-			mac_addr = df[0][mac_index]
+			#mac_addr = df[0][mac_index]
+			mac_addr = df.iloc[[mac_index]]['IN_SRC_MAC'].values[0]
 			prediction = predictions[mac_index]
 
 			if mac_addr not in self.inference_buffer:
@@ -487,7 +522,6 @@ class AccessPointNode(Node):
 				confidence = inf_cnt / self.inference_buffer[mac_addr][2]
 				inf_res = (mac_addr, 1, confidence)
 				break
-
 			mac_index += 1
 
 
@@ -589,7 +623,6 @@ class AccessPointNode(Node):
 		add_sudo = ""
 		if usr != 0:
 			add_sudo = f"echo '{os.environ['ROOT_PASS']}' | sudo -S "
-			print(add_sudo)
 
 		os.system(f"{add_sudo}tcpdump --immediate-mode -p -i {listen_interface} -c {self.MAX_PACKET_SNIFF} -w - 2>/dev/null > {chroot_dir}/{tmp_file_name}.pcap")
 
@@ -607,12 +640,11 @@ class AccessPointNode(Node):
 
 		# chroot can do amazing things - you can even execute binaries with full arguments! example: chroot ./debbytest/ /bin/cat /etc/os-release
 		#	chroot <fs location> <binary> <args>
-		os.system(f"{add_sudo}chroot {chroot_dir} nprobe -T \"%IPV4_SRC_ADDR %IPV4_DST_ADDR %L4_SRC_PORT %L4_DST_PORT %PROTOCOL %L7_PROTO %IN_BYTES %OUT_BYTES %IN_PKTS %OUT_PKTS %FLOW_DURATION_MILLISECONDS %TCP_FLAGS %CLIENT_TCP_FLAGS %SERVER_TCP_FLAGS %DURATION_IN %DURATION_OUT %MIN_TTL %MAX_TTL %LONGEST_FLOW_PKT %SHORTEST_FLOW_PKT %MIN_IP_PKT_LEN %MAX_IP_PKT_LEN %SRC_TO_DST_SECOND_BYTES %DST_TO_SRC_SECOND_BYTES %RETRANSMITTED_IN_BYTES %RETRANSMITTED_IN_PKTS %RETRANSMITTED_OUT_BYTES %RETRANSMITTED_OUT_PKTS %SRC_TO_DST_AVG_THROUGHPUT %DST_TO_SRC_AVG_THROUGHPUT %NUM_PKTS_UP_TO_128_BYTES %NUM_PKTS_128_TO_256_BYTES %NUM_PKTS_256_TO_512_BYTES %NUM_PKTS_512_TO_1024_BYTES %NUM_PKTS_1024_TO_1514_BYTES %TCP_WIN_MAX_IN %TCP_WIN_MAX_OUT %ICMP_TYPE %ICMP_IPV4_TYPE %DNS_QUERY_ID %DNS_QUERY_TYPE %DNS_TTL_ANSWER %FTP_COMMAND_RET_CODE\" --pcap-file-list /tmp/pktname.txt --dump-path 'flow_outs' --dump-format t --csv-separator , --dont-drop-privileges")
+		os.system(f"{add_sudo}chroot {chroot_dir} nprobe -T \"%IN_SRC_MAC %IN_DST_MAC %IPV4_SRC_ADDR %IPV4_DST_ADDR %L4_SRC_PORT %L4_DST_PORT %PROTOCOL %L7_PROTO %IN_BYTES %OUT_BYTES %IN_PKTS %OUT_PKTS %FLOW_DURATION_MILLISECONDS %TCP_FLAGS %CLIENT_TCP_FLAGS %SERVER_TCP_FLAGS %DURATION_IN %DURATION_OUT %MIN_TTL %MAX_TTL %LONGEST_FLOW_PKT %SHORTEST_FLOW_PKT %MIN_IP_PKT_LEN %MAX_IP_PKT_LEN %SRC_TO_DST_SECOND_BYTES %DST_TO_SRC_SECOND_BYTES %RETRANSMITTED_IN_BYTES %RETRANSMITTED_IN_PKTS %RETRANSMITTED_OUT_BYTES %RETRANSMITTED_OUT_PKTS %SRC_TO_DST_AVG_THROUGHPUT %DST_TO_SRC_AVG_THROUGHPUT %NUM_PKTS_UP_TO_128_BYTES %NUM_PKTS_128_TO_256_BYTES %NUM_PKTS_256_TO_512_BYTES %NUM_PKTS_512_TO_1024_BYTES %NUM_PKTS_1024_TO_1514_BYTES %TCP_WIN_MAX_IN %TCP_WIN_MAX_OUT %ICMP_TYPE %ICMP_IPV4_TYPE %DNS_QUERY_ID %DNS_QUERY_TYPE %DNS_TTL_ANSWER %FTP_COMMAND_RET_CODE\" --pcap-file-list /tmp/pktname.txt --dump-path 'flow_outs' --dump-format t --csv-separator , --dont-drop-privileges > /dev/null 2>&1")
 
 
 	# Read flows from nprobes outputs.
 	def read_traffic_cap(self, base_flow_dir):
-
 		
 		# Format of flow outputs example: 2024/01/30/14/45-39.flows.temp
 		# The format is then: year/month/day/hour/minute-n.file_ext
@@ -624,22 +656,23 @@ class AccessPointNode(Node):
 		times = time.strftime('%H:%M').split(':')
 		hr = times[0]
 
-		direct = f"{base_flow_dir}{curr_dat.year}{os_sep}{mo}{os_sep}{da}{os_sep}"
+		direct = f"{base_flow_dir}{curr_dat.year}{os_sep}{mo}{os_sep}"
+		direct2 = os.listdir(direct)[-1]
+
 
 		# Obtain all fragmented flows for traffic capture
-		flows_sub = os.listdir(direct)
-		sub_dir = direct + flows_sub[-1]
+		flows_sub = os.listdir(direct + direct2)
+		sub_dir = direct + direct2 + os_sep + flows_sub[-1]
 
 		flows = os.listdir(sub_dir)
 		flows = list(map(lambda x : sub_dir + os.path.sep + x, flows))
 
 		# Read first csv to create dataframe
-		df = pd.read_csv(flows[0], encoding='utf8', engine='python')
+		df = pd.read_csv(flows[0], header=None, engine='python', on_bad_lines='skip')
 
 		# Concatenate all following csv files to the dataframe
 		for csv in flows[1:]:
-			print(csv)
-			sub_df = pd.read_csv(csv, encoding='utf8', engine='python')
+			sub_df = pd.read_csv(csv, header=None, engine='python', on_bad_lines='skip')
 			df = pd.concat([df, sub_df])
 
 		# Delete old flows and finally return dataframe
@@ -652,7 +685,7 @@ class AccessPointNode(Node):
 		# chroot can do amazing things - you can even execute binaries with full arguments! example: chroot ./debbytest/ /bin/cat /etc/os-release
 		#	chroot <fs location> <binary> <args>
 		os.system(f"{add_sudo}rm -rf {flow_dir}")
-
+		df = df.iloc[1: , :]
 
 		return df
 
