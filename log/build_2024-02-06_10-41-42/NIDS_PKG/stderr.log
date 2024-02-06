@@ -1,0 +1,7 @@
+/home/gmo-pop/.local/lib/python3.10/site-packages/setuptools/dist.py:717: UserWarning: Usage of dash-separated 'script-dir' will not be supported in future versions. Please use the underscore name 'script_dir' instead
+  warnings.warn(
+  File "/home/gmo-pop/Desktop/DistriLearn/install/NIDS_PKG/lib/python3.10/site-packages/NIDS_PKG/master_node_script_node.py", line 105
+    		self.model = BertFlowLM(hf_path=f'{os.environ["HOME"]}/bertbased_ids/BERT_FlowLM_PT/', hf_path_t=f"{os.environ["HOME"]}/bertbased_ids/bert-base-uncased")
+    		                                                                                                                ^^^^
+SyntaxError: f-string: unmatched '['
+

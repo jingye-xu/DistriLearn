@@ -27,6 +27,9 @@ from NIDS_PKG.blackListAPI import *
 import lancedb
 import pyarrow as pa
 
+# This is to accomadate packages on the home directory (i.e. the bert mdl)
+sys.path.append(f'{os.environ["HOME"]}/bertbased_ids')
+from BertFlowLM import BertFlowLM
 
 class BlackListComposition:
 
@@ -99,7 +102,7 @@ class MasterNode(Node):
 		])
 
 
-		self.model = BertFlowLM()
+		self.model = BertFlowLM(hf_path=f'{os.environ["HOME"]}/bertbased_ids/BERT_FlowLM_PT', hf_path_t=f'bert-base-uncased')
 		self.tbl = None
 		try:
 			# Create empty table using defined schema.
@@ -107,17 +110,21 @@ class MasterNode(Node):
 
 			# Initialize database with data from training. Create embeddings using model with confidences' metadata too. 
 			data = pd.read_csv(f'{os.environ["HOME"]}/NF-UNSW-NB15-v2.csvLabelWiseSentenceClass.csv',low_memory=False)
-			for index, row in data.itterows():
+			print('Initializing database...')
+			for index, row in data.iterrows():
 				flow = row['Flow']
 				prediction = row['Label']
 				confidence = 1.0 # because it is ground truth, it has highest weight (i.e., 100%).
 				embedding = self.model.obtain_embedding_for(flow)
 				entry = [{"vector":embed1, "flow": flow, "confidence" : confidence, "pred":int(prediction), "inference_sum": int(prediction), "total_inferences": 1}]
 				self.tbl.add(entry)
-			self.tbl.add(entry)
-		except:
+			print('Done initializing database')
+		except Exception as e:
+			print(e)
+			print('Loading database...')
 			# Already exists, so just move on.
 			self.tbl = db.open_table("flow_table")
+			print('Done loading database.')
 
 		
 
@@ -144,8 +151,8 @@ class MasterNode(Node):
 
 		inf_mac = inf_tokens[1]
 		inf_encoding = int(inf_tokens[2]) # type
-		inf_cnt = int(inf_tokens[3]) # confidence.
-
+		inf_cnt = float(inf_tokens[3]) # confidence.
+		print(f'Debug: {inf_tokens[4:]}')
 		# Select top k from the database
 		# Make sure to iterate after index 4 because that's ALL the flows. 
 		for flow_s in inf_tokens[4:]:
