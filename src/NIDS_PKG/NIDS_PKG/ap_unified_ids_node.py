@@ -39,6 +39,7 @@ import pickle
 import base64
 
 
+from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from uuid import getnode as get_mac
 #from nfstream import NFPlugin, NFStreamer
 #from scapy.all import *
@@ -116,48 +117,62 @@ from anomalydetectionarchitecture import AnomalyAutoEncoder
 class AnomalyDetector:
 
 	# We can assume defaults here. AE trained on input size of 40, and the path is the 4th checkpoint! :)
-	def __init__(self, path=f'{os.environ["HOME"]}/ids_work/anomaly_autoencoder_weights4.ckpt', input_output_size=40):
+	def __init__(self, path=f'{os.environ["HOME"]}/ids_work_2024/binary_classification_model.h5', input_output_size=40):
 
-		self.anomaly_autoencoder = AnomalyAutoEncoder(input_output_size)
-		checkpoint = tf.train.Checkpoint(self.anomaly_autoencoder)
-		checkpoint.restore(path)
-		#self.anomaly_autoencoder.load_weights(path)
+		# self.anomaly_autoencoder = AnomalyAutoEncoder(input_output_size)
+		# checkpoint = tf.train.Checkpoint(self.anomaly_autoencoder)
+		# checkpoint.restore(path)
+		# #self.anomaly_autoencoder.load_weights(path)
+
+		# Trained on 33541208 values.
+		# self.model = tf.keras.Sequential([
+	    # 	tf.keras.layers.Input(shape=(40,)),
+	    # 	tf.keras.layers.Dense(128, activation='relu'),
+	    # 	tf.keras.layers.Dropout(0.2),
+	    # 	tf.keras.layers.Dense(1, activation='sigmoid')  # Sigmoid activation for binary classification
+		# ])
+		loaded_model = tf.keras.models.load_model(path)
 
 
-	def predict(self, flow_data, threshold=(0.024148070913876787)):
+	def predict(self, flow_data, threshold=(0.024148070913876787 - 0.01)):
 		# remove features that cause overfit.
 		# For the huge dataset: flow_data.drop(columns=['IPV4_SRC_ADDR', 'IPV4_DST_ADDR', 'Label', 'Attack'], inplace=True)
-		
-		
 		flow_data2 = flow_data.drop(columns=['IPV4_SRC_ADDR', 'IPV4_DST_ADDR', 'L4_DST_PORT', 'IN_DST_MAC'])
 		try:
 			flow_data2 = flow_data2.astype('float64')
 		except:
 			return
-		infs = []
-		# Let's take the flow and iterate to reconstruct each flow. 
-		for row in range(len(flow_data2)):
-			src_addr = flow_data.iloc[[row]]['IPV4_SRC_ADDR'].values[0]
 
-			# Group flow batches into a mini dataframe.
-			mini_df = flow_data.loc[flow_data['IPV4_SRC_ADDR'] == src_addr]
-			mini_df.drop(columns=['IPV4_SRC_ADDR', 'IPV4_DST_ADDR', 'L4_DST_PORT', 'IN_DST_MAC'], inplace=True)
-			mini_df = mini_df.astype('float64')
+		results = self.model.predict(flow_data2)
+		infs = [0 if result[0] < 0.6 else 1 for result in results.flatten().tolist()]
+		print(infs)
+		# autoencoder nonsense.
+		# infs = []
+		# # Let's take the flow and iterate to reconstruct each flow. 
+		# for row in range(len(flow_data2)):
+		# 	src_addr = flow_data.iloc[[row]]['IPV4_SRC_ADDR'].values[0]
+
+		# 	# Group flow batches into a mini dataframe.
+		# 	# mini_df = flow_data.loc[flow_data['IPV4_SRC_ADDR'] == src_addr]
+		# 	# mini_df.drop(columns=['IPV4_SRC_ADDR', 'IPV4_DST_ADDR', 'L4_DST_PORT', 'IN_DST_MAC'], inplace=True)
+		# 	# mini_df = mini_df.astype('float64')
 			
-			try:
+		# 	# try:
 				
-				reconstruction = self.anomaly_autoencoder.predict(mini_df)
-				reconstruction_error = tf.keras.losses.mae(reconstruction, mini_df)
-				preds = tf.math.greater_equal(reconstruction_error, threshold)
-				cnt_anom = tf.math.count_nonzero(preds)
-				cnt_anom = cnt_anom.numpy()
-				# Fix this.
-				inf = 0.0
-				if cnt_anom >= (len(mini_df) / 2):
-				 	inf = 1.0
-				infs.append(inf)
-			except Exception as e:
-				pass
+		# 	# 	reconstruction = self.anomaly_autoencoder.predict(mini_df)
+		# 	# 	reconstruction_error = tf.keras.losses.mae(reconstruction, mini_df)
+		# 	# 	preds = tf.math.greater_equal(reconstruction_error, threshold)
+		# 	# 	cnt_anom = tf.math.count_nonzero(preds)
+		# 	# 	cnt_anom = cnt_anom.numpy()
+		# 	# 	# Fix this.
+		# 	# 	inf = 0.0
+		# 	# 	if cnt_anom >= (len(mini_df) / 2):
+		# 	# 	 	inf = 1.0
+		# 	# 	infs.append(inf)
+		# 	# except Exception as e:
+		# 	# 	pass
+			
+
 			
 
 		return infs
@@ -190,7 +205,7 @@ class AccessPointNode(Node):
 		timer_period = 0.2 # seconds for "refresh rate" of publisher callbacks
 
 		self.COLLAB_MODE = False # False means local AP operation
-		self.MAX_PACKET_SNIFF = 20
+		self.MAX_PACKET_SNIFF = 50
 
 		self.MALICIOUS_THRESHOLD = 1 # Number of reports for malicious before sending to master or reporting.
 		self.BENIGN_THRESHOLD = 1 # Number of report for bengin before sending to master or reporting. 

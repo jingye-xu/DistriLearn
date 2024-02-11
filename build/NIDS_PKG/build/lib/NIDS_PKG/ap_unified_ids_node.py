@@ -39,6 +39,7 @@ import pickle
 import base64
 
 
+from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from uuid import getnode as get_mac
 #from nfstream import NFPlugin, NFStreamer
 #from scapy.all import *
@@ -124,11 +125,11 @@ class AnomalyDetector:
 		#self.anomaly_autoencoder.load_weights(path)
 
 
-	def predict(self, flow_data, threshold=(0.024148070913876787)):
+	def predict(self, flow_data, threshold=(0.024148070913876787 - 0.01)):
 		# remove features that cause overfit.
 		# For the huge dataset: flow_data.drop(columns=['IPV4_SRC_ADDR', 'IPV4_DST_ADDR', 'Label', 'Attack'], inplace=True)
 		
-		
+		scaler = MinMaxScaler()
 		flow_data2 = flow_data.drop(columns=['IPV4_SRC_ADDR', 'IPV4_DST_ADDR', 'L4_DST_PORT', 'IN_DST_MAC'])
 		try:
 			flow_data2 = flow_data2.astype('float64')
@@ -140,24 +141,36 @@ class AnomalyDetector:
 			src_addr = flow_data.iloc[[row]]['IPV4_SRC_ADDR'].values[0]
 
 			# Group flow batches into a mini dataframe.
-			mini_df = flow_data.loc[flow_data['IPV4_SRC_ADDR'] == src_addr]
-			mini_df.drop(columns=['IPV4_SRC_ADDR', 'IPV4_DST_ADDR', 'L4_DST_PORT', 'IN_DST_MAC'], inplace=True)
-			mini_df = mini_df.astype('float64')
+			# mini_df = flow_data.loc[flow_data['IPV4_SRC_ADDR'] == src_addr]
+			# mini_df.drop(columns=['IPV4_SRC_ADDR', 'IPV4_DST_ADDR', 'L4_DST_PORT', 'IN_DST_MAC'], inplace=True)
+			# mini_df = mini_df.astype('float64')
 			
-			try:
+			# try:
 				
-				reconstruction = self.anomaly_autoencoder.predict(mini_df)
-				reconstruction_error = tf.keras.losses.mae(reconstruction, mini_df)
-				preds = tf.math.greater_equal(reconstruction_error, threshold)
-				cnt_anom = tf.math.count_nonzero(preds)
-				cnt_anom = cnt_anom.numpy()
-				# Fix this.
-				inf = 0.0
-				if cnt_anom >= (len(mini_df) / 2):
-				 	inf = 1.0
-				infs.append(inf)
-			except Exception as e:
-				pass
+			# 	reconstruction = self.anomaly_autoencoder.predict(mini_df)
+			# 	reconstruction_error = tf.keras.losses.mae(reconstruction, mini_df)
+			# 	preds = tf.math.greater_equal(reconstruction_error, threshold)
+			# 	cnt_anom = tf.math.count_nonzero(preds)
+			# 	cnt_anom = cnt_anom.numpy()
+			# 	# Fix this.
+			# 	inf = 0.0
+			# 	if cnt_anom >= (len(mini_df) / 2):
+			# 	 	inf = 1.0
+			# 	infs.append(inf)
+			# except Exception as e:
+			# 	pass
+			data_entry = scaler.fit_transform(flow_data2.iloc[[row]])
+			
+
+			reconstruction = self.anomaly_autoencoder.predict(data_entry)
+			reconstruction_error = tf.keras.losses.mae(reconstruction, data_entry)
+			#reconstruction_error = np.mean(np.square(data_entry - reconstruction))
+			inf = 0.0
+			print(reconstruction_error)
+			if reconstruction_error >= (threshold):
+				inf = 1.0
+			infs.append(inf)
+
 			
 
 		return infs
@@ -190,7 +203,7 @@ class AccessPointNode(Node):
 		timer_period = 0.2 # seconds for "refresh rate" of publisher callbacks
 
 		self.COLLAB_MODE = False # False means local AP operation
-		self.MAX_PACKET_SNIFF = 20
+		self.MAX_PACKET_SNIFF = 50
 
 		self.MALICIOUS_THRESHOLD = 1 # Number of reports for malicious before sending to master or reporting.
 		self.BENIGN_THRESHOLD = 1 # Number of report for bengin before sending to master or reporting. 
