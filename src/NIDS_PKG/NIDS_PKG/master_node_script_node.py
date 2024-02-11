@@ -96,7 +96,7 @@ class MasterNode(Node):
 			for index, row in data.iterrows():
 				flow = row['Flow']
 				prediction = row['Label']
-				confidence = 100 # because it is ground truth, it has highest weight (i.e., 100%).
+				confidence = 1.0 # because it is ground truth, it has highest weight (i.e., 100%).
 				embedding = self.model.obtain_embedding_for(flow)
 				entry = [{"vector":embedding, "flow": flow, "confidence" : confidence, "pred":int(prediction), "inference_sum": int(prediction), "total_inferences": 1}]
 				self.tbl.add(entry)

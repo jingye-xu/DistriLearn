@@ -143,9 +143,12 @@ class AnomalyDetector:
 		except:
 			return
 
-		scaler = MinMaxScaler()
-		X = scaler.fit_transform(flow_data2)
-		results = self.model.predict(X)
+		try:
+			scaler = MinMaxScaler()
+			X = scaler.fit_transform(flow_data2)
+			results = self.model.predict(X)
+		except:
+			return []
 		
 		# Extract confidence as a tuple (inference, confidence)
 		infs = [(0, 0.4) if result < 0.4 else (1, result) for result in results.flatten().tolist()]
