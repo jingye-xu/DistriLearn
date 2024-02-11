@@ -131,7 +131,7 @@ class AnomalyDetector:
 	    # 	tf.keras.layers.Dropout(0.2),
 	    # 	tf.keras.layers.Dense(1, activation='sigmoid')  # Sigmoid activation for binary classification
 		# ])
-		loaded_model = tf.keras.models.load_model(path)
+		self.model = tf.keras.models.load_model(path)
 
 
 	def predict(self, flow_data, threshold=(0.024148070913876787 - 0.01)):
@@ -143,9 +143,12 @@ class AnomalyDetector:
 		except:
 			return
 
-		results = self.model.predict(flow_data2)
-		infs = [0 if result[0] < 0.6 else 1 for result in results.flatten().tolist()]
-		print(infs)
+		scaler = MinMaxScaler()
+		X = scaler.fit_transform(flow_data2)
+		results = self.model.predict(X)
+		
+		infs = [0 if result < 0.4 else 1 for result in results.flatten().tolist()]
+		
 		# autoencoder nonsense.
 		# infs = []
 		# # Let's take the flow and iterate to reconstruct each flow. 
@@ -205,7 +208,7 @@ class AccessPointNode(Node):
 		timer_period = 0.2 # seconds for "refresh rate" of publisher callbacks
 
 		self.COLLAB_MODE = False # False means local AP operation
-		self.MAX_PACKET_SNIFF = 50
+		self.MAX_PACKET_SNIFF = 25
 
 		self.MALICIOUS_THRESHOLD = 1 # Number of reports for malicious before sending to master or reporting.
 		self.BENIGN_THRESHOLD = 1 # Number of report for bengin before sending to master or reporting. 
