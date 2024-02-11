@@ -1,0 +1,43 @@
+[0.000000] (-) TimerEvent: {}
+[0.000611] (NIDS_PKG) JobQueued: {'identifier': 'NIDS_PKG', 'dependencies': OrderedDict()}
+[0.000667] (NIDS_PKG) JobStarted: {'identifier': 'NIDS_PKG'}
+[0.100069] (-) TimerEvent: {}
+[0.200294] (-) TimerEvent: {}
+[0.300522] (-) TimerEvent: {}
+[0.401060] (-) TimerEvent: {}
+[0.501571] (-) TimerEvent: {}
+[0.601863] (-) TimerEvent: {}
+[0.702164] (-) TimerEvent: {}
+[0.788986] (NIDS_PKG) Command: {'cmd': ['/usr/bin/python3', 'setup.py', 'egg_info', '--egg-base', '../../build/NIDS_PKG', 'build', '--build-base', '/home/gmo-pop/Desktop/DistriLearn/build/NIDS_PKG/build', 'install', '--record', '/home/gmo-pop/Desktop/DistriLearn/build/NIDS_PKG/install.log', '--install-scripts', '$base/lib/NIDS_PKG', '--single-version-externally-managed'], 'cwd': '/home/gmo-pop/Desktop/DistriLearn/src/NIDS_PKG', 'env': {'LESSOPEN': '| /usr/bin/lesspipe %s', 'USER': 'gmo-pop', 'XDG_SESSION_TYPE': 'x11', 'SHLVL': '1', 'LD_LIBRARY_PATH': '/opt/ros/iron/opt/rviz_ogre_vendor/lib:/opt/ros/iron/lib/x86_64-linux-gnu:/opt/ros/iron/lib:/usr/local/cuda/lib64:/usr/local/cuda-11.2/lib64', 'HOME': '/home/gmo-pop', 'DESKTOP_SESSION': 'pop', 'ROS_PYTHON_VERSION': '3', 'GNOME_SHELL_SESSION_MODE': 'pop', 'GTK_MODULES': 'gail:atk-bridge', 'DOMAIN_ID': 'testing', 'SYSTEMD_EXEC_PID': '4054', 'DBUS_SESSION_BUS_ADDRESS': 'unix:path=/run/user/1000/bus', 'COLORTERM': 'truecolor', 'COLCON_PREFIX_PATH': '/home/gmo-pop/Desktop/DistriLearn/install', 'ROS_DISTRO': 'iron', 'GTK_IM_MODULE': 'ibus', 'LOGNAME': 'gmo-pop', '_': '/usr/bin/colcon', 'ROS_VERSION': '2', 'XDG_SESSION_CLASS': 'user', 'USERNAME': 'gmo-pop', 'TERM': 'xterm-256color', 'GNOME_DESKTOP_SESSION_ID': 'this-is-deprecated', 'WINDOWPATH': '2', 'PATH': '/opt/ros/iron/bin:/home/gmo-pop/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin', 'SESSION_MANAGER': 'local/gmo-pop-os:@/tmp/.ICE-unix/2421,unix/gmo-pop-os:/tmp/.ICE-unix/2421', 'XDG_MENU_PREFIX': 'gnome-', 'GNOME_TERMINAL_SCREEN': '/org/gnome/Terminal/screen/7aa3a6aa_c198_44e3_b5c6_71dae8faa275', 'XDG_RUNTIME_DIR': '/run/user/1000', 'DISPLAY': ':1', 'LANG': 'en_US.UTF-8', 'XDG_CURRENT_DESKTOP': 'pop:GNOME', 'XMODIFIERS': '@im=ibus', 'XDG_SESSION_DESKTOP': 'pop', 'XAUTHORITY': '/run/user/1000/gdm/Xauthority', 'LS_COLORS': 'rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.zst=01;31:*.tzst=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.wim=01;31:*.swm=01;31:*.dwm=01;31:*.esd=01;31:*.jpg=01;35:*.jpeg=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.webp=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.oga=00;36:*.opus=00;36:*.spx=00;36:*.xspf=00;36:', 'GNOME_TERMINAL_SERVICE': ':1.104', 'SSH_AGENT_LAUNCHER': 'gnome-keyring', 'SSH_AUTH_SOCK': '/run/user/1000/keyring/ssh', 'AMENT_PREFIX_PATH': '/home/gmo-pop/Desktop/DistriLearn/install/NIDS_PKG:/opt/ros/iron', 'SHELL': '/bin/bash', 'QT_ACCESSIBILITY': '1', 'GDMSESSION': 'pop', 'LESSCLOSE': '/usr/bin/lesspipe %s %s', 'GPG_AGENT_INFO': '/run/user/1000/gnupg/S.gpg-agent:0:1', 'ROS_AUTOMATIC_DISCOVERY_RANGE': 'SUBNET', 'QT_IM_MODULE': 'ibus', 'PWD': '/home/gmo-pop/Desktop/DistriLearn/build/NIDS_PKG', 'XDG_CONFIG_DIRS': '/etc/xdg/xdg-pop:/etc/xdg', 'XDG_DATA_DIRS': '/usr/share/pop:/usr/share/gnome:/home/gmo-pop/.local/share/flatpak/exports/share:/var/lib/flatpak/exports/share:/usr/local/share/:/usr/share/', 'PYTHONPATH': '/home/gmo-pop/Desktop/DistriLearn/build/NIDS_PKG/prefix_override:/home/gmo-pop/Desktop/DistriLearn/install/NIDS_PKG/lib/python3.10/site-packages:/home/gmo-pop/Desktop/DistriLearn/install/NIDS_PKG/lib/python3.10/site-packages:/opt/ros/iron/lib/python3.10/site-packages', 'COLCON': '1', 'VTE_VERSION': '6800'}, 'shell': False}
+[0.802237] (-) TimerEvent: {}
+[0.902467] (-) TimerEvent: {}
+[1.002722] (-) TimerEvent: {}
+[1.016370] (NIDS_PKG) StderrLine: {'line': b"/home/gmo-pop/.local/lib/python3.10/site-packages/setuptools/dist.py:717: UserWarning: Usage of dash-separated 'script-dir' will not be supported in future versions. Please use the underscore name 'script_dir' instead\n"}
+[1.016633] (NIDS_PKG) StderrLine: {'line': b'  warnings.warn(\n'}
+[1.036915] (NIDS_PKG) StdoutLine: {'line': b'running egg_info\n'}
+[1.037320] (NIDS_PKG) StdoutLine: {'line': b'writing ../../build/NIDS_PKG/NIDS_PKG.egg-info/PKG-INFO\n'}
+[1.037504] (NIDS_PKG) StdoutLine: {'line': b'writing dependency_links to ../../build/NIDS_PKG/NIDS_PKG.egg-info/dependency_links.txt\n'}
+[1.037618] (NIDS_PKG) StdoutLine: {'line': b'writing entry points to ../../build/NIDS_PKG/NIDS_PKG.egg-info/entry_points.txt\n'}
+[1.037729] (NIDS_PKG) StdoutLine: {'line': b'writing requirements to ../../build/NIDS_PKG/NIDS_PKG.egg-info/requires.txt\n'}
+[1.037820] (NIDS_PKG) StdoutLine: {'line': b'writing top-level names to ../../build/NIDS_PKG/NIDS_PKG.egg-info/top_level.txt\n'}
+[1.039179] (NIDS_PKG) StdoutLine: {'line': b"reading manifest file '../../build/NIDS_PKG/NIDS_PKG.egg-info/SOURCES.txt'\n"}
+[1.039797] (NIDS_PKG) StdoutLine: {'line': b"writing manifest file '../../build/NIDS_PKG/NIDS_PKG.egg-info/SOURCES.txt'\n"}
+[1.039907] (NIDS_PKG) StdoutLine: {'line': b'running build\n'}
+[1.039997] (NIDS_PKG) StdoutLine: {'line': b'running build_py\n'}
+[1.040103] (NIDS_PKG) StdoutLine: {'line': b'copying NIDS_PKG/master_node_script_node.py -> /home/gmo-pop/Desktop/DistriLearn/build/NIDS_PKG/build/lib/NIDS_PKG\n'}
+[1.040391] (NIDS_PKG) StdoutLine: {'line': b'running install\n'}
+[1.040592] (NIDS_PKG) StdoutLine: {'line': b'running install_lib\n'}
+[1.041179] (NIDS_PKG) StdoutLine: {'line': b'copying /home/gmo-pop/Desktop/DistriLearn/build/NIDS_PKG/build/lib/NIDS_PKG/master_node_script_node.py -> /home/gmo-pop/Desktop/DistriLearn/install/NIDS_PKG/lib/python3.10/site-packages/NIDS_PKG\n'}
+[1.041794] (NIDS_PKG) StdoutLine: {'line': b'byte-compiling /home/gmo-pop/Desktop/DistriLearn/install/NIDS_PKG/lib/python3.10/site-packages/NIDS_PKG/master_node_script_node.py to master_node_script_node.cpython-310.pyc\n'}
+[1.043719] (NIDS_PKG) StdoutLine: {'line': b'running install_data\n'}
+[1.044360] (NIDS_PKG) StdoutLine: {'line': b'running install_egg_info\n'}
+[1.045499] (NIDS_PKG) StdoutLine: {'line': b"removing '/home/gmo-pop/Desktop/DistriLearn/install/NIDS_PKG/lib/python3.10/site-packages/NIDS_PKG-0.0.0-py3.10.egg-info' (and everything under it)\n"}
+[1.045793] (NIDS_PKG) StdoutLine: {'line': b'Copying ../../build/NIDS_PKG/NIDS_PKG.egg-info to /home/gmo-pop/Desktop/DistriLearn/install/NIDS_PKG/lib/python3.10/site-packages/NIDS_PKG-0.0.0-py3.10.egg-info\n'}
+[1.046474] (NIDS_PKG) StdoutLine: {'line': b'running install_scripts\n'}
+[1.061124] (NIDS_PKG) StdoutLine: {'line': b'Installing ap_node script to /home/gmo-pop/Desktop/DistriLearn/install/NIDS_PKG/lib/NIDS_PKG\n'}
+[1.061297] (NIDS_PKG) StdoutLine: {'line': b'Installing master_node script to /home/gmo-pop/Desktop/DistriLearn/install/NIDS_PKG/lib/NIDS_PKG\n'}
+[1.061554] (NIDS_PKG) StdoutLine: {'line': b"writing list of installed files to '/home/gmo-pop/Desktop/DistriLearn/build/NIDS_PKG/install.log'\n"}
+[1.080558] (NIDS_PKG) CommandEnded: {'returncode': 0}
+[1.102917] (-) TimerEvent: {}
+[1.176236] (NIDS_PKG) JobEnded: {'identifier': 'NIDS_PKG', 'rc': 0}
+[1.176879] (-) EventReactorShutdown: {}

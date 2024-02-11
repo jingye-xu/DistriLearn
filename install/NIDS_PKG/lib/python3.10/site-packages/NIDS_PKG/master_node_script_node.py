@@ -154,6 +154,7 @@ class MasterNode(Node):
 		inf_mac = inf_tokens[1]
 		inf_encoding = int(inf_tokens[2]) # type
 		inf_cnt = float(inf_tokens[3]) # confidence.
+		print(inf_cnt)
 		
 		# Select top k from the database
 		# Make sure to iterate after index 4 because that's ALL the flows. 

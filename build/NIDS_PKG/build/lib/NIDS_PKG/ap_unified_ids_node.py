@@ -147,7 +147,8 @@ class AnomalyDetector:
 		X = scaler.fit_transform(flow_data2)
 		results = self.model.predict(X)
 		
-		infs = [0 if result < 0.4 else 1 for result in results.flatten().tolist()]
+		# Extract confidence as a tuple (inference, confidence)
+		infs = [(0, 0.4) if result < 0.4 else (1, result) for result in results.flatten().tolist()]
 		
 		# autoencoder nonsense.
 		# infs = []
@@ -516,7 +517,8 @@ class AccessPointNode(Node):
 			# df[column][row_num]
 			#mac_addr = df[0][mac_index]
 			mac_addr = df.iloc[[mac_index]]['IN_SRC_MAC'].values[0]
-			prediction = predictions[mac_index]
+			prediction = predictions[mac_index][0]
+			confidence = predictions[mac_index][1]
 
 			if mac_addr not in self.inference_buffer:
 				# Here a new encoding is introduced: 2 - means the total # of appearances for this mac.
@@ -526,13 +528,12 @@ class AccessPointNode(Node):
 			self.inference_buffer[mac_addr][prediction] += 1
 			self.inference_buffer[mac_addr][2] += 1
 
-			# Check evidence threshold, and flush whichever surpasses first for this mac. If a threshold is surpassed, then we make a report for this MAC. Hence, the break in the stamtent.
-			# NOTICE: that we divide the inference count by the buffer's count. This is the confidence for the autoencoder.
+			# Check evidence threshold, and flush whichever surpasses first for this mac. If a threshold is surpassed, then we make a report for this MAC.
 			if self.inference_buffer[mac_addr][0] >= self.BENIGN_THRESHOLD:
 				inf_cnt = self.inference_buffer[mac_addr][0]
 				self.inference_buffer[mac_addr][0] = 0
-				confidence = inf_cnt / self.inference_buffer[mac_addr][2]
-				inf_res = ( mac_addr, 0, confidence)
+				#confidence = inf_cnt / self.inference_buffer[mac_addr][2]
+				inf_res = (mac_addr, 0, confidence)
 				break
 			if self.inference_buffer[mac_addr][1] >= self.MALICIOUS_THRESHOLD:
 				inf_cnt = self.inference_buffer[mac_addr][1]
@@ -540,7 +541,7 @@ class AccessPointNode(Node):
 					self.inference_buffer[mac_addr][1] //= self.inference_buffer[mac_addr][1]
 				if self.inference_buffer[mac_addr][0] != 0:
 					self.inference_buffer[mac_addr][0] //= self.inference_buffer[mac_addr][0]
-				confidence = inf_cnt / self.inference_buffer[mac_addr][2]
+				# confidence = inf_cnt / self.inference_buffer[mac_addr][2]
 				inf_res = (mac_addr, 1, confidence)
 				break
 			mac_index += 1
