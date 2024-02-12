@@ -117,7 +117,7 @@ import tensorflow as tf
 class AnomalyDetector:
 
 	# We can assume defaults here. AE trained on input size of 40, and the path is the 4th checkpoint! :)
-	def __init__(self, path=f'{os.environ["HOME"]}/ids_work_2024/binary_classification_model.h5', input_output_size=40):
+	def __init__(self, path=f'/ids_work_2024/binary_classification_model.h5', input_output_size=40):
 
 		# self.anomaly_autoencoder = AnomalyAutoEncoder(input_output_size)
 		# checkpoint = tf.train.Checkpoint(self.anomaly_autoencoder)
