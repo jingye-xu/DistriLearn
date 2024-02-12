@@ -112,7 +112,7 @@ feature_description_dict = {
 }
 import tensorflow as tf
 
-from anomalydetectionarchitecture import AnomalyAutoEncoder
+#from anomalydetectionarchitecture import AnomalyAutoEncoder
 
 class AnomalyDetector:
 
