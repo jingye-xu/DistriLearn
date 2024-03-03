@@ -437,8 +437,11 @@ class AccessPointNode(Node):
 
 		# turn it into flow
 		self.create_fows(self.capture_name, chroot_dir)
-
-		df = self.read_traffic_cap(f"{chroot_dir}/flow_outs/")
+		df = None
+		try:
+			df = self.read_traffic_cap(f"{chroot_dir}/flow_outs/")
+		except:
+			return
 		
 		#Check if it has all needed values. Else, return.
 		

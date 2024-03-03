@@ -23,6 +23,7 @@ from uuid import getnode as get_mac
 
 from NIDS_PKG.kappa_coeff import *
 from NIDS_PKG.blackListAPI import *
+from setfit import SetFitModel
 
 import lancedb
 import pyarrow as pa
@@ -30,6 +31,21 @@ import pyarrow as pa
 # This is to accomadate packages on the home directory (i.e. the bert mdl)
 sys.path.append(f'{os.environ["HOME"]}/bertbased_ids')
 from BertFlowLM import BertFlowLM
+
+
+class SetFitWrapper:
+
+	def __init__(self, device='cpu', use_dh=True):
+		self.setfit = SetFitModel.from_pretrained(f"{os.environ['HOME']}/bertbased_ids/setfit_mobile_siamese", device=device, use_differentiable_head=use_dh)
+
+	def obtain_embedding(self, flow_entry):
+		return self.setfit.encode(flow_entry)
+
+	def infer(self, flow_entry):
+		pred = self.setfit.predict(flow_entry)
+		confidence = self.setfit.predict_proba(flow_entry)
+		return pred.item(), confidence.data[np.argmax(confidence)].item()
+
 
 class BlackListComposition:
 
@@ -75,7 +91,7 @@ class MasterNode(Node):
 		# create a table for the embeddings
 		schema = pa.schema(
 		[ # 985 and 512 or 768
-			pa.field("vector", pa.list_(pa.float64(), list_size=768)),
+			pa.field("vector", pa.list_(pa.float64(), list_size=512)),
 			pa.field("flow", pa.string()),
 			pa.field("confidence", pa.float64()),
 			pa.field("pred", pa.int32()),
@@ -84,7 +100,9 @@ class MasterNode(Node):
 		])
 
 
-		self.model = BertFlowLM(hf_path=f'{os.environ["HOME"]}/bertbased_ids/BERT_FlowLM_PT', hf_path_t=f'bert-base-uncased')
+		# self.model = BertFlowLM(hf_path=f'{os.environ["HOME"]}/bertbased_ids/BERT_FlowLM_PT', hf_path_t=f'bert-base-uncased')
+		self.model = SetFitWrapper()
+
 		self.tbl = None
 		try:
 			# Create empty table using defined schema.
@@ -99,7 +117,8 @@ class MasterNode(Node):
 				flow = row['Flow']
 				prediction = row['Label']
 				confidence = 1.0 # because it is ground truth, it has highest weight (i.e., 100%).
-				embedding = self.model.obtain_embedding_for(flow)
+				#embedding = self.model.obtain_embedding_for(flow)
+				embedding = self.model.obtain_embedding(flow)
 				entry = [{"vector":embedding, "flow": flow, "confidence" : confidence, "pred":int(prediction), "inference_sum": int(prediction), "total_inferences": 1}]
 				self.tbl.add(entry)
 			print('Done initializing database')
@@ -164,19 +183,28 @@ class MasterNode(Node):
 				continue
 			
 			# Predict on flow sentence and get confidence.
+			# pred, confidence = self.model.infer(flow_s)
 			pred, confidence = self.model.infer(flow_s)
-			confidence /= 2
-			print(pred)
-			#confidence = float(confidence.data[0])
+
+			# This isn't inflating the benign counts in any way. This allows us to add strength to malicious ONLY when the probability is high enough to say so.
+			if pred == 1 and confidence <= 0.55:
+				pred = 0
+				confidence = 0.5
+			
+			# confidence = float(confidence.data[0])
 			# Obtain embedding for the flow sentence
-			embedding = self.model.obtain_embedding_for(flow_s)
-			search_results = self.tbl.search(embedding).metric("cosine").limit(10).to_df()
+			# embedding = self.model.obtain_embedding_for(flow_s)
+			embedding = self.model.obtain_embedding(flow_s)
+
+			search_results = self.tbl.search(embedding).metric("cosine").limit(10).to_pandas()
 			
 			
 			# Now we have k similar flows with the values "vector" "flow" "confidence" "pred" "inference_sum" "total_inferences"
 			# The confidence updates via the inference sum, and its total inferences. 
 			search_results['total_inferences'] = search_results['total_inferences'].apply(lambda x : x + 1)
 			
+			# Apply a weighted sum to see which values actually have a higher weight. The highest weight value is the decision.
+			sums = [0, 0] # mapped directly to 0 or 1.
 			for _, row in search_results.iterrows():
 				# For each flow in the k that we pulled out, update its inference sum and confidence with the new values.
 				row['inference_sum'] += pred
@@ -186,20 +214,24 @@ class MasterNode(Node):
 				
 				# Now, update the table with this new flow metadata (flows are usually always unique). We can turn the dataframe back into its original state of a dictionary.
 				self.tbl.update(where=f"flow = \"{row['flow']}\"", values={'inference_sum' : int(row['inference_sum']), 'confidence' : float(row['confidence']), 'total_inferences' : int(row['total_inferences'])})
-			
-			# Once we iterate through everything, now we need to take all values under consideration. 
-			# Use all the confidences we have for the nn, the BERT model, and the k flows to make a determination for this source address. 
-			# So make the decision and report.
-			# Since each prediction is binary, and the confidences are technically weights, we can then use that as a pseudo neural network input; that is, we can use a sigmoid function.
-				# Sigmoid : Take in a vector of values, along with weights, sum it and produce a value between 0 and 1.
-				# 1/(1 + e^x); to use it as a neural activation it is sum(weight * input) + bias
-			# This is initialized with BERT's weights (left) + autoencoder weights (right)
-			cumulative_sum = (pred * confidence) + (inf_encoding * inf_cnt)
-			# Even though we can do this quicker and more effectively, for correctness, I will just use a loop.
-			for _, row in search_results.iterrows():
-				cumulative_sum += (row['confidence'] * row['pred'])
-			# Apply sigmoid after weighted sum calculation like the NN.
-			cumulative_sum = self.sig(cumulative_sum)
+				
+				sums[row['pred']] += row['confidence']
+
+
+			print(search_results)
+			# # Once we iterate through everything, now we need to take all values under consideration. 
+			# # Use all the confidences we have for the nn, the BERT model, and the k flows to make a determination for this source address. 
+			# # So make the decision and report.
+			# # Since each prediction is binary, and the confidences are technically weights, we can then use that as a pseudo neural network input; that is, we can use a sigmoid function.
+			# 	# Sigmoid : Take in a vector of values, along with weights, sum it and produce a value between 0 and 1.
+			# 	# 1/(1 + e^x); to use it as a neural activation it is sum(weight * input) + bias
+			# # This is initialized with BERT's weights (left) + autoencoder weights (right)
+			# cumulative_sum = (pred * confidence) + (inf_encoding * inf_cnt)
+			# # Even though we can do this quicker and more effectively, for correctness, I will just use a loop.
+			# for _, row in search_results.iterrows():
+			# 	cumulative_sum += (row['confidence'] * row['pred'])
+			# # Apply sigmoid after weighted sum calculation like the NN.
+			# cumulative_sum = self.sig(cumulative_sum)
 
 
 			
@@ -208,10 +240,11 @@ class MasterNode(Node):
 			gmtime = time.gmtime()
 			dt_string = "%s:%s:%s" % (gmtime.tm_hour, gmtime.tm_min, gmtime.tm_sec)
 			report = 0
-			if cumulative_sum < 0.6:
+			cumulative_sum = np.argmax(sums)
+			if cumulative_sum == 0:
 				report = 0
 				print(f'\033[32;1m[{dt_string}]\033[0m {inf_mac} - \033[32;1mNormal.\033[0m')
-			if cumulative_sum >= 0.6:
+			if cumulative_sum == 1:
 				report = 1
 				print(f'\033[31;1m[{dt_string}]\033[0m {inf_mac} - \033[31;1mSuspicious.\033[0m')
 
