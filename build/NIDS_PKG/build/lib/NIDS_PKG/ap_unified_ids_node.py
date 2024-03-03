@@ -112,12 +112,12 @@ feature_description_dict = {
 }
 import tensorflow as tf
 
-from anomalydetectionarchitecture import AnomalyAutoEncoder
+#from anomalydetectionarchitecture import AnomalyAutoEncoder
 
 class AnomalyDetector:
 
 	# We can assume defaults here. AE trained on input size of 40, and the path is the 4th checkpoint! :)
-	def __init__(self, path=f'{os.environ["HOME"]}/ids_work_2024/binary_classification_model.h5', input_output_size=40):
+	def __init__(self, path=f'/ids_work_2024/binary_classification_model.h5', input_output_size=40):
 
 		# self.anomaly_autoencoder = AnomalyAutoEncoder(input_output_size)
 		# checkpoint = tf.train.Checkpoint(self.anomaly_autoencoder)
@@ -151,7 +151,7 @@ class AnomalyDetector:
 			return []
 		
 		# Extract confidence as a tuple (inference, confidence)
-		infs = [(0, 0.4) if result < 0.4 else (1, result) for result in results.flatten().tolist()]
+		infs = [(0, 0.6) if result < 0.7 else (1, result) for result in results.flatten().tolist()]
 		
 		# autoencoder nonsense.
 		# infs = []

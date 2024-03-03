@@ -51,7 +51,7 @@ class MasterNode(Node):
 	def __init__(self):
 		super().__init__('master_node')
 
-		timer_period = 0.2  # seconds
+		timer_period = 0.1  # seconds
 
 		
 
@@ -92,8 +92,10 @@ class MasterNode(Node):
 
 			# Initialize database with data from training. Create embeddings using model with confidences' metadata too. 
 			data = pd.read_csv(f'{os.environ["HOME"]}/NF-UNSW-NB15-v2.csvLabelWiseSentenceClass.csv',low_memory=False)
-			print('Initializing database...')
+			data = data.sample(frac=1).reset_index(drop=True)
+			print(f'Initializing database... ({len(data)} Entries)')
 			for index, row in data.iterrows():
+				print(f'({index + 1} / {len(data)})', end='\r')
 				flow = row['Flow']
 				prediction = row['Label']
 				confidence = 1.0 # because it is ground truth, it has highest weight (i.e., 100%).
@@ -154,7 +156,7 @@ class MasterNode(Node):
 		inf_mac = inf_tokens[1]
 		inf_encoding = int(inf_tokens[2]) # type
 		inf_cnt = float(inf_tokens[3]) # confidence.
-		
+		print(inf_cnt)
 		# Select top k from the database
 		# Make sure to iterate after index 4 because that's ALL the flows. 
 		for flow_s in inf_tokens[4:]:
@@ -163,39 +165,42 @@ class MasterNode(Node):
 			
 			# Predict on flow sentence and get confidence.
 			pred, confidence = self.model.infer(flow_s)
-			#print(pred)
+			confidence /= 2
+			print(pred)
 			#confidence = float(confidence.data[0])
 			# Obtain embedding for the flow sentence
 			embedding = self.model.obtain_embedding_for(flow_s)
 			search_results = self.tbl.search(embedding).metric("cosine").limit(10).to_df()
 			
+			
 			# Now we have k similar flows with the values "vector" "flow" "confidence" "pred" "inference_sum" "total_inferences"
 			# The confidence updates via the inference sum, and its total inferences. 
 			search_results['total_inferences'] = search_results['total_inferences'].apply(lambda x : x + 1)
-
+			
 			for _, row in search_results.iterrows():
 				# For each flow in the k that we pulled out, update its inference sum and confidence with the new values.
 				row['inference_sum'] += pred
-				row['confidence'] = (row['inference_sum'] / row['total_inferences'])
+				row['confidence'] = self.sig((row['inference_sum'] / row['total_inferences']) * row['confidence'])
 
 				entry = [{"vector": row['vector'], "flow": row['flow'], "confidence" : row['confidence'], "pred": row['pred'], "inference_sum": row['inference_sum'], "total_inferences": row['total_inferences']}]
 				
 				# Now, update the table with this new flow metadata (flows are usually always unique). We can turn the dataframe back into its original state of a dictionary.
-				self.tbl.update(where=f"flow = \"{row['flow']}\"", values={'inference_sum' : int(row['inference_sum']), 'confidence' : float(row['confidence'])})
-
+				self.tbl.update(where=f"flow = \"{row['flow']}\"", values={'inference_sum' : int(row['inference_sum']), 'confidence' : float(row['confidence']), 'total_inferences' : int(row['total_inferences'])})
+			
 			# Once we iterate through everything, now we need to take all values under consideration. 
-			# Use all the confidences we have for the autoencoder, the BERT model, and the k flows to make a determination for this source address. 
+			# Use all the confidences we have for the nn, the BERT model, and the k flows to make a determination for this source address. 
 			# So make the decision and report.
 			# Since each prediction is binary, and the confidences are technically weights, we can then use that as a pseudo neural network input; that is, we can use a sigmoid function.
 				# Sigmoid : Take in a vector of values, along with weights, sum it and produce a value between 0 and 1.
 				# 1/(1 + e^x); to use it as a neural activation it is sum(weight * input) + bias
 			# This is initialized with BERT's weights (left) + autoencoder weights (right)
-			cumulative_sum = (pred * confidence) + (inf_encoding * confidence)
+			cumulative_sum = (pred * confidence) + (inf_encoding * inf_cnt)
 			# Even though we can do this quicker and more effectively, for correctness, I will just use a loop.
 			for _, row in search_results.iterrows():
 				cumulative_sum += (row['confidence'] * row['pred'])
 			# Apply sigmoid after weighted sum calculation like the NN.
 			cumulative_sum = self.sig(cumulative_sum)
+
 
 			
 			# Since we are using sigmoid, we can use a threshold to say whether it is 0 or 1.

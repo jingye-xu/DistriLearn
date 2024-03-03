@@ -151,7 +151,7 @@ class AnomalyDetector:
 			return []
 		
 		# Extract confidence as a tuple (inference, confidence)
-		infs = [(0, 0.4) if result < 0.4 else (1, result) for result in results.flatten().tolist()]
+		infs = [(0, 0.6) if result < 0.7 else (1, result) for result in results.flatten().tolist()]
 		
 		# autoencoder nonsense.
 		# infs = []
